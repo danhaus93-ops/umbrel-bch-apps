@@ -1,1 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SoloStrike Cash</title>
+<style>
+  @font-face{font-family:'Chakra Petch';font-weight:400;font-display:swap;src:url('fonts/ChakraPetch-Regular.ttf') format('truetype')}
+  @font-face{font-family:'Chakra Petch';font-weight:500;font-display:swap;src:url('fonts/ChakraPetch-Medium.ttf') format('truetype')}
+  @font-face{font-family:'Chakra Petch';font-weight:600;font-display:swap;src:url('fonts/ChakraPetch-SemiBold.ttf') format('truetype')}
+  @font-face{font-family:'Chakra Petch';font-weight:700;font-display:swap;src:url('fonts/ChakraPetch-Bold.ttf') format('truetype')}
+  @font-face{font-family:'JetBrains Mono';font-weight:300 700;font-display:swap;src:url('fonts/JetBrainsMono.ttf') format('truetype')}
 
+  :root{
+    --bg-void:#051914; --bg-deep:#08221c; --surface:#0a2e26; --raised:#0d3a30; --elevated:#11473b;
+    --line:#11473b; --line2:#18594a;
+    --green:#10B981; --mint:#34D399; --gold:#FCD34D; --red:#FB7185; --hot:#FFFFFF;
+    --text:#E6F4EE; --muted:#6E9286; --dim:#3E5F54;
+    --fd:'Chakra Petch',system-ui,-apple-system,sans-serif;
+    --fm:'JetBrains Mono','IBM Plex Mono',ui-monospace,Menlo,monospace;
+    --r:3px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(120% 85% at 50% -8%, #0c3a2f 0%, var(--bg-deep) 44%, var(--bg-void) 100%);
+    color:var(--text); font-family:var(--fd);
+    min-height:100vh; padding:22px 16px 60px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto}
+
+  header{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+  .logo{width:40px;height:40px;flex:0 0 auto}
+  .brand h1{font-family:var(--fd);font-size:20px;font-weight:700;letter-spacing:.01em;line-height:1}
+  .brand .sub{font-family:var(--fm);font-size:10.5px;color:var(--muted);margin-top:4px;letter-spacing:.12em}
+  .status{margin-left:auto;display:flex;align-items:center;gap:8px;font-family:var(--fm);
+    font-size:11px;color:var(--muted);padding:7px 12px;border:1px solid var(--line);
+    border-radius:var(--r);background:rgba(10,46,38,.6);text-transform:lowercase;letter-spacing:.04em}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);
+    box-shadow:0 0 0 0 rgba(16,185,129,.7);animation:pulse 2.4s infinite}
+  .dot.bad{background:var(--red);animation:none}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.55)}70%{box-shadow:0 0 0 7px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
+
+  .hero{position:relative;border:1px solid var(--line);border-radius:var(--r);
+    background:linear-gradient(180deg,var(--surface),var(--bg-deep));
+    padding:30px 24px 26px;text-align:center;overflow:hidden;margin-bottom:13px}
+  .hero .eyebrow{font-family:var(--fm);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:18px}
+  .gauge{position:relative;width:232px;height:232px;margin:0 auto}
+  .gauge svg{transform:rotate(-90deg)}
+  .gauge .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .gauge .pct{font-family:var(--fm);font-size:13px;color:var(--gold);letter-spacing:.06em}
+  .gauge .best{font-family:var(--fm);font-size:42px;font-weight:600;letter-spacing:-.01em;line-height:1;margin:5px 0 3px;color:var(--hot);text-shadow:0 0 24px rgba(52,211,153,.4)}
+  .gauge .bestlabel{font-family:var(--fm);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  .hero .foot{margin-top:18px;font-family:var(--fm);font-size:12px;color:var(--muted)}
+  .hero .foot b{color:var(--gold);font-weight:500}
+
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-bottom:13px}
+  .card{border:1px solid var(--line);border-radius:var(--r);background:linear-gradient(180deg,var(--surface),var(--bg-deep));padding:15px 16px 14px}
+  .card .k{font-family:var(--fm);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .card .v{font-family:var(--fm);font-size:27px;font-weight:600;letter-spacing:-.01em;margin-top:9px;line-height:1;color:var(--text)}
+  .card .v small{font-size:13px;color:var(--muted);font-weight:400;margin-left:3px}
+  .card .meta{font-family:var(--fm);font-size:11px;color:var(--dim);margin-top:6px}
+  .v.green{color:var(--mint)} .v.gold{color:var(--gold)}
+
+  .sec{font-family:var(--fm);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:22px 2px 9px}
+
+  .panel{border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+  .row{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .rk{font-family:var(--fm);font-size:11px;color:var(--muted);width:100px;flex:0 0 auto;letter-spacing:.04em;text-transform:uppercase}
+  .row .rv{font-family:var(--fm);font-size:13px;color:var(--text);flex:1;word-break:break-all}
+  .copy{flex:0 0 auto;border:1px solid var(--line2);background:rgba(16,185,129,.08);color:var(--mint);font-family:var(--fm);font-size:11px;padding:5px 11px;border-radius:var(--r);cursor:pointer;transition:.15s;text-transform:uppercase;letter-spacing:.05em}
+  .copy:hover{background:rgba(16,185,129,.18)}
+  .copy:active{transform:scale(.96)}
+
+  .workers{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+  .workers .wh,.workers .wr{display:grid;grid-template-columns:1.5fr 1fr 1fr .9fr;gap:8px;padding:11px 15px;align-items:center}
+  .workers .wh{background:var(--raised);font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .workers .wr{border-top:1px solid var(--line);font-family:var(--fm);font-size:12px}
+  .workers .wr .name{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .workers .wr .hr{color:var(--mint)} .workers .wr .bd{color:var(--gold)}
+  .workers .wr .ls{color:var(--muted);text-align:right}
+  .wcol-r{text-align:right}
+  .empty{padding:26px 16px;text-align:center;font-family:var(--fm);font-size:12px;color:var(--dim)}
+
+  footer{margin-top:24px;text-align:center;font-family:var(--fm);font-size:11px;color:var(--dim);line-height:1.9}
+  .badge{display:inline-block;border:1px solid var(--line2);border-radius:var(--r);padding:3px 9px;color:var(--mint);margin:0 3px;letter-spacing:.04em}
+  @media(max-width:520px){
+    .gauge{width:202px;height:202px}.gauge .best{font-size:35px}
+    .row .rk{width:78px}
+    .workers .wh,.workers .wr{grid-template-columns:1.4fr 1fr .9fr}
+    .workers .bd-col{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg class="logo" viewBox="0 0 1024 1024" aria-hidden="true">
+      <defs><linearGradient id="mk" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#34D399"/><stop offset="1" stop-color="#0E9B6E"/>
+      </linearGradient></defs>
+      <rect width="1024" height="1024" rx="36" fill="#0a2e26"/>
+      <text x="512" y="700" font-family="Chakra Petch,Arial,sans-serif" font-weight="700" font-size="620" text-anchor="middle" fill="url(#mk)">฿</text>
+    </svg>
+    <div class="brand">
+      <h1>SoloStrike Cash</h1>
+      <div class="sub">BCH SOLO POOL · ZERO-FEE</div>
+    </div>
+    <div class="status" id="status"><span class="dot" id="statusDot"></span><span id="statusText">connecting…</span></div>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">Closest strike</div>
+    <div class="gauge">
+      <svg width="232" height="232" viewBox="0 0 232 232">
+        <circle cx="116" cy="116" r="100" fill="none" stroke="#0e3b30" stroke-width="13"/>
+        <circle id="arc" cx="116" cy="116" r="100" fill="none" stroke="url(#g)" stroke-width="13"
+          stroke-linecap="round" stroke-dasharray="628" stroke-dashoffset="628"
+          style="filter:drop-shadow(0 0 9px rgba(52,211,153,.6));transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1)"/>
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#10B981"/><stop offset="1" stop-color="#FCD34D"/>
+        </linearGradient></defs>
+      </svg>
+      <div class="center">
+        <div class="pct" id="strikePct">—</div>
+        <div class="best" id="bestShare">—</div>
+        <div class="bestlabel">best share diff</div>
+      </div>
+    </div>
+    <div class="foot">network needs <b id="netDiff">—</b> to mine a block</div>
+  </section>
+
+  <div class="grid">
+    <div class="card"><div class="k">Pool hashrate</div><div class="v green" id="hashrate">—<small id="hrUnit"></small></div><div class="meta" id="hrMeta">5-minute average</div></div>
+    <div class="card"><div class="k">Miners online</div><div class="v" id="workers">—</div><div class="meta" id="wkMeta">0 connected</div></div>
+    <div class="card"><div class="k">Blocks found</div><div class="v gold" id="blocks">—</div><div class="meta" id="blkMeta">all-time</div></div>
+    <div class="card"><div class="k">Shares</div><div class="v" id="shares">—</div><div class="meta" id="shMeta">accepted / rejected</div></div>
+  </div>
+
+  <div class="sec">Point your miner here</div>
+  <div class="panel">
+    <div class="row"><div class="rk">Stratum URL</div><div class="rv" id="stratum">stratum+tcp://—</div><button class="copy" data-c="stratum">Copy</button></div>
+    <div class="row"><div class="rk">Username</div><div class="rv">your BCH address — <span style="color:var(--muted)">e.g. bitcoincash:q…</span></div><button class="copy" data-c="user">Copy tip</button></div>
+    <div class="row"><div class="rk">Password</div><div class="rv">x</div><button class="copy" data-c="pass">Copy</button></div>
+  </div>
+
+  <div class="sec">Workers</div>
+  <div class="workers" id="workersTable">
+    <div class="wh"><div>Worker</div><div class="wcol-r">Hashrate</div><div class="wcol-r bd-col">Best</div><div class="wcol-r">Last</div></div>
+    <div class="empty" id="workersEmpty">No miners connected yet — point one at the stratum URL above.</div>
+  </div>
+
+  <div class="sec">Backing node</div>
+  <div class="panel">
+    <div class="row"><div class="rk">Node</div><div class="rv" id="nodeName">Bitcoin Cash Node (BCHN)</div><span class="dot" id="nodeDot" style="margin-right:8px"></span></div>
+    <div class="row"><div class="rk">Block height</div><div class="rv" id="height">—</div></div>
+    <div class="row"><div class="rk">Net difficulty</div><div class="rv" id="netDiff2">—</div></div>
+  </div>
+
+  <footer>
+    <span class="badge">solo</span><span class="badge">zero-fee</span><span class="badge">your node</span><br/>
+    SoloStrike Cash <span id="ver">v1.0.0</span> · powered by asicseer-pool
+  </footer>
+</div>
+
+<script>
+function fmtDiff(n){
+  if(n==null||isNaN(n))return"—";
+  const u=[[1e18,"E"],[1e15,"P"],[1e12,"T"],[1e9,"G"],[1e6,"M"],[1e3,"K"]];
+  for(const[v,s]of u){if(n>=v)return(n/v).toFixed(n/v>=100?0:2)+s;}
+  return n.toFixed(0);
+}
+function ago(ts){
+  if(!ts)return"—";const s=Math.max(0,Math.floor(Date.now()/1000-ts));
+  if(s<60)return s+"s";if(s<3600)return Math.floor(s/60)+"m";
+  if(s<86400)return Math.floor(s/3600)+"h";return Math.floor(s/86400)+"d";
+}
+function strikeFrac(best,net){
+  if(!best||!net||best<=0||net<=0)return 0;
+  if(best>=net)return 1;
+  return Math.min(1,Math.max(0,Math.log10(best)/Math.log10(net)));
+}
+function render(d){
+  const sd=document.getElementById('statusDot'),st=document.getElementById('statusText');
+  if(d.poolUp){sd.className='dot';st.textContent=d.nodeUp?'mining':'pool up · node down';}
+  else{sd.className='dot bad';st.textContent='pool offline';}
+  const frac=strikeFrac(d.bestShare,d.netDiff);
+  document.getElementById('arc').style.strokeDashoffset=628*(1-frac);
+  document.getElementById('strikePct').textContent=(frac*100).toFixed(frac>=0.999?0:4)+'% there';
+  document.getElementById('bestShare').textContent=fmtDiff(d.bestShare);
+  document.getElementById('netDiff').textContent=fmtDiff(d.netDiff);
+  document.getElementById('netDiff2').textContent=fmtDiff(d.netDiff);
+  document.getElementById('hashrate').firstChild.textContent=d.hashrate.val;
+  document.getElementById('hrUnit').textContent=d.hashrate.unit;
+  document.getElementById('workers').textContent=d.workers;
+  document.getElementById('wkMeta').textContent=d.users+' address'+(d.users===1?'':'es');
+  document.getElementById('blocks').textContent=d.blocks;
+  document.getElementById('shares').textContent=fmtDiff(d.accepted);
+  document.getElementById('shMeta').textContent=fmtDiff(d.accepted)+' acc / '+(d.rejected||0)+' rej';
+  document.getElementById('stratum').textContent=d.stratum;
+  document.getElementById('nodeDot').className='dot'+(d.nodeUp?'':' bad');
+  document.getElementById('height').textContent=d.height?d.height.toLocaleString():'—';
+  if(d.version)document.getElementById('ver').textContent=d.version;
+  const t=document.getElementById('workersTable');
+  t.querySelectorAll('.wr').forEach(e=>e.remove());
+  const emp=document.getElementById('workersEmpty');
+  if(d.workerList&&d.workerList.length){
+    emp.style.display='none';
+    d.workerList.forEach(w=>{
+      const r=document.createElement('div');r.className='wr';
+      r.innerHTML=`<div class="name">${w.name}</div><div class="hr wcol-r">${w.hashrate}</div><div class="bd wcol-r bd-col">${fmtDiff(w.best)}</div><div class="ls">${ago(w.last)}</div>`;
+      t.appendChild(r);
+    });
+  }else{emp.style.display='block';}
+}
+const COPY={user:'Use your own BCH address as the username (bitcoincash:q… or legacy). The block reward pays straight to it.',pass:'x'};
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.copy');if(!b)return;
+  const key=b.dataset.c;
+  let txt=key==='stratum'?document.getElementById('stratum').textContent:(COPY[key]||'');
+  navigator.clipboard?.writeText(txt);
+  const o=b.textContent;b.textContent='Copied';setTimeout(()=>b.textContent=o,1200);
+});
+const MOCK={poolUp:true,nodeUp:true,bestShare:4.1e6,netDiff:5.75e11,
+  hashrate:{val:'92.4',unit:'TH/s'},workers:3,users:1,blocks:0,accepted:18420,rejected:12,
+  stratum:'stratum+tcp://umbrel.local:3333',height:954112,version:'v1.0.0',
+  workerList:[
+    {name:'S21XP-board1',hashrate:'90.1 TH/s',best:4.1e6,last:Math.floor(Date.now()/1000)-4},
+    {name:'NerdQAxe++',hashrate:'1.9 TH/s',best:88200,last:Math.floor(Date.now()/1000)-11},
+    {name:'bitaxe-gamma',hashrate:'1.2 TH/s',best:42100,last:Math.floor(Date.now()/1000)-2},
+  ]};
+async function tick(){
+  try{const r=await fetch('/api/status');if(!r.ok)throw 0;render(await r.json());}
+  catch{render(MOCK);}
+}
+tick();setInterval(tick,5000);
+</script>
+</body>
+</html>
