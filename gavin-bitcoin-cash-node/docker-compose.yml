@@ -15,7 +15,7 @@
 services:
   app_proxy:
     environment:
-      APP_HOST: bitcoin-cash-node_web_1
+      APP_HOST: gavin-bitcoin-cash-node_web_1
       APP_PORT: 3000
 
   bitcoind:
