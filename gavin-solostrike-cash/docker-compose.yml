@@ -1,0 +1,43 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: gavin-solostrike-cash_dashboard_1
+      APP_PORT: 3000
+
+  pool:
+    image: ghcr.io/danhaus93-ops/asicseer-pool:latest
+    restart: on-failure
+    stop_grace_period: 30s
+    environment:
+      RPC_HOST: gavin-bitcoin-cash-node_bitcoind_1
+      RPC_PORT: "8332"
+      RPC_USER: bchn
+      RPC_PASS: bchn_local_rpc_pw_2f9c
+      # Lowest-latency block notifications via BCHN's ZMQ hashblock publisher.
+      # Requires BCHN to run with: -zmqpubhashblock=tcp://0.0.0.0:28332
+      ZMQ_ENDPOINT: tcp://gavin-bitcoin-cash-node_bitcoind_1:28332
+      # ↓↓↓ SET THIS to your Bitcoin Cash address ↓↓↓
+      BCH_ADDRESS: ""
+    volumes:
+      - ${APP_DATA_DIR}/data/pool:/pool
+    ports:
+      - "3335:3333"   # host 3335 (SoloStrike already owns 3333/3334/4333)
+
+  dashboard:
+    image: ghcr.io/danhaus93-ops/solostrike-cash-dashboard:latest
+    restart: on-failure
+    environment:
+      POOL_LOGDIR: /pool/logs
+      STRATUM_HOST: ${DEVICE_DOMAIN_NAME:-umbrel.local}
+      STRATUM_PORT: "3335"
+      RPC_HOST: gavin-bitcoin-cash-node_bitcoind_1
+      RPC_PORT: "8332"
+      RPC_USER: bchn
+      RPC_PASS: bchn_local_rpc_pw_2f9c
+      APP_VERSION: v1.0.0
+    volumes:
+      - ${APP_DATA_DIR}/data/pool:/pool
+    depends_on:
+      - pool

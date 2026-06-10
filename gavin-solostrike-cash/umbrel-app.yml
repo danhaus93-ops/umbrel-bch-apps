@@ -1,1 +1,44 @@
+manifestVersion: 1
+id: gavin-solostrike-cash
+category: bitcoin
+name: SoloStrike Cash
+version: "1.0.0"
+tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
+icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-solostrike-cash/icon.svg
+description: >-
+  SoloStrike Cash is a self-hosted solo mining pool for Bitcoin Cash, powered by
+  the asicseer-pool engine (a BCH-native ckpool fork) and wrapped in a real-time
+  dashboard that matches your Bitcoin Cash Node.
 
+
+  Point your ASICs at your own pool, backed by your own BCHN node, and keep 100%
+  of every block you find — no pool fees, no custody, no middleman. If you solve
+  a block, the full reward pays straight to the BCH address your miner connects
+  with.
+
+
+  Requires the Bitcoin Cash Node app to be installed and synced.
+
+
+  Displays:
+
+  • Closest Strike gauge — your best share difficulty vs. the network target
+
+  • Pool hashrate, miners online, blocks found, and accepted/rejected shares
+
+  • Per-worker breakdown: hashrate, best share, and last-seen time
+
+  • One-tap stratum connection details for your miners
+
+  • Backing-node status: block height and live network difficulty
+developer: Gavin
+website: https://github.com/danhaus93-ops/umbrel-bch-apps
+dependencies:
+  - gavin-bitcoin-cash-node
+repo: https://github.com/danhaus93-ops/umbrel-bch-apps
+support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
+port: 3000
+gallery: []
+releaseNotes: First release — zero-fee BCH solo mining pool with a live dashboard.
+submitter: Gavin
+submission: https://github.com/danhaus93-ops/umbrel-bch-apps
