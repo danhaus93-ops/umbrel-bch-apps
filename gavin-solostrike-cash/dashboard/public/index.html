@@ -4,6 +4,12 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SoloStrike Cash</title>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#08221c"/>
 <style>
   @font-face{font-family:'Chakra Petch';font-weight:400;font-display:swap;src:url('fonts/ChakraPetch-Regular.ttf') format('truetype')}
   @font-face{font-family:'Chakra Petch';font-weight:500;font-display:swap;src:url('fonts/ChakraPetch-Medium.ttf') format('truetype')}
@@ -73,7 +79,9 @@
   .copy:active{transform:scale(.96)}
 
   .workers{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface)}
-  .workers .wh,.workers .wr{display:grid;grid-template-columns:1.5fr 1fr 1fr .9fr;gap:8px;padding:11px 15px;align-items:center}
+  .workers .wh,.workers .wr{display:grid;grid-template-columns:1.5fr 1fr 1fr .9fr 30px;gap:8px;padding:11px 15px;align-items:center}
+  .wreset{border:1px solid var(--line2);background:none;color:var(--dim);font-family:var(--fm);font-size:12px;width:26px;height:24px;border-radius:var(--r);cursor:pointer}
+  .wreset:hover{color:var(--red);border-color:var(--red)}
   .workers .wh{background:var(--raised);font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
   .workers .wr{border-top:1px solid var(--line);font-family:var(--fm);font-size:12px}
   .workers .wr .name{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -141,6 +149,7 @@
       </div>
     </div>
     <div class="foot">network needs <b id="netDiff">—</b> to mine a block</div>
+    <button class="copy" id="resetAll" style="margin-top:12px">Reset best</button>
   </section>
 
   <div class="grid">
@@ -171,7 +180,7 @@
 
   <div class="sec">Workers</div>
   <div class="workers" id="workersTable">
-    <div class="wh"><div>Worker</div><div class="wcol-r">Hashrate</div><div class="wcol-r bd-col">Best</div><div class="wcol-r">Last</div></div>
+    <div class="wh"><div>Worker</div><div class="wcol-r">Hashrate</div><div class="wcol-r bd-col">Best</div><div class="wcol-r">Last</div><div></div></div>
     <div class="empty" id="workersEmpty">No miners connected yet — point one at the stratum URL above.</div>
   </div>
 
@@ -238,7 +247,7 @@ function render(d){
     emp.style.display='none';
     d.workerList.forEach(w=>{
       const r=document.createElement('div');r.className='wr';
-      r.innerHTML=`<div class="name">${w.name}</div><div class="hr wcol-r">${w.hashrate}</div><div class="bd wcol-r bd-col">${fmtDiff(w.best)}</div><div class="ls">${ago(w.last)}</div>`;
+      r.innerHTML=`<div class="name">${w.name}</div><div class="hr wcol-r">${w.hashrate}</div><div class="bd wcol-r bd-col">${fmtDiff(w.best)}</div><div class="ls">${ago(w.last)}</div><button class="wreset" data-w="${w.name}" title="reset this miner's best">⟲</button>`;
       t.appendChild(r);
     });
   }else{emp.style.display='block';}
@@ -267,6 +276,17 @@ async function saveAddr(){
     else{msg.style.color='var(--red)';msg.textContent=j.error||'invalid address';}
   }catch{msg.style.color='var(--red)';msg.textContent='could not save';}
 }
+async function doReset(scope,btn){
+  if(btn.dataset.arm!=='1'){btn.dataset.arm='1';const o=btn.textContent;btn.textContent='Sure?';btn.style.color='var(--red)';
+    setTimeout(()=>{btn.dataset.arm='';btn.textContent=o;btn.style.color='';},2500);return;}
+  btn.dataset.arm='';
+  try{await fetch('/api/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scope})});
+    btn.textContent='Resetting…';setTimeout(tick,8000);}catch{}
+}
+document.getElementById('resetAll').addEventListener('click',e=>doReset('all',e.target));
+document.getElementById('workersTable').addEventListener('click',e=>{
+  const b=e.target.closest('.wreset');if(b)doReset(b.dataset.w,b);
+});
 document.getElementById('addrSave').addEventListener('click',saveAddr);
 document.getElementById('addrInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveAddr();});
 const MOCK={poolUp:true,nodeUp:true,bestShare:4.1e6,netDiff:5.75e11,
