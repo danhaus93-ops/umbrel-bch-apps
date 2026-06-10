@@ -1,29 +1,33 @@
 #!/usr/bin/env bash
-set -euo pipefail
-mkdir -p /pool/logs
+# SoloStrike Cash — pool entrypoint
+# The BCH payout address is read from a shared file the dashboard can write
+# (/pool/config/bch_address). We supervise asicseer-pool and restart it whenever
+# the address changes, so the address can be set from the UI with no redeploy.
+set -uo pipefail
 
-if [ -z "${BCH_ADDRESS:-}" ]; then
-  echo "[SoloStrike Cash] WARNING: BCH_ADDRESS is not set."
-  echo "  Set it to your Bitcoin Cash address (bitcoincash:q... or legacy) so the"
-  echo "  pool has a valid fallback/fee address. In solo mode each miner's reward"
-  echo "  pays to whatever address it uses as its stratum username."
+mkdir -p /pool/logs /pool/config
+ADDR_FILE=/pool/config/bch_address
+
+# Seed the address file from the env var on first run (back-compat).
+if [ ! -f "$ADDR_FILE" ] && [ -n "${BCH_ADDRESS:-}" ]; then
+  printf '%s' "${BCH_ADDRESS}" > "$ADDR_FILE"
 fi
 
-# Build the bitcoind entry. If ZMQ_ENDPOINT is set, subscribe to hashblock for
-# lowest-latency block notifications (implies notify:true). Otherwise fall back
-# to polling.
-if [ -n "${ZMQ_ENDPOINT:-}" ]; then
-  echo "[SoloStrike Cash] block notifications: ZMQ ${ZMQ_ENDPOINT} (lowest latency)"
-  BTCD="{ \"url\": \"${RPC_HOST}:${RPC_PORT}\", \"auth\": \"${RPC_USER}\", \"pass\": \"${RPC_PASS}\", \"zmq\": \"${ZMQ_ENDPOINT}\" }"
-else
-  echo "[SoloStrike Cash] block notifications: polling fallback (set ZMQ_ENDPOINT for lowest latency)"
-  BTCD="{ \"url\": \"${RPC_HOST}:${RPC_PORT}\", \"auth\": \"${RPC_USER}\", \"pass\": \"${RPC_PASS}\" }"
-fi
+read_addr() {
+  if [ -f "$ADDR_FILE" ]; then tr -d ' \t\r\n' < "$ADDR_FILE"; else printf '%s' "${BCH_ADDRESS:-}"; fi
+}
 
-cat > /pool/asicseer-pool.conf <<JSON
+write_conf() {
+  local addr="$1" btcd
+  if [ -n "${ZMQ_ENDPOINT:-}" ]; then
+    btcd="{ \"url\": \"${RPC_HOST}:${RPC_PORT}\", \"auth\": \"${RPC_USER}\", \"pass\": \"${RPC_PASS}\", \"zmq\": \"${ZMQ_ENDPOINT}\" }"
+  else
+    btcd="{ \"url\": \"${RPC_HOST}:${RPC_PORT}\", \"auth\": \"${RPC_USER}\", \"pass\": \"${RPC_PASS}\" }"
+  fi
+  cat > /pool/asicseer-pool.conf <<JSON
 {
-  "btcd": [ ${BTCD} ],
-  "bchaddress": "${BCH_ADDRESS:-}",
+  "btcd": [ ${btcd} ],
+  "bchaddress": "${addr}",
   "bchsig": "/SoloStrike Cash/",
   "pool_fee": 0.0,
   "disable_dev_donation": true,
@@ -33,6 +37,45 @@ cat > /pool/asicseer-pool.conf <<JSON
   "logdir": "/pool/logs"
 }
 JSON
+}
 
-echo "[SoloStrike Cash] starting asicseer-pool in SOLO (-B) mode -> ${RPC_HOST}:${RPC_PORT}"
-exec asicseer-pool -B -c /pool/asicseer-pool.conf
+POOL_PID=""
+start_pool() {
+  local addr="$1"
+  if [ -z "$addr" ]; then
+    echo "[SoloStrike Cash] No BCH address set yet — open the dashboard and enter one. Waiting…"
+    POOL_PID=""
+    return 0
+  fi
+  write_conf "$addr"
+  echo "[SoloStrike Cash] starting asicseer-pool (solo) -> ${RPC_HOST}:${RPC_PORT}; payout ${addr}"
+  asicseer-pool -B -c /pool/asicseer-pool.conf &
+  POOL_PID=$!
+}
+
+stop_pool() {
+  if [ -n "$POOL_PID" ] && kill -0 "$POOL_PID" 2>/dev/null; then
+    kill "$POOL_PID" 2>/dev/null || true
+    wait "$POOL_PID" 2>/dev/null || true
+  fi
+  POOL_PID=""
+}
+trap 'stop_pool; exit 0' TERM INT
+
+CUR_ADDR="$(read_addr)"
+start_pool "$CUR_ADDR"
+
+# Supervisor loop: apply address changes, and revive the pool if it dies.
+while true; do
+  sleep 5
+  NEW_ADDR="$(read_addr)"
+  if [ "$NEW_ADDR" != "$CUR_ADDR" ]; then
+    echo "[SoloStrike Cash] address changed -> '${NEW_ADDR}'; restarting pool"
+    stop_pool
+    CUR_ADDR="$NEW_ADDR"
+    start_pool "$CUR_ADDR"
+  elif [ -n "$CUR_ADDR" ] && { [ -z "$POOL_PID" ] || ! kill -0 "$POOL_PID" 2>/dev/null; }; then
+    echo "[SoloStrike Cash] pool not running; (re)starting"
+    start_pool "$CUR_ADDR"
+  fi
+done
