@@ -1,0 +1,78 @@
+# Bitcoin Cash Node for Umbrel
+#
+# Services:
+#   app_proxy  - Umbrel's auth/proxy front door (points at the dashboard)
+#   bitcoind   - Bitcoin Cash Node daemon (BCHN)
+#   fulcrum    - Electrum server, so wallets (Electron Cash, Sparrow) can connect
+#   web        - status dashboard UI
+#
+# IMPORTANT before publishing:
+#   1. Replace `ghcr.io/YOUR_GITHUB_USERNAME/bchn-dashboard` with your image, and
+#      pin it to a digest (image: ...@sha256:...) — Umbrel requires pinned digests
+#      in the official store.
+#   2. Change RPC_PASS below AND the matching rpcpassword in fulcrum.conf.
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: bitcoin-cash-node_web_1
+      APP_PORT: 3000
+
+  bitcoind:
+    image: uphold/bitcoin-cash-node:28
+    restart: on-failure
+    stop_grace_period: 1m
+    # Using BITCOIN_CASH_NODE_DATA lets the image create the data dir with the
+    # right ownership for its `bitcoin` user — avoids bind-mount permission errors.
+    environment:
+      BITCOIN_CASH_NODE_DATA: /data
+    volumes:
+      - ${APP_DATA_DIR}/data/bitcoind:/data
+    command:
+      - -printtoconsole
+      - -server=1
+      - -listen=1
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0 # safe: RPC port is NOT published to the host
+      - -rpcuser=bchn
+      - -rpcpassword=bchn_local_rpc_pw_2f9c
+      - -rpcworkqueue=512
+      - -dbcache=512
+      - -maxmempool=300
+      # ── STORAGE MODE ──────────────────────────────────────────────
+      # FULL  (default): -txindex=1   keeps full chain, wallet server works
+      # PRUNED:          -prune=5500  MB to keep (min 550); RPC-only.
+      #                  In pruned mode you MUST also remove the `fulcrum`
+      #                  service below — it can't index a pruned chain.
+      # Switching full <-> pruned requires a full resync.
+      - ${BCHN_MODE_ARGS:--txindex=1}
+
+  fulcrum:
+    image: cculianu/fulcrum:latest
+    restart: on-failure
+    depends_on:
+      - bitcoind
+    volumes:
+      - ${APP_DATA_DIR}/data/fulcrum:/data
+      - ${APP_DATA_DIR}/fulcrum.conf:/data/fulcrum.conf:ro
+    command: ["Fulcrum", "/data/fulcrum.conf"]
+    ports:
+      - 50021:50021   # Electrum TCP
+      - 50022:50022   # Electrum SSL
+
+  web:
+    image: ghcr.io/YOUR_GITHUB_USERNAME/bchn-dashboard:1.0.0
+    restart: on-failure
+    depends_on:
+      - bitcoind
+    environment:
+      PORT: 3000
+      RPC_HOST: bitcoind
+      RPC_PORT: "8332"
+      RPC_USER: bchn
+      RPC_PASS: bchn_local_rpc_pw_2f9c
+      FULCRUM_HOST: fulcrum
+      FULCRUM_STATS_PORT: "8081"
+      FULCRUM_TCP_PORT: "50021"
+      FULCRUM_SSL_PORT: "50022"
+      PUBLIC_HOST: ${DEVICE_DOMAIN_NAME}
