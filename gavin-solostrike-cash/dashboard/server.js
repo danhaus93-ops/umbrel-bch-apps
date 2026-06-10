@@ -158,6 +158,16 @@ app.get('/api/status', async (_req, res) => {
   res.json(out);
 });
 
+app.post('/api/reset', (req, res) => {
+  const scope = ((req.body && req.body.scope) || 'all').toString().slice(0, 120);
+  if (!/^[A-Za-z0-9:._\-]+$|^all$/.test(scope)) return res.status(400).json({ ok: false, error: 'bad scope' });
+  try {
+    fs.mkdirSync(path.join(POOL_DIR, 'config'), { recursive: true });
+    fs.writeFileSync(path.join(POOL_DIR, 'config', 'reset_request'), scope);
+  } catch (e) { return res.status(500).json({ ok: false, error: 'could not request reset' }); }
+  res.json({ ok: true, scope });
+});
+
 app.post('/api/address', (req, res) => {
   const a = (req.body && req.body.address || '').trim();
   if (!validAddress(a)) return res.status(400).json({ ok: false, error: 'invalid BCH address' });
