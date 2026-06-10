@@ -2,44 +2,30 @@ manifestVersion: 1
 id: gavin-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.0.0"
-icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bitcoin-cash-node/master/gavin-bitcoin-cash-node/icon.svg
-tagline: Run your own Bitcoin Cash full node and Electrum server
+version: "29.0.1"
+icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-bitcoin-cash-node/icon.svg
+tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
-  Run Bitcoin Cash on your own terms. This app pairs Bitcoin Cash Node (BCHN) —
-  the professional, miner-friendly BCH full node — with Fulcrum, a fast Electrum
-  server, so your wallets connect directly to hardware you control.
+  Run Bitcoin Cash on your own terms. Bitcoin Cash Node (BCHN) — the
+  professional, miner-friendly BCH full node — validates every block and
+  transaction independently and exposes JSON-RPC + ZMQ on your local network.
 
 
-  Independently validate every Bitcoin Cash block and transaction instead of
-  trusting someone else's server. Point Electron Cash, Sparrow, or any
-  Electrum-compatible wallet at your node for full privacy: your wallet provider
-  can't see your addresses or balances, and can't feed you a false view of the
-  chain. Solo miners and apps can also connect over JSON-RPC on your local
-  network.
+  This is the node only. For wallet connectivity install Fulcrum (BCH); to
+  solo-mine install SoloStrike Cash. Both are in this store and depend on this node.
 
 
-  The built-in dashboard shows sync progress, peers, mempool, and the exact
-  connection strings to paste into your wallet.
-
-
-  First sync downloads the full chain and builds the Electrum index, so allow
-  plenty of time and use an SSD — an NVMe drive is strongly recommended.
+  First sync downloads the full chain, so use an SSD (NVMe strongly recommended).
 releaseNotes: >-
-  Initial release. Bitcoin Cash Node 28 + Fulcrum, with a status dashboard and
-  one-tap wallet connection strings.
-developer: Community
+  Split out from Fulcrum — Fulcrum is now its own app. ZMQ enabled for
+  SoloStrike Cash. Update (don't reinstall) to keep your synced chain.
+developer: Gavin
 website: https://bitcoincashnode.org
 dependencies: []
-repo: https://github.com/YOUR_GITHUB_USERNAME/umbrel-bitcoin-cash-node
-support: https://github.com/YOUR_GITHUB_USERNAME/umbrel-bitcoin-cash-node/issues
+repo: https://github.com/danhaus93-ops/umbrel-bch-apps
+support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
 port: 3330
-gallery:
-  - 1.jpg
-  - 2.jpg
-  - 3.jpg
+gallery: []
 path: ""
-defaultUsername: ""
-defaultPassword: ""
-submitter: YOUR_NAME
-submission: https://github.com/getumbrel/umbrel-apps/pull/PR_NUMBER
+submitter: Gavin
+submission: https://github.com/danhaus93-ops/umbrel-bch-apps
