@@ -2,7 +2,7 @@ manifestVersion: 1
 id: gavin-solostrike-cash
 category: bitcoin
 name: SoloStrike Cash
-version: "1.0.0"
+version: "1.0.1"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-solostrike-cash/icon.svg
 description: >-
@@ -39,6 +39,6 @@ repo: https://github.com/danhaus93-ops/umbrel-bch-apps
 support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
 port: 3000
 gallery: []
-releaseNotes: First release — zero-fee BCH solo mining pool with a live dashboard.
+releaseNotes: Enter your BCH payout address in the dashboard UI; pool auto-restarts to apply.
 submitter: Gavin
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
