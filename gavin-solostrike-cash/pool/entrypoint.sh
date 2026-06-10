@@ -7,6 +7,7 @@ set -uo pipefail
 
 mkdir -p /pool/logs /pool/config
 ADDR_FILE=/pool/config/bch_address
+RESET_FILE=/pool/config/reset_request
 
 # Seed the address file from the env var on first run (back-compat).
 if [ ! -f "$ADDR_FILE" ] && [ -n "${BCH_ADDRESS:-}" ]; then
@@ -62,12 +63,32 @@ stop_pool() {
 }
 trap 'stop_pool; exit 0' TERM INT
 
+do_reset() {
+  local scope="$1"
+  echo "[SoloStrike Cash] reset best requested: ${scope}"
+  stop_pool
+  if [ "$scope" = "all" ]; then
+    find /pool/logs -type f 2>/dev/null | while read -r fp; do
+      sed -i -E 's/"best(share|ever)" *: *[0-9.eE+\-]+/"best\1": 0/g' "$fp" 2>/dev/null || true
+    done
+  else
+    grep -rl -- "$scope" /pool/logs/users /pool/logs 2>/dev/null | while read -r fp; do
+      sed -i -E 's/"best(share|ever)" *: *[0-9.eE+\-]+/"best\1": 0/g' "$fp" 2>/dev/null || true
+    done
+  fi
+  rm -f "$RESET_FILE"
+  start_pool "$CUR_ADDR"
+}
+
 CUR_ADDR="$(read_addr)"
 start_pool "$CUR_ADDR"
 
 # Supervisor loop: apply address changes, and revive the pool if it dies.
 while true; do
   sleep 5
+  if [ -f "$RESET_FILE" ]; then
+    do_reset "$(tr -d '\r\n' < "$RESET_FILE")"
+  fi
   NEW_ADDR="$(read_addr)"
   if [ "$NEW_ADDR" != "$CUR_ADDR" ]; then
     echo "[SoloStrike Cash] address changed -> '${NEW_ADDR}'; restarting pool"
