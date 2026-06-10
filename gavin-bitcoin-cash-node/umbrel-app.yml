@@ -1,5 +1,5 @@
 manifestVersion: 1
-id: bitcoin-cash-node
+id: gavin-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
 version: "28.0.1"
