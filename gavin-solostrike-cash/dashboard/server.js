@@ -1,1 +1,144 @@
+'use strict';
+/*
+ * SoloStrike Cash — dashboard API
+ * Reads asicseer-pool (ckpool-lineage) stats from its logdir and queries the
+ * backing BCHN node over JSON-RPC. Serves a single /api/status payload to the UI.
+ * Degrades gracefully: if the pool hasn't started or the node is unreachable,
+ * it returns whatever it can with poolUp/nodeUp flags so the UI stays honest.
+ */
+const fs = require('fs');
+const path = require('path');
+const http = require('http');
+const express = require('express');
 
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+const POOL_LOGDIR  = process.env.POOL_LOGDIR  || '/pool/logs';
+const STRATUM_HOST = process.env.STRATUM_HOST || 'umbrel.local';
+const STRATUM_PORT = process.env.STRATUM_PORT || '3335';
+const VERSION      = process.env.APP_VERSION  || 'v1.0.0';
+
+const RPC_HOST = process.env.RPC_HOST || 'gavin-bitcoin-cash-node_bitcoind_1';
+const RPC_PORT = process.env.RPC_PORT || '8332';
+const RPC_USER = process.env.RPC_USER || 'bchn';
+const RPC_PASS = process.env.RPC_PASS || 'bchn_local_rpc_pw_2f9c';
+
+// ---- helpers -------------------------------------------------------------
+const SUFFIX = { E:1e18, P:1e15, T:1e12, G:1e9, M:1e6, K:1e3 };
+const UNIT   = { E:'EH/s', P:'PH/s', T:'TH/s', G:'GH/s', M:'MH/s', K:'KH/s', '':'H/s' };
+
+// ckpool reports hashrate as strings like "92.4T". Split into display + numeric.
+function parseHash(s) {
+  if (s == null) return { val: '0', unit: 'H/s', n: 0 };
+  const m = String(s).trim().match(/^([\d.]+)\s*([EPTGMK]?)/i);
+  if (!m) return { val: '0', unit: 'H/s', n: 0 };
+  const suf = (m[2] || '').toUpperCase();
+  return { val: m[1], unit: UNIT[suf] || 'H/s', n: parseFloat(m[1]) * (SUFFIX[suf] || 1) };
+}
+
+// pool.status is several JSON objects, one per line — merge them all.
+function readPoolStatus() {
+  const f = path.join(POOL_LOGDIR, 'pool', 'pool.status');
+  const raw = fs.readFileSync(f, 'utf8');
+  const merged = {};
+  for (const line of raw.split('\n')) {
+    const t = line.trim();
+    if (!t.startsWith('{')) continue;
+    try { Object.assign(merged, JSON.parse(t)); } catch (_) {}
+  }
+  return merged;
+}
+
+// per-user files live in logdir/users/<address>; each lists its workers.
+function readWorkers() {
+  const out = [];
+  const dir = path.join(POOL_LOGDIR, 'users');
+  let files = [];
+  try { files = fs.readdirSync(dir); } catch (_) { return out; }
+  for (const name of files) {
+    let u;
+    try { u = JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8')); } catch (_) { continue; }
+    const ws = Array.isArray(u.worker) ? u.worker : [];
+    for (const w of ws) {
+      const wn = (w.workername || name).split('.').slice(1).join('.') || (w.workername || name);
+      out.push({
+        name: wn,
+        hashrate: (() => { const h = parseHash(w.hashrate5m || w.hashrate1m); return h.val + ' ' + h.unit; })(),
+        best: Number(w.bestshare) || 0,
+        last: Number(w.lastshare) || 0,
+      });
+    }
+  }
+  out.sort((a, b) => b.best - a.best);
+  return out;
+}
+
+// count solved blocks if asicseer-pool logged any (logdir/pool/blocks.log)
+function countBlocks() {
+  try {
+    const f = path.join(POOL_LOGDIR, 'pool', 'blocks.log');
+    return fs.readFileSync(f, 'utf8').split('\n').filter(l => l.trim()).length;
+  } catch (_) { return 0; }
+}
+
+// minimal JSON-RPC call to BCHN
+function rpc(method, params = []) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({ jsonrpc: '1.0', id: 'ssc', method, params });
+    const req = http.request({
+      host: RPC_HOST, port: RPC_PORT, method: 'POST', path: '/',
+      auth: `${RPC_USER}:${RPC_PASS}`,
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+      timeout: 4000,
+    }, res => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => { try { const j = JSON.parse(d); j.error ? reject(j.error) : resolve(j.result); } catch (e) { reject(e); } });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => req.destroy(new Error('rpc timeout')));
+    req.write(body); req.end();
+  });
+}
+
+// ---- api -----------------------------------------------------------------
+app.get('/api/status', async (_req, res) => {
+  const out = {
+    poolUp: false, nodeUp: false,
+    hashrate: { val: '0', unit: 'H/s' }, workers: 0, users: 0,
+    accepted: 0, rejected: 0, bestShare: 0, blocks: 0,
+    netDiff: 0, height: 0, chain: 'main',
+    stratum: `stratum+tcp://${STRATUM_HOST}:${STRATUM_PORT}`,
+    workerList: [], version: VERSION,
+  };
+
+  try {
+    const p = readPoolStatus();
+    out.poolUp   = true;
+    out.users    = Number(p.Users) || 0;
+    out.workers  = Number(p.Workers) || 0;
+    out.accepted = Number(p.accepted) || 0;
+    out.rejected = Number(p.rejected) || 0;
+    out.bestShare = Number(p.bestshare) || 0;
+    const h = parseHash(p.hashrate5m || p.hashrate1m);
+    out.hashrate = { val: h.val, unit: h.unit };
+    out.workerList = readWorkers();
+    out.blocks = countBlocks();
+  } catch (_) { /* pool not started yet */ }
+
+  try {
+    const info = await rpc('getblockchaininfo');
+    out.nodeUp  = true;
+    out.height  = info.blocks;
+    out.chain   = info.chain;
+    out.netDiff = Number(info.difficulty) || 0;
+  } catch (_) { /* node unreachable */ }
+
+  res.json(out);
+});
+
+app.get('/health', (_req, res) => res.json({ ok: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.listen(PORT, () => console.log(`SoloStrike Cash dashboard on :${PORT}`));
