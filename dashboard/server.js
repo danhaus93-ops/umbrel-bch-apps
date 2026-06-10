@@ -14,7 +14,8 @@ const RPC_USER = process.env.RPC_USER || 'bchn';
 const RPC_PASS = process.env.RPC_PASS || 'bchn';
 
 // --- Fulcrum (Electrum server) ---
-const FULCRUM_HOST = process.env.FULCRUM_HOST || 'fulcrum';
+const FULCRUM_HOST = process.env.FULCRUM_HOST || '';      // empty = Fulcrum is its own app now
+const FULCRUM_ENABLED = !!FULCRUM_HOST;
 const FULCRUM_STATS_PORT = process.env.FULCRUM_STATS_PORT || '8081';
 const FULCRUM_TCP_PORT = process.env.FULCRUM_TCP_PORT || '50021';
 const FULCRUM_SSL_PORT = process.env.FULCRUM_SSL_PORT || '50022';
@@ -93,6 +94,7 @@ app.get('/api/status', async (_req, res) => {
     network: null,
     mempool: null,
     nettotals: null,
+    fulcrum_enabled: FULCRUM_ENABLED,
     fulcrum: { reachable_ssl: false, reachable_tcp: false, height: null, stats: false },
     connect: {
       electrum_ssl: `${PUBLIC_HOST}:${FULCRUM_SSL_PORT}:s`,
@@ -147,16 +149,18 @@ app.get('/api/status', async (_req, res) => {
     out.error = String(err.message || err);
   }
 
-  // Fulcrum checks run regardless so the wallet card stays informative.
-  const [stats, sslUp, tcpUp] = await Promise.all([
-    fulcrumStats(),
-    tcpProbe(FULCRUM_HOST, FULCRUM_SSL_PORT),
-    tcpProbe(FULCRUM_HOST, FULCRUM_TCP_PORT),
-  ]);
-  out.fulcrum.reachable_ssl = sslUp;
-  out.fulcrum.reachable_tcp = tcpUp;
-  out.fulcrum.stats = Boolean(stats);
-  out.fulcrum.height = fulcrumHeight(stats);
+  // Fulcrum is a separate app now — only probe it if FULCRUM_HOST is configured.
+  if (FULCRUM_ENABLED) {
+    const [stats, sslUp, tcpUp] = await Promise.all([
+      fulcrumStats(),
+      tcpProbe(FULCRUM_HOST, FULCRUM_SSL_PORT),
+      tcpProbe(FULCRUM_HOST, FULCRUM_TCP_PORT),
+    ]);
+    out.fulcrum.reachable_ssl = sslUp;
+    out.fulcrum.reachable_tcp = tcpUp;
+    out.fulcrum.stats = Boolean(stats);
+    out.fulcrum.height = fulcrumHeight(stats);
+  }
 
   res.set('Cache-Control', 'no-store');
   res.json(out);
