@@ -2,15 +2,12 @@
 #
 # Services:
 #   app_proxy  - Umbrel's auth/proxy front door (points at the dashboard)
-#   bitcoind   - Bitcoin Cash Node daemon (BCHN)
+#   bitcoind   - Bitcoin Cash Node daemon (BCHN v29, zquestz image)
 #   fulcrum    - Electrum server, so wallets (Electron Cash, Sparrow) can connect
 #   web        - status dashboard UI
 #
-# IMPORTANT before publishing:
-#   1. Replace `ghcr.io/YOUR_GITHUB_USERNAME/bchn-dashboard` with your image, and
-#      pin it to a digest (image: ...@sha256:...) — Umbrel requires pinned digests
-#      in the official store.
-#   2. Change RPC_PASS below AND the matching rpcpassword in fulcrum.conf.
+# Note: the zquestz image uses datadir /data and needs `bitcoind` as the first
+# command token (different from the old uphold image).
 
 services:
   app_proxy:
@@ -19,16 +16,14 @@ services:
       APP_PORT: 3000
 
   bitcoind:
-    image: uphold/bitcoin-cash-node:28
+    image: zquestz/bitcoin-cash-node:29.0.0
     restart: on-failure
     stop_grace_period: 1m
-    # Using BITCOIN_CASH_NODE_DATA lets the image create the data dir with the
-    # right ownership for its `bitcoin` user — avoids bind-mount permission errors.
-    environment:
-      BITCOIN_CASH_NODE_DATA: /data
     volumes:
       - ${APP_DATA_DIR}/data/bitcoind:/data
     command:
+      - bitcoind
+      - -datadir=/data
       - -printtoconsole
       - -server=1
       - -listen=1
@@ -42,10 +37,8 @@ services:
       # ── STORAGE MODE ──────────────────────────────────────────────
       # FULL  (default): -txindex=1   keeps full chain, wallet server works
       # PRUNED:          -prune=5500  MB to keep (min 550); RPC-only.
-      #                  In pruned mode you MUST also remove the `fulcrum`
-      #                  service below — it can't index a pruned chain.
-      # Switching full <-> pruned requires a full resync.
-      - ${BCHN_MODE_ARGS:--txindex=1}
+      #                  In pruned mode also remove the `fulcrum` service.
+      - -txindex=1
 
   fulcrum:
     image: cculianu/fulcrum:latest
