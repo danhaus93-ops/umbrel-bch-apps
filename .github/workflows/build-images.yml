@@ -1,4 +1,4 @@
-name: Build new app images (pool + fulcrum-info)
+name: Build app images
 
 on:
   workflow_dispatch:
@@ -8,6 +8,7 @@ on:
       - 'gavin-solostrike-cash/dashboard/**'
       - 'gavin-solostrike-cash/pool/**'
       - 'gavin-fulcrum/web/**'
+      - 'dashboard/**'
       - '.github/workflows/build-images.yml'
 
 permissions:
@@ -20,6 +21,8 @@ jobs:
     strategy:
       matrix:
         include:
+          - context: ./dashboard
+            image: bchn-dashboard
           - context: ./gavin-solostrike-cash/dashboard
             image: solostrike-cash-dashboard
           - context: ./gavin-solostrike-cash/pool
