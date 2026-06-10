@@ -137,10 +137,22 @@
     <div class="card"><div class="k">Shares</div><div class="v" id="shares">—</div><div class="meta" id="shMeta">accepted / rejected</div></div>
   </div>
 
+  <div class="sec">Payout address</div>
+  <div class="panel">
+    <div class="row" style="flex-wrap:wrap;gap:9px">
+      <input id="addrInput" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false"
+        placeholder="bitcoincash:q…  (where blocks pay)"
+        style="flex:1;min-width:200px;background:var(--bg-deep);border:1px solid var(--line2);border-radius:var(--r);
+               color:var(--mint);font-family:var(--fm);font-size:13px;padding:10px 12px;outline:none"/>
+      <button class="copy" id="addrSave" style="padding:10px 16px">Save</button>
+      <div id="addrMsg" style="flex-basis:100%;font-family:var(--fm);font-size:11px;color:var(--muted);min-height:14px"></div>
+    </div>
+  </div>
+
   <div class="sec">Point your miner here</div>
   <div class="panel">
     <div class="row"><div class="rk">Stratum URL</div><div class="rv" id="stratum">stratum+tcp://—</div><button class="copy" data-c="stratum">Copy</button></div>
-    <div class="row"><div class="rk">Username</div><div class="rv">your BCH address — <span style="color:var(--muted)">e.g. bitcoincash:q…</span></div><button class="copy" data-c="user">Copy tip</button></div>
+    <div class="row"><div class="rk">Username</div><div class="rv" id="userHint">your BCH address — <span style="color:var(--muted)">set it above</span></div><button class="copy" data-c="user">Copy</button></div>
     <div class="row"><div class="rk">Password</div><div class="rv">x</div><button class="copy" data-c="pass">Copy</button></div>
   </div>
 
@@ -182,8 +194,13 @@ function strikeFrac(best,net){
 }
 function render(d){
   const sd=document.getElementById('statusDot'),st=document.getElementById('statusText');
+  window.__addr=d.address||'';
   if(d.poolUp){sd.className='dot';st.textContent=d.nodeUp?'mining':'pool up · node down';}
-  else{sd.className='dot bad';st.textContent='pool offline';}
+  else{sd.className='dot bad';st.textContent=(d.address?'pool offline':'set payout address');}
+  const ai=document.getElementById('addrInput');
+  if(ai&&document.activeElement!==ai&&d.address&&ai.value!==d.address)ai.value=d.address;
+  const uh=document.getElementById('userHint');
+  if(uh)uh.innerHTML=d.address?`<span style="color:var(--mint)">${d.address}</span>`:'your BCH address — <span style="color:var(--muted)">set it above</span>';
   const frac=strikeFrac(d.bestShare,d.netDiff);
   document.getElementById('arc').style.strokeDashoffset=628*(1-frac);
   document.getElementById('strikePct').textContent=(frac*100).toFixed(frac>=0.999?0:4)+'% there';
@@ -213,17 +230,35 @@ function render(d){
     });
   }else{emp.style.display='block';}
 }
-const COPY={user:'Use your own BCH address as the username (bitcoincash:q… or legacy). The block reward pays straight to it.',pass:'x'};
+const COPY={pass:'x'};
 document.addEventListener('click',e=>{
   const b=e.target.closest('.copy');if(!b)return;
   const key=b.dataset.c;
-  let txt=key==='stratum'?document.getElementById('stratum').textContent:(COPY[key]||'');
+  let txt;
+  if(key==='stratum')txt=document.getElementById('stratum').textContent;
+  else if(key==='user')txt=window.__addr||'';
+  else txt=COPY[key]||'';
+  if(!txt)return;
   navigator.clipboard?.writeText(txt);
   const o=b.textContent;b.textContent='Copied';setTimeout(()=>b.textContent=o,1200);
 });
+async function saveAddr(){
+  const ai=document.getElementById('addrInput'),msg=document.getElementById('addrMsg');
+  const a=(ai.value||'').trim();
+  if(!a){msg.style.color='var(--red)';msg.textContent='enter an address';return;}
+  msg.style.color='var(--muted)';msg.textContent='saving…';
+  try{
+    const r=await fetch('/api/address',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:a})});
+    const j=await r.json();
+    if(j.ok){msg.style.color='var(--mint)';msg.textContent='saved — pool restarting (~10s)…';}
+    else{msg.style.color='var(--red)';msg.textContent=j.error||'invalid address';}
+  }catch{msg.style.color='var(--red)';msg.textContent='could not save';}
+}
+document.getElementById('addrSave').addEventListener('click',saveAddr);
+document.getElementById('addrInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveAddr();});
 const MOCK={poolUp:true,nodeUp:true,bestShare:4.1e6,netDiff:5.75e11,
   hashrate:{val:'92.4',unit:'TH/s'},workers:3,users:1,blocks:0,accepted:18420,rejected:12,
-  stratum:'stratum+tcp://umbrel.local:3333',height:954112,version:'v1.0.0',
+  stratum:'stratum+tcp://umbrel.local:3335',height:954112,version:'v1.0.1',address:'bitcoincash:qq8e2x9f0n3l7k2m5p4r6t8w1y3u5i7o9a2s4d6f8g',
   workerList:[
     {name:'S21XP-board1',hashrate:'90.1 TH/s',best:4.1e6,last:Math.floor(Date.now()/1000)-4},
     {name:'NerdQAxe++',hashrate:'1.9 TH/s',best:88200,last:Math.floor(Date.now()/1000)-11},
