@@ -1,1 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0A1410" />
+<title>Bitcoin Cash Node</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#0A1410; --panel:#10201A; --panel-2:#16271F; --line:#20382E;
+    --green:#0AC18E; --green-dim:#0a7d5e; --brass:#C9A227; --warn:#E0934E;
+    --text:#E8F2EC; --muted:#7E988B;
+    --disp:"Space Grotesk",system-ui,-apple-system,Segoe UI,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(10,193,142,.10), transparent 60%),
+      var(--ink);
+    color:var(--text); font-family:var(--disp);
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+    padding:max(16px,env(safe-area-inset-top)) 16px 40px;
+  }
+  .wrap{max-width:980px;margin:0 auto}
 
+  header{display:flex;align-items:center;gap:14px;padding:6px 2px 22px}
+  .mark{
+    width:38px;height:38px;border-radius:9px;flex:none;
+    background:linear-gradient(150deg,var(--green),#0a8f6a);
+    display:grid;place-items:center;color:#06120d;font-weight:700;
+    font-family:var(--mono);font-size:20px;
+    box-shadow:0 0 0 1px rgba(10,193,142,.35),0 8px 22px -10px rgba(10,193,142,.7);
+  }
+  header h1{font-size:17px;font-weight:600;margin:0;letter-spacing:.2px}
+  header .sub{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:1px}
+  header .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .pill{
+    font-family:var(--mono);font-size:11px;letter-spacing:.4px;text-transform:uppercase;
+    padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);
+    white-space:nowrap;
+  }
+  .pill.live{color:var(--green);border-color:rgba(10,193,142,.4);background:rgba(10,193,142,.07)}
+  .pill.warn{color:var(--warn);border-color:rgba(224,147,78,.4);background:rgba(224,147,78,.07)}
+  .pill.mode{color:var(--brass);border-color:rgba(201,162,39,.4);background:rgba(201,162,39,.07)}
+
+  .hero{
+    display:grid;grid-template-columns:200px 1fr;gap:30px;align-items:center;
+    background:linear-gradient(180deg,var(--panel),#0d1b15);
+    border:1px solid var(--line);border-radius:18px;padding:30px 28px;
+  }
+  .beacon{position:relative;width:200px;height:200px;margin:0 auto}
+  .beacon svg{transform:rotate(-90deg)}
+  .beacon .track{stroke:rgba(255,255,255,.06)}
+  .beacon .arc{stroke:var(--green);transition:stroke-dashoffset .9s cubic-bezier(.22,1,.36,1),stroke .4s}
+  .beacon.warn .arc{stroke:var(--warn)}
+  .beacon .center{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:2px}
+  .beacon .pct{font-family:var(--mono);font-weight:700;font-size:34px;line-height:1}
+  .beacon .pct small{font-size:15px;color:var(--muted);font-weight:500}
+  .beacon .blab{font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+  .beacon .core{
+    position:absolute;left:50%;top:50%;width:13px;height:13px;border-radius:50%;
+    transform:translate(-50%,-50%) translateY(34px);background:var(--green);
+    box-shadow:0 0 14px 2px var(--green);
+  }
+  .beacon.synced .core{animation:pulse 2.4s ease-in-out infinite}
+  .beacon.warn .core{background:var(--warn);box-shadow:0 0 14px 2px var(--warn)}
+  .beacon.starting .core{background:var(--muted);box-shadow:none}
+  @keyframes pulse{0%,100%{opacity:.55;transform:translate(-50%,-50%) translateY(34px) scale(.85)}50%{opacity:1;transform:translate(-50%,-50%) translateY(34px) scale(1.25)}}
+
+  .hero .headline{font-size:27px;font-weight:600;letter-spacing:-.3px;margin:0 0 8px}
+  .hero .blurb{color:var(--muted);font-size:14.5px;max-width:46ch;margin:0}
+  .hero .ticks{display:flex;gap:22px;margin-top:18px;flex-wrap:wrap}
+  .tick{font-family:var(--mono)}
+  .tick b{display:block;font-size:18px;font-weight:700}
+  .tick span{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+
+  .section-label{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:30px 2px 12px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px}
+  .card .k{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+  .card .v{font-family:var(--mono);font-size:23px;font-weight:700;margin-top:8px;letter-spacing:-.5px}
+  .card .v small{font-size:12px;color:var(--muted);font-weight:500;letter-spacing:0}
+
+  .connect{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .conn{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:20px}
+  .conn h3{margin:0 0 4px;font-size:15px;font-weight:600}
+  .conn p{margin:0 0 14px;color:var(--muted);font-size:13px}
+  .conn .brass{color:var(--brass)}
+  .field{display:flex;align-items:center;gap:8px;margin-top:10px}
+  .field label{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);width:46px;flex:none}
+  .field .val{
+    flex:1;min-width:0;font-family:var(--mono);font-size:13px;background:#0a160f;
+    border:1px solid var(--line);border-radius:8px;padding:9px 11px;color:var(--text);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .copy{
+    flex:none;font-family:var(--mono);font-size:11px;letter-spacing:.5px;cursor:pointer;
+    background:rgba(10,193,142,.1);color:var(--green);border:1px solid rgba(10,193,142,.35);
+    border-radius:8px;padding:9px 12px;transition:background .15s;
+  }
+  .copy:hover{background:rgba(10,193,142,.2)}
+  .copy:active{transform:translateY(1px)}
+  .copy.done{color:#06120d;background:var(--green);border-color:var(--green)}
+  .note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.45}
+  .disabled-card{opacity:.92}
+  .disabled-card h3{color:var(--warn)}
+
+  /* Storage mode */
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .mode-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;
+    transition:border-color .2s,background .2s;
+  }
+  .mode-card.active{border-color:rgba(10,193,142,.45);background:linear-gradient(180deg,rgba(10,193,142,.06),var(--panel))}
+  .mode-card .mc-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .mode-card h3{margin:0;font-size:15.5px;font-weight:600}
+  .badge{margin-left:auto;font-family:var(--mono);font-size:9.5px;letter-spacing:1px;text-transform:uppercase;
+    padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);display:none}
+  .mode-card.active .badge{color:var(--green);border-color:rgba(10,193,142,.5);background:rgba(10,193,142,.1);display:inline-block}
+  .mode-card .desc{color:var(--muted);font-size:12.5px;margin:0}
+  .mc-live{margin-top:12px;font-family:var(--mono);font-size:12px;display:none;gap:18px;flex-wrap:wrap}
+  .mode-card.active .mc-live{display:flex}
+  .mc-live b{display:block;font-size:15px}
+  .mc-live span{font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  .switch{
+    margin-top:14px;display:none;width:100%;text-align:left;cursor:pointer;
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.3px;
+    background:transparent;color:var(--green);border:1px dashed rgba(10,193,142,.35);
+    border-radius:9px;padding:9px 12px;
+  }
+  .mode-card:not(.active) .switch{display:block}
+  .switch:hover{background:rgba(10,193,142,.06)}
+  .steps{display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+  .steps.open{display:block}
+  .steps ol{margin:0;padding-left:18px;font-size:12.5px;color:var(--muted);line-height:1.6}
+  .steps code{font-family:var(--mono);background:#0a160f;border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;color:var(--text);font-size:11.5px}
+  .steps .warnline{margin-top:10px;font-size:11.5px;color:var(--warn);display:flex;gap:7px;align-items:flex-start}
+
+  footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    font-family:var(--mono);font-size:11px;color:var(--muted)}
+  footer a{color:var(--muted)}
+  .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:middle}
+  .dot.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
+  .dot.no{background:#5a3a3a}
+
+  @media (max-width:760px){
+    .hero{grid-template-columns:1fr;gap:18px;text-align:center;padding:26px 18px}
+    .hero .blurb{margin:0 auto}.hero .ticks{justify-content:center}
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .connect,.modes{grid-template-columns:1fr}
+    .hero .headline{font-size:23px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .beacon .arc{transition:none}.beacon .core{animation:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark">฿</div>
+    <div>
+      <h1>Bitcoin Cash Node</h1>
+      <div class="sub" id="versionLine">connecting…</div>
+    </div>
+    <div class="right">
+      <span class="pill mode" id="modePill" hidden>full</span>
+      <span class="pill" id="chainPill">mainnet</span>
+      <span class="pill" id="statePill">…</span>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="beacon starting" id="beacon">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <circle class="track" cx="100" cy="100" r="86" fill="none" stroke-width="10"/>
+        <circle class="arc" id="arc" cx="100" cy="100" r="86" fill="none" stroke-width="10"
+                stroke-linecap="round" stroke-dasharray="540.35" stroke-dashoffset="540.35"/>
+      </svg>
+      <div class="center">
+        <div class="pct" id="pct">—<small>%</small></div>
+        <div class="blab" id="blab">validated</div>
+      </div>
+      <div class="core"></div>
+    </div>
+    <div>
+      <h2 class="headline" id="headline">Starting your node…</h2>
+      <p class="blurb" id="blurb">Bringing up Bitcoin Cash Node. The first launch takes a moment while the daemon opens its database.</p>
+      <div class="ticks">
+        <div class="tick"><b id="tHeight">—</b><span>block height</span></div>
+        <div class="tick"><b id="tPeers">—</b><span>peers</span></div>
+        <div class="tick"><b id="tDisk">—</b><span>on disk</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Node telemetry</div>
+  <div class="grid">
+    <div class="card"><div class="k">Blocks</div><div class="v" id="cBlocks">—</div></div>
+    <div class="card"><div class="k">Headers</div><div class="v" id="cHeaders">—</div></div>
+    <div class="card"><div class="k">Connections</div><div class="v" id="cConn">—</div></div>
+    <div class="card"><div class="k">Mempool</div><div class="v" id="cMempool">—</div></div>
+    <div class="card"><div class="k">Received</div><div class="v" id="cRecv">—</div></div>
+    <div class="card"><div class="k">Sent</div><div class="v" id="cSent">—</div></div>
+    <div class="card"><div class="k">Difficulty</div><div class="v" id="cDiff">—</div></div>
+    <div class="card"><div class="k" id="cSlotK">Electrum index</div><div class="v" id="cSlot">—</div></div>
+  </div>
+
+  <div class="section-label">Connect</div>
+  <div class="connect">
+    <div class="conn" id="walletCard">
+      <div id="walletFull">
+        <h3>Point a wallet here</h3>
+        <p>Electron Cash, Sparrow and other wallets connect over the <span class="brass">Electrum</span> protocol. Use the SSL endpoint — most wallets refuse plain TCP.</p>
+        <div class="field">
+          <label>SSL</label><div class="val" id="elSsl">—</div>
+          <button class="copy" data-copy="elSsl">Copy</button>
+        </div>
+        <div class="field">
+          <label>TCP</label><div class="val" id="elTcp">—</div>
+          <button class="copy" data-copy="elTcp">Copy</button>
+        </div>
+        <div class="note">In Electron Cash: Network → switch to manual, add the server above. The certificate is self-signed, so accept it on first connect.</div>
+      </div>
+      <div id="walletPruned" hidden>
+        <h3>Wallet serving is off</h3>
+        <p>This node runs in <span class="brass">pruned</span> mode, so it doesn't keep the full history an Electrum server needs. Wallets can't sync against it.</p>
+        <div class="note">Want wallets to connect? Switch to <b>Full</b> mode under Storage below. That keeps the whole chain and turns the Electrum server back on.</div>
+      </div>
+    </div>
+    <div class="conn">
+      <h3>Point a miner or app here</h3>
+      <p>Solo miners, explorers and scripts talk to the node over <span class="brass">JSON-RPC</span> on your local network.</p>
+      <div class="field">
+        <label>RPC</label><div class="val" id="rpcEp">—</div>
+        <button class="copy" data-copy="rpcEp">Copy</button>
+      </div>
+      <div class="field">
+        <label>User</label><div class="val" id="rpcUser">—</div>
+        <button class="copy" data-copy="rpcUser">Copy</button>
+      </div>
+      <div class="note">The RPC port is not published to your network by default. Expose it deliberately in the app's compose file if an external app needs it, and change the default credentials first.</div>
+    </div>
+  </div>
+
+  <div class="section-label">Storage mode</div>
+  <div class="modes">
+    <div class="mode-card" id="modeFull">
+      <div class="mc-head"><h3>Full</h3><span class="badge">Active</span></div>
+      <p class="desc">Keeps the entire chain and serves wallets through the Electrum server. Uses the most disk — hundreds of GB and growing.</p>
+      <div class="mc-live">
+        <div><b id="fullDisk">—</b><span>on disk</span></div>
+        <div><b id="fullWallets">—</b><span>wallet server</span></div>
+      </div>
+      <button class="switch" data-steps="stepsFull">Switch to Full mode →</button>
+      <div class="steps" id="stepsFull">
+        <ol>
+          <li>In <code>docker-compose.yml</code>, set the mode line to <code>-txindex=1</code>.</li>
+          <li>Restore the <code>fulcrum</code> service if you removed it.</li>
+          <li>Restart the app.</li>
+        </ol>
+        <div class="warnline"><span>⚠</span><span>Going from pruned to full re-downloads the chain from scratch — the discarded blocks have to come back.</span></div>
+      </div>
+    </div>
+
+    <div class="mode-card" id="modePruned">
+      <div class="mc-head"><h3>Pruned</h3><span class="badge">Active</span></div>
+      <p class="desc">Validates every block but discards old ones past a size cap. Small disk, RPC-only — no wallet server.</p>
+      <div class="mc-live">
+        <div><b id="prunedTarget">—</b><span>size cap</span></div>
+        <div><b id="prunedFrom">—</b><span>retained from</span></div>
+      </div>
+      <button class="switch" data-steps="stepsPruned">Switch to Pruned mode →</button>
+      <div class="steps" id="stepsPruned">
+        <ol>
+          <li>In <code>docker-compose.yml</code>, change the mode line to <code>-prune=5500</code> (MB to keep, minimum 550).</li>
+          <li>Remove the <code>fulcrum</code> service — it can't index a pruned chain.</li>
+          <li>Restart the app.</li>
+        </ol>
+        <div class="warnline"><span>⚠</span><span>Pruning is one-way for the existing data. Re-enabling full history later means a fresh sync.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span id="fulStatus"><span class="dot no"></span>Electrum server</span>
+    <span>Refreshes every 5s · <a href="https://bitcoincashnode.org" target="_blank" rel="noopener">BCHN</a> + <a href="https://github.com/cculianu/Fulcrum" target="_blank" rel="noopener">Fulcrum</a></span>
+  </footer>
+</div>
+
+<script>
+const C = 2 * Math.PI * 86;
+const $ = (id) => document.getElementById(id);
+
+function fmtInt(n){ return (n==null||Number.isNaN(n)) ? '—' : Number(n).toLocaleString('en-US'); }
+function fmtBytes(b){
+  if(b==null) return '—';
+  const u=['B','KB','MB','GB','TB']; let i=0; b=Number(b);
+  while(b>=1024 && i<u.length-1){ b/=1024; i++; }
+  return b.toFixed(b<10&&i>0?1:0)+' '+u[i];
+}
+function fmtDiff(d){
+  if(d==null) return '—';
+  if(d>=1e12) return (d/1e12).toFixed(2)+'T';
+  if(d>=1e9) return (d/1e9).toFixed(2)+'B';
+  if(d>=1e6) return (d/1e6).toFixed(2)+'M';
+  return Math.round(d).toLocaleString('en-US');
+}
+function setBeacon(progress, mode){
+  const arc = $('arc');
+  const p = Math.max(0, Math.min(1, progress||0));
+  arc.style.strokeDashoffset = (C*(1-p)).toFixed(2);
+  $('beacon').className = 'beacon ' + mode;
+  $('pct').innerHTML = (p*100).toFixed(p>=0.9999?0:1)+'<small>%</small>';
+}
+
+function applyMode(mode, chain, fulOk){
+  const pruned = mode === 'pruned';
+  $('modePill').hidden = false;
+  $('modePill').textContent = pruned ? 'pruned' : 'full';
+
+  // Active highlight
+  $('modeFull').classList.toggle('active', !pruned);
+  $('modePruned').classList.toggle('active', pruned);
+
+  // Wallet card swaps to RPC-only message when pruned
+  $('walletFull').hidden = pruned;
+  $('walletPruned').hidden = !pruned;
+  $('walletCard').classList.toggle('disabled-card', pruned);
+
+  // Live detail in the active mode card
+  $('fullDisk').textContent = fmtBytes(chain.size_on_disk);
+  $('fullWallets').textContent = fulOk ? 'on' : (pruned ? 'off' : 'starting');
+  $('prunedTarget').textContent = chain.prune_target_size ? fmtBytes(chain.prune_target_size) : (pruned ? 'manual' : '—');
+  $('prunedFrom').textContent = chain.pruneheight != null ? ('#'+fmtInt(chain.pruneheight)) : '—';
+
+  // 8th telemetry slot adapts
+  if(pruned){
+    $('cSlotK').textContent = 'Pruned from';
+    $('cSlot').innerHTML = chain.pruneheight != null ? ('#'+fmtInt(chain.pruneheight)) : '<small>pruning</small>';
+  }else{
+    $('cSlotK').textContent = 'Electrum index';
+  }
+}
+
+async function tick(){
+  let d;
+  try{
+    const r = await fetch('/api/status',{cache:'no-store'});
+    d = await r.json();
+  }catch{ $('statePill').textContent='offline'; $('statePill').className='pill warn'; return; }
+
+  $('elSsl').textContent = d.connect.electrum_ssl;
+  $('elTcp').textContent = d.connect.electrum_tcp;
+  $('rpcEp').textContent = d.connect.rpc;
+  $('rpcUser').textContent = d.connect.rpc_user;
+
+  const fulOk = d.fulcrum.reachable_ssl || d.fulcrum.reachable_tcp;
+  const pruned = d.mode === 'pruned';
+  $('fulStatus').innerHTML = '<span class="dot '+((pruned)?'no':(fulOk?'ok':'no'))+'"></span>Electrum server '+
+    (pruned ? 'disabled (pruned)' : (fulOk ? 'listening' : (d.fulcrum.stats ? 'indexing' : 'starting')));
+
+  if(!d.ready){
+    $('versionLine').textContent = 'waiting for the daemon…';
+    $('statePill').textContent = 'starting'; $('statePill').className='pill warn';
+    $('modePill').hidden = true;
+    setBeacon(0,'starting');
+    $('modeFull').classList.add('active'); $('modePruned').classList.remove('active');
+    $('headline').textContent = 'Starting your node…';
+    $('blurb').textContent = 'The daemon is opening its database. On a fresh install this is also when the initial block download begins — it can run for hours on first sync.';
+    $('blab').textContent='starting';
+    return;
+  }
+
+  const c = d.chain;
+  $('chainPill').textContent = c.chain === 'main' ? 'mainnet' : c.chain;
+  $('versionLine').textContent = (d.node.subversion || '').replace(/\//g,'') || ('BCHN '+d.node.version);
+
+  applyMode(d.mode, c, fulOk);
+
+  // Electrum index card (full mode only — applyMode leaves the label alone)
+  if(!pruned){
+    $('cSlot').innerHTML = d.fulcrum.height != null ? fmtInt(d.fulcrum.height)
+      : (fulOk ? 'ready' : '<small>syncing</small>');
+  }
+
+  const synced = !c.initialblockdownload;
+  setBeacon(c.verificationprogress, synced ? 'synced' : 'warn');
+  $('blab').textContent = synced ? 'validated' : 'syncing';
+  if(synced){
+    $('statePill').textContent='synced'; $('statePill').className='pill live';
+    $('headline').textContent = 'Synced. You are your own source of truth.';
+    $('blurb').textContent = pruned
+      ? 'Your node validated every block independently, keeping only recent history to save space. Apps and miners can use it over RPC.'
+      : 'Your node is validating every Bitcoin Cash block and transaction independently. Point your wallet at it for full privacy and verification.';
+  }else{
+    $('statePill').textContent='syncing'; $('statePill').className='pill warn';
+    const behind = (c.headers && c.blocks!=null) ? (c.headers - c.blocks) : null;
+    $('headline').textContent = 'Syncing the chain…';
+    $('blurb').textContent = behind!=null
+      ? 'Downloading and verifying history — '+fmtInt(behind)+' blocks behind the network tip. '+(pruned?'':'You can connect wallets once this completes.')
+      : 'Downloading and verifying the chain. This finishes on its own.';
+  }
+
+  $('tHeight').textContent = fmtInt(c.blocks);
+  $('tPeers').textContent = fmtInt(d.network.connections);
+  $('tDisk').textContent = fmtBytes(c.size_on_disk);
+
+  $('cBlocks').textContent = fmtInt(c.blocks);
+  $('cHeaders').textContent = fmtInt(c.headers);
+  $('cConn').innerHTML = fmtInt(d.network.connections) +
+    ' <small>'+fmtInt(d.network.connections_in)+' in / '+fmtInt(d.network.connections_out)+' out</small>';
+  $('cMempool').innerHTML = fmtInt(d.mempool.size) + ' <small>txs</small>';
+  $('cRecv').textContent = d.nettotals ? fmtBytes(d.nettotals.totalbytesrecv) : '—';
+  $('cSent').textContent = d.nettotals ? fmtBytes(d.nettotals.totalbytessent) : '—';
+  $('cDiff').textContent = fmtDiff(c.difficulty);
+}
+
+document.addEventListener('click',(e)=>{
+  const copyBtn = e.target.closest('.copy');
+  if(copyBtn){
+    const txt = $(copyBtn.dataset.copy).textContent;
+    navigator.clipboard?.writeText(txt).then(()=>{
+      const old = copyBtn.textContent; copyBtn.textContent='Copied'; copyBtn.classList.add('done');
+      setTimeout(()=>{ copyBtn.textContent=old; copyBtn.classList.remove('done'); },1400);
+    });
+    return;
+  }
+  const sw = e.target.closest('.switch');
+  if(sw){ $(sw.dataset.steps).classList.toggle('open'); }
+});
+
+tick();
+setInterval(tick, 5000);
+</script>
+</body>
+</html>
