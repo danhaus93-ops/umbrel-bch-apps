@@ -3,6 +3,7 @@ id: gavin-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
 version: "29.0.0"
+icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bitcoin-cash-node/master/gavin-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node and Electrum server
 description: >-
   Run Bitcoin Cash on your own terms. This app pairs Bitcoin Cash Node (BCHN) —
