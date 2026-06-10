@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.4" r="0.78">
+      <stop offset="0" stop-color="#11331F"/><stop offset="0.55" stop-color="#0A2017"/><stop offset="1" stop-color="#06110C"/>
+    </radialGradient>
+    <linearGradient id="bar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#34D399"/><stop offset="1" stop-color="#0E9B6E"/>
+    </linearGradient>
+    <linearGradient id="tri" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2BBD86"/><stop offset="1" stop-color="#0A7E5A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- the lever (balanced beam), tilted -->
+  <g transform="rotate(-8 512 452)">
+    <rect x="214" y="420" width="596" height="64" rx="32" fill="url(#bar)"/>
+    <circle cx="232" cy="452" r="20" fill="#0A2017"/>
+    <circle cx="792" cy="452" r="20" fill="#0A2017"/>
+  </g>
+  <!-- the pivot (fulcrum) -->
+  <path d="M512 470 L648 724 L376 724 Z" fill="url(#tri)"/>
+  <rect x="352" y="724" width="320" height="40" rx="14" fill="url(#tri)"/>
+</svg>

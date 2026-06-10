@@ -1,0 +1,27 @@
+manifestVersion: 1
+id: gavin-fulcrum
+category: networking
+name: Fulcrum (BCH)
+version: "1.0.0"
+icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-fulcrum/icon.svg
+tagline: Electrum server for your Bitcoin Cash node — connect your wallet
+description: >-
+  Fulcrum is a fast Electrum server for Bitcoin Cash. It indexes your own node
+  so wallets like Electron Cash and Sparrow connect privately to hardware you
+  control instead of a stranger's server.
+
+
+  Requires the Bitcoin Cash Node app. The first index build takes a while and
+  uses extra disk; once done, point your wallet at the endpoints shown in the app.
+releaseNotes: First release — Fulcrum carved out of the node app into its own app.
+developer: Gavin
+website: https://github.com/cculianu/Fulcrum
+dependencies:
+  - gavin-bitcoin-cash-node
+repo: https://github.com/danhaus93-ops/umbrel-bch-apps
+support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
+port: 3331
+gallery: []
+path: ""
+submitter: Gavin
+submission: https://github.com/danhaus93-ops/umbrel-bch-apps
