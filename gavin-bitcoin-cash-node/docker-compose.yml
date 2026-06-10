@@ -61,7 +61,7 @@ services:
       - 50022:50022   # Electrum SSL
 
   web:
-    image: ghcr.io/YOUR_GITHUB_USERNAME/bchn-dashboard:1.0.0
+    image: ghcr.io/danhaus93-ops/bchn-dashboard:latest
     restart: on-failure
     depends_on:
       - bitcoind
