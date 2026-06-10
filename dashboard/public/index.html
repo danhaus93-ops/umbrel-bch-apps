@@ -357,15 +357,24 @@ async function tick(){
     d = await r.json();
   }catch{ $('statePill').textContent='offline'; $('statePill').className='pill warn'; return; }
 
-  $('elSsl').textContent = d.connect.electrum_ssl;
-  $('elTcp').textContent = d.connect.electrum_tcp;
+  const fulcrumOff = d.fulcrum_enabled === false;
+  if(fulcrumOff){
+    ['walletCard','fulStatus'].forEach(id=>{const e=$(id); if(e) e.style.display='none';});
+    const slot=$('cSlot'); if(slot){const card=slot.closest('.card'); if(card) card.style.display='none';}
+  }
+
   $('rpcEp').textContent = d.connect.rpc;
   $('rpcUser').textContent = d.connect.rpc_user;
 
-  const fulOk = d.fulcrum.reachable_ssl || d.fulcrum.reachable_tcp;
   const pruned = d.mode === 'pruned';
-  $('fulStatus').innerHTML = '<span class="dot '+((pruned)?'no':(fulOk?'ok':'no'))+'"></span>Electrum server '+
-    (pruned ? 'disabled (pruned)' : (fulOk ? 'listening' : (d.fulcrum.stats ? 'indexing' : 'starting')));
+  let fulOk = false;
+  if(!fulcrumOff){
+    $('elSsl').textContent = d.connect.electrum_ssl;
+    $('elTcp').textContent = d.connect.electrum_tcp;
+    fulOk = d.fulcrum.reachable_ssl || d.fulcrum.reachable_tcp;
+    $('fulStatus').innerHTML = '<span class="dot '+((pruned)?'no':(fulOk?'ok':'no'))+'"></span>Electrum server '+
+      (pruned ? 'disabled (pruned)' : (fulOk ? 'listening' : (d.fulcrum.stats ? 'indexing' : 'starting')));
+  }
 
   if(!d.ready){
     $('versionLine').textContent = 'waiting for the daemon…';
@@ -385,8 +394,8 @@ async function tick(){
 
   applyMode(d.mode, c, fulOk);
 
-  // Electrum index card (full mode only — applyMode leaves the label alone)
-  if(!pruned){
+  // Electrum index card (full mode only; skipped when Fulcrum is a separate app)
+  if(!pruned && !fulcrumOff){
     $('cSlot').innerHTML = d.fulcrum.height != null ? fmtInt(d.fulcrum.height)
       : (fulOk ? 'ready' : '<small>syncing</small>');
   }
