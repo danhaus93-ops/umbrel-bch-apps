@@ -1,14 +1,5 @@
-# Bitcoin Cash Node for Umbrel
-#
-# Services:
-#   app_proxy  - Umbrel's auth/proxy front door (points at the dashboard)
-#   bitcoind   - Bitcoin Cash Node daemon (BCHN v29, zquestz image)
-#   fulcrum    - Electrum server, so wallets (Electron Cash, Sparrow) can connect
-#   web        - status dashboard UI
-#
-# Note: the zquestz image uses datadir /data and needs `bitcoind` as the first
-# command token (different from the old uphold image).
-
+# Bitcoin Cash Node (node only) for Umbrel
+# Fulcrum is now its own app (gavin-fulcrum). ZMQ added for SoloStrike Cash.
 services:
   app_proxy:
     environment:
@@ -28,30 +19,14 @@ services:
       - -server=1
       - -listen=1
       - -rpcbind=0.0.0.0
-      - -rpcallowip=0.0.0.0/0 # safe: RPC port is NOT published to the host
+      - -rpcallowip=0.0.0.0/0
       - -rpcuser=bchn
       - -rpcpassword=bchn_local_rpc_pw_2f9c
       - -rpcworkqueue=512
       - -dbcache=512
       - -maxmempool=300
-      # ── STORAGE MODE ──────────────────────────────────────────────
-      # FULL  (default): -txindex=1   keeps full chain, wallet server works
-      # PRUNED:          -prune=5500  MB to keep (min 550); RPC-only.
-      #                  In pruned mode also remove the `fulcrum` service.
       - -txindex=1
-
-  fulcrum:
-    image: cculianu/fulcrum:latest
-    restart: on-failure
-    depends_on:
-      - bitcoind
-    volumes:
-      - ${APP_DATA_DIR}/data/fulcrum:/data
-      - ${APP_DATA_DIR}/fulcrum.conf:/data/fulcrum.conf:ro
-    command: ["Fulcrum", "/data/fulcrum.conf"]
-    ports:
-      - 50021:50021   # Electrum TCP
-      - 50022:50022   # Electrum SSL
+      - -zmqpubhashblock=tcp://0.0.0.0:28332   # for SoloStrike Cash (lowest-latency)
 
   web:
     image: ghcr.io/danhaus93-ops/bchn-dashboard:latest
@@ -64,8 +39,4 @@ services:
       RPC_PORT: "8332"
       RPC_USER: bchn
       RPC_PASS: bchn_local_rpc_pw_2f9c
-      FULCRUM_HOST: fulcrum
-      FULCRUM_STATS_PORT: "8081"
-      FULCRUM_TCP_PORT: "50021"
-      FULCRUM_SSL_PORT: "50022"
       PUBLIC_HOST: ${DEVICE_DOMAIN_NAME}
