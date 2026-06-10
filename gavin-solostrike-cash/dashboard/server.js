@@ -12,12 +12,32 @@ const http = require('http');
 const express = require('express');
 
 const app = express();
+app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
 const POOL_LOGDIR  = process.env.POOL_LOGDIR  || '/pool/logs';
 const STRATUM_HOST = process.env.STRATUM_HOST || 'umbrel.local';
 const STRATUM_PORT = process.env.STRATUM_PORT || '3335';
 const VERSION      = process.env.APP_VERSION  || 'v1.0.0';
+
+const POOL_DIR  = path.dirname(POOL_LOGDIR);            // /pool
+const ADDR_FILE = path.join(POOL_DIR, 'config', 'bch_address');
+
+function readAddress() {
+  try { return fs.readFileSync(ADDR_FILE, 'utf8').trim(); } catch (_) { return ''; }
+}
+function validAddress(a) {
+  if (!a || typeof a !== 'string') return false;
+  a = a.trim();
+  if (a.length > 110) return false;
+  if (/^(bitcoincash:|bchtest:|bchreg:)?[qp][0-9a-z]{38,}$/i.test(a)) return true; // cashaddr
+  if (/^[13][1-9A-HJ-NP-Za-km-z]{25,34}$/.test(a)) return true;                    // legacy
+  return false;
+}
+function writeAddress(a) {
+  fs.mkdirSync(path.dirname(ADDR_FILE), { recursive: true });
+  fs.writeFileSync(ADDR_FILE, a.trim());
+}
 
 const RPC_HOST = process.env.RPC_HOST || 'gavin-bitcoin-cash-node_bitcoind_1';
 const RPC_PORT = process.env.RPC_PORT || '8332';
@@ -110,7 +130,7 @@ app.get('/api/status', async (_req, res) => {
     accepted: 0, rejected: 0, bestShare: 0, blocks: 0,
     netDiff: 0, height: 0, chain: 'main',
     stratum: `stratum+tcp://${STRATUM_HOST}:${STRATUM_PORT}`,
-    workerList: [], version: VERSION,
+    workerList: [], version: VERSION, address: readAddress(),
   };
 
   try {
@@ -136,6 +156,13 @@ app.get('/api/status', async (_req, res) => {
   } catch (_) { /* node unreachable */ }
 
   res.json(out);
+});
+
+app.post('/api/address', (req, res) => {
+  const a = (req.body && req.body.address || '').trim();
+  if (!validAddress(a)) return res.status(400).json({ ok: false, error: 'invalid BCH address' });
+  try { writeAddress(a); } catch (e) { return res.status(500).json({ ok: false, error: 'could not save' }); }
+  res.json({ ok: true, address: a });
 });
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
