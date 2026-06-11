@@ -2,7 +2,7 @@ manifestVersion: 1
 id: gavin-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.0.6"
+version: "29.0.7"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
@@ -18,7 +18,7 @@ description: >-
   First sync downloads the full chain, so use an SSD (NVMe strongly recommended).
 
   Donations are never expected — but if SoloStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
-releaseNotes: HOTFIX — RPC password pinned again; the per-install random password caused auth mismatches between apps on some setups. Update all three apps.
+releaseNotes: Copy buttons (RPC endpoint, user, password) now work over plain HTTP connections.
   Split out from Fulcrum — Fulcrum is now its own app. ZMQ enabled for
   SoloStrike Cash. Update (don't reinstall) to keep your synced chain.
 developer: Gavin
