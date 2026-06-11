@@ -112,7 +112,8 @@ async function poll(){
   const dot=document.getElementById('dot'),t=document.getElementById('stTxt'),
         sub=document.getElementById('stSub'),bar=document.getElementById('bar');
   try{
-    const r=await fetch('/stats',{cache:'no-store'}); if(!r.ok)throw 0;
+    const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),10000);
+    const r=await fetch('/stats',{cache:'no-store',signal:ac.signal}).finally(()=>clearTimeout(tm)); if(!r.ok)throw 0;
     const j=await r.json();
     if(j&&j.error)throw 0;
     const hs=heights(j,[]);
@@ -137,11 +138,11 @@ async function poll(){
   }catch(e){}
   window.__miss=(window.__miss||0)+1;
   if(!window.__ok){
-    if(window.__miss>=4){
-      dot.style.background='#FB7185';
-      t.textContent='Starting \u2014 stats not up yet';
-      sub.textContent='first index build can take a while; this page refreshes itself';
-      bar.style.width='0%';
+    if(window.__miss>=3){
+      dot.style.background='#FCD34D';
+      t.textContent='Indexing \u2014 stats unavailable during heavy build';
+      sub.textContent='normal during the first index; check app logs for live progress';
+      bar.classList.add('busy');
     }
   }else if(window.__miss>=3){
     busyState(t,sub,bar,dot);
