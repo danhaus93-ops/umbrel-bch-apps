@@ -21,7 +21,7 @@ services:
       - -rpcbind=0.0.0.0
       - -rpcallowip=0.0.0.0/0
       - -rpcuser=bchn
-      - -rpcpassword=bchn_local_rpc_pw_2f9c
+      - -rpcpassword=${APP_GAVIN_BITCOIN_CASH_NODE_RPC_PASS:-bchn_local_rpc_pw_2f9c}
       - -rpcworkqueue=512
       - -dbcache=512
       - -maxmempool=300
@@ -38,5 +38,5 @@ services:
       RPC_HOST: bitcoind
       RPC_PORT: "8332"
       RPC_USER: bchn
-      RPC_PASS: bchn_local_rpc_pw_2f9c
+      RPC_PASS: ${APP_GAVIN_BITCOIN_CASH_NODE_RPC_PASS:-bchn_local_rpc_pw_2f9c}
       PUBLIC_HOST: ${DEVICE_DOMAIN_NAME}
