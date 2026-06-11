@@ -52,6 +52,20 @@
   <p class="lead">Fulcrum indexes your Bitcoin Cash node so wallets connect privately to <b>your</b> server instead of a stranger's. Point your wallet at the endpoints below. Replace <code>umbrel.local</code> with your Umbrel's IP if needed.</p>
 
   <div class="card">
+    <div class="k">Index status</div>
+    <div style="padding:13px 16px 15px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span id="dot" style="width:9px;height:9px;border-radius:50%;background:var(--dim);flex:0 0 auto"></span>
+        <span id="stTxt" style="font-family:var(--mono);font-size:13px;color:var(--text)">checking&hellip;</span>
+      </div>
+      <div style="margin-top:11px;height:6px;border-radius:3px;background:rgba(52,211,153,.12);overflow:hidden">
+        <div id="bar" style="height:100%;width:0%;background:linear-gradient(90deg,#10B981,#34D399);transition:width .8s"></div>
+      </div>
+      <div id="stSub" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:7px"></div>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="k">Electrum endpoints</div>
     <div class="row"><div class="rk">SSL</div><div class="rv">umbrel.local:50022</div></div>
     <div class="row"><div class="rk">TCP</div><div class="rv">umbrel.local:50021</div></div>
@@ -69,7 +83,43 @@
     </div>
   </div>
 
-  <footer>Fulcrum (BCH) · requires Bitcoin Cash Node</footer>
+  <footer>Fulcrum (BCH) v1.2.0 · requires Bitcoin Cash Node</footer>
 </div>
+<script>
+function deepFind(o,key){
+  if(o&&typeof o==='object'){
+    for(const k in o){
+      if(k===key&&typeof o[k]==='number')return o[k];
+      const r=deepFind(o[k],key); if(r!=null)return r;
+    }
+  } return null;
+}
+async function poll(){
+  const dot=document.getElementById('dot'),t=document.getElementById('stTxt'),
+        sub=document.getElementById('stSub'),bar=document.getElementById('bar');
+  try{
+    const r=await fetch('/stats',{cache:'no-store'}); if(!r.ok)throw 0;
+    const j=await r.json();
+    const idx=(j.Controller&&typeof j.Controller.Height==='number')?j.Controller.Height:deepFind(j,'Height');
+    let tip=deepFind(j,'blocks'); if(tip==null)tip=deepFind(j,'headers');
+    if(idx!=null&&tip!=null&&tip>0){
+      const pct=Math.min(100,idx/tip*100);
+      bar.style.width=pct.toFixed(2)+'%';
+      if(idx>=tip-1){dot.style.background='#34D399';t.textContent='Ready \u2014 fully indexed';
+        sub.textContent='height '+idx.toLocaleString()+' \u00b7 wallets can connect';}
+      else{dot.style.background='#FCD34D';t.textContent='Indexing \u2014 '+pct.toFixed(1)+'%';
+        sub.textContent=idx.toLocaleString()+' / '+tip.toLocaleString()+' blocks';}
+    }else if(idx!=null){
+      dot.style.background='#FCD34D';t.textContent='Indexing \u2014 height '+idx.toLocaleString();
+      sub.textContent='node tip unknown yet'; bar.style.width='0%';
+    }else throw 0;
+  }catch{
+    dot.style.background='#FB7185';t.textContent='Starting \u2014 stats not up yet';
+    sub.textContent='first index build can take a while; this page refreshes itself';
+    bar.style.width='0%';
+  }
+}
+poll();setInterval(poll,5000);
+</script>
 </body>
 </html>
