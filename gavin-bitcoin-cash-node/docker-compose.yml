@@ -14,6 +14,9 @@ services:
     volumes:
       - ${APP_DATA_DIR}/torrc:/etc/tor/torrc:ro
       - ${APP_DATA_DIR}/data/tor:/data
+    networks:
+      default:
+        ipv4_address: ${APP_GAVIN_BITCOIN_CASH_NODE_TOR_IP}
 
   bitcoind:
     image: zquestz/bitcoin-cash-node:29.0.0
@@ -50,6 +53,7 @@ services:
       - bitcoind
     environment:
       PORT: 3000
+      TOR_IP: ${APP_GAVIN_BITCOIN_CASH_NODE_TOR_IP}
       RPC_HOST: bitcoind
       RPC_PORT: "8332"
       RPC_USER: bchn
