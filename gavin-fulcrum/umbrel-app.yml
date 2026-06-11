@@ -2,7 +2,7 @@ manifestVersion: 1
 id: gavin-fulcrum
 category: networking
 name: Fulcrum (BCH)
-version: "1.2.2"
+version: "1.2.3"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-fulcrum/icon.svg
 tagline: Electrum server for your Bitcoin Cash node — connect your wallet
 description: >-
@@ -15,7 +15,7 @@ description: >-
   uses extra disk; once done, point your wallet at the endpoints shown in the app.
 
   Donations are never expected — but if SoloStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
-releaseNotes: HOTFIX — newest Fulcrum removed the fast-sync option and refused to start; config now uses db_mem instead. Update if Fulcrum shows Starting forever.
+releaseNotes: Index status page fixed — accurate progress when stats responds, busy indicator while Fulcrum is deep in the build, no more false Starting.
 developer: Gavin
 website: https://github.com/cculianu/Fulcrum
 dependencies:
