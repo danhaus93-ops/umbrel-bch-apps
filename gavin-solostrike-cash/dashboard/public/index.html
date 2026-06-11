@@ -200,7 +200,7 @@
 
   <footer>
     <span class="badge">solo</span><span class="badge">zero-fee</span><span class="badge">your node</span><br/>
-    SoloStrike Cash <span id="ver">v1.2.0</span> · powered by asicseer-pool<br/><span style="font-size:10px;color:var(--dim)">donations never expected, always fuel: <span style="color:var(--muted)">bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk</span></span>
+    SoloStrike Cash <span id="ver">v1.2.2</span> · powered by asicseer-pool<br/><span style="font-size:10px;color:var(--dim)">donations never expected, always fuel: <span style="color:var(--muted)">bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk</span></span>
   </footer>
 </div>
 
@@ -274,6 +274,19 @@ function render(d){
   }else{bemp.style.display='block';}
 }
 const COPY={pass:'x'};
+function copyText(txt){
+  if(navigator.clipboard&&window.isSecureContext){return navigator.clipboard.writeText(txt);}
+  return new Promise(function(res,rej){
+    var ta=document.createElement("textarea");
+    ta.value=txt; ta.setAttribute("readonly","");
+    ta.style.position="fixed"; ta.style.left="-9999px"; ta.style.top="0"; ta.style.opacity="0";
+    document.body.appendChild(ta);
+    ta.focus(); ta.select(); ta.setSelectionRange(0, txt.length);
+    var ok=false; try{ok=document.execCommand("copy");}catch(e){}
+    document.body.removeChild(ta);
+    ok?res():rej(new Error("copy failed"));
+  });
+}
 document.addEventListener('click',e=>{
   const b=e.target.closest('.copy');if(!b)return;
   const key=b.dataset.c;
@@ -282,7 +295,7 @@ document.addEventListener('click',e=>{
   else if(key==='user')txt=window.__addr||'';
   else txt=COPY[key]||'';
   if(!txt)return;
-  navigator.clipboard?.writeText(txt);
+  copyText(txt).catch(()=>{});
   const o=b.textContent;b.textContent='Copied';setTimeout(()=>b.textContent=o,1200);
 });
 async function saveAddr(){
@@ -312,7 +325,7 @@ document.getElementById('addrSave').addEventListener('click',saveAddr);
 document.getElementById('addrInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveAddr();});
 const MOCK={poolUp:true,nodeUp:true,bestShare:4.1e6,netDiff:5.75e11,
   hashrate:{val:'92.4',unit:'TH/s'},workers:3,users:1,blocks:0,accepted:18420,rejected:12,
-  stratum:'stratum+tcp://umbrel.local:3335',height:954112,version:'v1.2.0',address:'bitcoincash:qq8e2x9f0n3l7k2m5p4r6t8w1y3u5i7o9a2s4d6f8g',blockList:[],
+  stratum:'stratum+tcp://umbrel.local:3335',height:954112,version:'v1.2.2',address:'bitcoincash:qq8e2x9f0n3l7k2m5p4r6t8w1y3u5i7o9a2s4d6f8g',blockList:[],
   workerList:[
     {name:'S21XP-board1',hashrate:'90.1 TH/s',best:4.1e6,last:Math.floor(Date.now()/1000)-4},
     {name:'NerdQAxe++',hashrate:'1.9 TH/s',best:88200,last:Math.floor(Date.now()/1000)-11},
