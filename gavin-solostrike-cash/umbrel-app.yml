@@ -2,7 +2,7 @@ manifestVersion: 1
 id: gavin-solostrike-cash
 category: bitcoin
 name: SoloStrike Cash
-version: "1.1.0"
+version: "1.2.0"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-solostrike-cash/icon.svg
 description: >-
@@ -31,6 +31,8 @@ description: >-
   • One-tap stratum connection details for your miners
 
   • Backing-node status: block height and live network difficulty
+
+  Donations are never expected — but if SoloStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
 developer: Gavin
 website: https://github.com/danhaus93-ops/umbrel-bch-apps
 dependencies:
@@ -39,6 +41,7 @@ repo: https://github.com/danhaus93-ops/umbrel-bch-apps
 support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
 port: 3000
 gallery: []
-releaseNotes: Enter your BCH payout address in the dashboard UI; pool auto-restarts to apply.
+
+releaseNotes: Found-blocks tracker (height, time, best diff, block hash) and per-install random RPC password. Update Node, Fulcrum, and SoloStrike Cash together.
 submitter: Gavin
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
