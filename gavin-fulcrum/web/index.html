@@ -32,6 +32,9 @@
     font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center}
   code{font-family:var(--mono);background:rgba(52,211,153,.1);color:var(--mint);padding:1px 5px;border-radius:3px;font-size:12.5px}
   footer{margin-top:22px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim)}
+
+  #bar.busy{width:40% !important;animation:sscShimmer 1.6s ease-in-out infinite alternate;opacity:.75}
+  @keyframes sscShimmer{from{margin-left:0}to{margin-left:60%}}
 </style>
 </head>
 <body>
@@ -86,13 +89,24 @@
   <footer>Fulcrum (BCH) v1.2.0 · requires Bitcoin Cash Node</footer>
 </div>
 <script>
-function deepFind(o,key){
+function heights(o,acc){
   if(o&&typeof o==='object'){
     for(const k in o){
-      if(k===key&&typeof o[k]==='number')return o[k];
-      const r=deepFind(o[k],key); if(r!=null)return r;
+      const v=o[k];
+      if(/^(height|blocks|headers)$/i.test(k)){
+        const n=typeof v==='number'?v:(typeof v==='string'&&/^[0-9]+$/.test(v)?parseInt(v,10):null);
+        if(n!=null&&n>1000)acc.push(n);
+      }
+      heights(v,acc);
     }
-  } return null;
+  }
+  return acc;
+}
+function busyState(t,sub,bar,dot){
+  dot.style.background='#FCD34D';
+  t.textContent='Indexing \u2014 Fulcrum busy (heavy build phase)';
+  sub.textContent=(window.__lastSub?('last: '+window.__lastSub):'stats will answer when the build lets it breathe');
+  bar.classList.add('busy');
 }
 async function poll(){
   const dot=document.getElementById('dot'),t=document.getElementById('stTxt'),
@@ -100,26 +114,40 @@ async function poll(){
   try{
     const r=await fetch('/stats',{cache:'no-store'}); if(!r.ok)throw 0;
     const j=await r.json();
-    const idx=(j.Controller&&typeof j.Controller.Height==='number')?j.Controller.Height:deepFind(j,'Height');
-    let tip=deepFind(j,'blocks'); if(tip==null)tip=deepFind(j,'headers');
-    if(idx!=null&&tip!=null&&tip>0){
+    if(j&&j.error)throw 0;
+    const hs=heights(j,[]);
+    if(!hs.length)throw 0;
+    const idx=Math.min.apply(null,hs), tip=Math.max.apply(null,hs);
+    bar.classList.remove('busy');
+    window.__ok=true; window.__miss=0;
+    if(tip>idx){
       const pct=Math.min(100,idx/tip*100);
       bar.style.width=pct.toFixed(2)+'%';
-      if(idx>=tip-1){dot.style.background='#34D399';t.textContent='Ready \u2014 fully indexed';
-        sub.textContent='height '+idx.toLocaleString()+' \u00b7 wallets can connect';}
-      else{dot.style.background='#FCD34D';t.textContent='Indexing \u2014 '+pct.toFixed(1)+'%';
-        sub.textContent=idx.toLocaleString()+' / '+tip.toLocaleString()+' blocks';}
-    }else if(idx!=null){
-      dot.style.background='#FCD34D';t.textContent='Indexing \u2014 height '+idx.toLocaleString();
-      sub.textContent='node tip unknown yet'; bar.style.width='0%';
-    }else throw 0;
-  }catch{
-    dot.style.background='#FB7185';t.textContent='Starting \u2014 stats not up yet';
-    sub.textContent='first index build can take a while; this page refreshes itself';
-    bar.style.width='0%';
+      dot.style.background='#FCD34D';
+      t.textContent='Indexing \u2014 '+pct.toFixed(1)+'%';
+      sub.textContent=idx.toLocaleString()+' / '+tip.toLocaleString()+' blocks';
+      window.__lastSub=sub.textContent;
+    }else{
+      bar.style.width='100%';
+      dot.style.background='#34D399';
+      t.textContent='Ready \u2014 fully indexed';
+      sub.textContent='height '+tip.toLocaleString()+' \u00b7 wallets can connect';
+    }
+    return;
+  }catch(e){}
+  window.__miss=(window.__miss||0)+1;
+  if(!window.__ok){
+    if(window.__miss>=4){
+      dot.style.background='#FB7185';
+      t.textContent='Starting \u2014 stats not up yet';
+      sub.textContent='first index build can take a while; this page refreshes itself';
+      bar.style.width='0%';
+    }
+  }else if(window.__miss>=3){
+    busyState(t,sub,bar,dot);
   }
 }
-poll();setInterval(poll,5000);
+poll();setInterval(poll,8000);
 </script>
 </body>
 </html>
