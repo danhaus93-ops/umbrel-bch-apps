@@ -246,6 +246,11 @@
         <label>User</label><div class="val" id="rpcUser">—</div>
         <button class="copy" data-copy="rpcUser">Copy</button>
       </div>
+      <div class="field">
+        <label>Pass</label><div class="val" id="rpcPass" data-real="">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</div>
+        <button class="copy" id="passToggle">Show</button>
+        <button class="copy" data-copy="rpcPass">Copy</button>
+      </div>
       <div class="note">The RPC port is not published to your network by default. Expose it deliberately in the app's compose file if an external app needs it, and change the default credentials first.</div>
     </div>
   </div>
@@ -365,6 +370,8 @@ async function tick(){
 
   $('rpcEp').textContent = d.connect.rpc;
   $('rpcUser').textContent = d.connect.rpc_user;
+  const pp=$('rpcPass'); pp.dataset.real=d.connect.rpc_pass||'';
+  if(pp.dataset.shown==='1')pp.textContent=pp.dataset.real;
 
   const pruned = d.mode === 'pruned';
   let fulOk = false;
@@ -448,6 +455,21 @@ document.addEventListener('click',(e)=>{
 
 tick();
 setInterval(tick, 5000);
+</script>
+<script>
+(function(){
+  var t=document.getElementById('passToggle'),p=document.getElementById('rpcPass');
+  if(t&&p){t.addEventListener('click',function(){
+    if(p.dataset.shown==='1'){p.dataset.shown='';p.innerHTML='&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;';t.textContent='Show';}
+    else{p.dataset.shown='1';p.textContent=p.dataset.real;t.textContent='Hide';}
+  });}
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-copy="rpcPass"]');
+    if(b&&p&&p.dataset.real){navigator.clipboard&&navigator.clipboard.writeText(p.dataset.real);
+      var o=b.textContent;b.textContent='Copied';setTimeout(function(){b.textContent=o;},1200);
+      e.stopImmediatePropagation();}
+  },true);
+})();
 </script>
 </body>
 </html>
