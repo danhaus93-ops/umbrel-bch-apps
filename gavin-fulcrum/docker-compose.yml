@@ -44,7 +44,24 @@ services:
         condition: service_completed_successfully
     volumes:
       - ${APP_DATA_DIR}/data/fulcrum:/data
-    command: ["Fulcrum", "/data/fulcrum.conf"]
+    command:
+      - sh
+      - -c
+      - |
+        mkfifo /tmp/logpipe 2>/dev/null || true
+        ( while IFS= read -r l; do
+            printf '%s\n' "$$l"
+            case "$$l" in
+              *"Processed height: "*)
+                h="$${l#*Processed height: }"
+                printf '%s' "$${h%%,*}" > /data/progress.txt
+                ;;
+            esac
+          done < /tmp/logpipe ) &
+        trap 'kill -TERM "$$FPID" 2>/dev/null' TERM INT
+        Fulcrum /data/fulcrum.conf > /tmp/logpipe 2>&1 &
+        FPID=$$!
+        wait "$$FPID"
     ports:
       - 50021:50021   # Electrum TCP
       - 50022:50022   # Electrum SSL
@@ -52,5 +69,7 @@ services:
   web:
     image: ghcr.io/danhaus93-ops/fulcrum-info:latest
     restart: on-failure
+    volumes:
+      - ${APP_DATA_DIR}/data/fulcrum:/fdata:ro
     depends_on:
       - fulcrum
