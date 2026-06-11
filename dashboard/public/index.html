@@ -524,7 +524,10 @@ setInterval(tick, 5000);
       setTimeout(function(){b.dataset.arm='';b.textContent='Apply';},3000);return;}
     b.dataset.arm='';b.textContent='Applying\u2026';
     try{
-      await fetch('/api/tor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:sel.value})});
+      var r=await fetch('/api/tor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:sel.value})});
+      if(!r.ok){var j=null;try{j=await r.json();}catch(_){ }
+        b.textContent='Failed: '+((j&&j.error)||r.status);
+        setTimeout(function(){b.textContent='Apply';},4000);return;}
       b.textContent='Node restarting\u2026';
       setTimeout(function(){b.textContent='Apply';window.__torTouched=false;},25000);
     }catch(e){b.textContent='Failed';setTimeout(function(){b.textContent='Apply';},2000);}
