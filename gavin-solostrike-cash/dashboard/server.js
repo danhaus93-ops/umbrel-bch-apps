@@ -122,6 +122,62 @@ function rpc(method, params = []) {
   });
 }
 
+
+// ---- found-block scanner ---------------------------------------------------
+// Engine-agnostic: watches the chain itself for blocks whose coinbase pays the
+// configured payout address. Persists to /pool/config/blocks.json.
+const BLOCKS_FILE = path.join(POOL_DIR, 'config', 'blocks.json');
+let blockState = { lastScanned: 0, blocks: [] };
+try { blockState = JSON.parse(fs.readFileSync(BLOCKS_FILE, 'utf8')); } catch (_) {}
+let lastBestSeen = 0;
+
+function saveBlocks() {
+  try {
+    fs.mkdirSync(path.dirname(BLOCKS_FILE), { recursive: true });
+    fs.writeFileSync(BLOCKS_FILE, JSON.stringify(blockState));
+  } catch (_) {}
+}
+function addrKey(a) { return String(a || '').toLowerCase().replace(/^(bitcoincash|bchtest|bchreg):/, ''); }
+
+async function coinbasePaysUs(hash, mine) {
+  const blk = await rpc('getblock', [hash, 1]);
+  const cbTxid = blk.tx && blk.tx[0];
+  if (!cbTxid) return null;
+  const tx = await rpc('getrawtransaction', [cbTxid, true, hash]);
+  for (const v of (tx.vout || [])) {
+    const spk = v.scriptPubKey || {};
+    const addrs = spk.addresses || (spk.address ? [spk.address] : []);
+    if (addrs.some(a => addrKey(a) === mine)) return { time: blk.time, height: blk.height };
+  }
+  return null;
+}
+
+let scanning = false;
+async function scanBlocks() {
+  if (scanning) return;
+  scanning = true;
+  try {
+    const mine = addrKey(readAddress());
+    if (!mine) return;
+    const tip = await rpc('getblockcount', []);
+    if (!blockState.lastScanned) blockState.lastScanned = Math.max(0, tip - 200); // first-run backfill
+    let h = blockState.lastScanned + 1;
+    let budget = 50;                                   // be gentle per pass
+    while (h <= tip && budget-- > 0) {
+      const hash = await rpc('getblockhash', [h]);
+      const hit = await coinbasePaysUs(hash, mine);
+      if (hit && !blockState.blocks.some(b => b.hash === hash)) {
+        blockState.blocks.push({ height: h, hash, time: hit.time, best: lastBestSeen });
+        console.log(`[SoloStrike Cash] BLOCK FOUND at height ${h} (${hash})`);
+      }
+      blockState.lastScanned = h; h++;
+    }
+    saveBlocks();
+  } catch (_) { /* node not ready — retry next pass */ }
+  finally { scanning = false; }
+}
+setInterval(scanBlocks, 60 * 1000);
+setTimeout(scanBlocks, 8 * 1000);
 // ---- api -----------------------------------------------------------------
 app.get('/api/status', async (_req, res) => {
   const out = {
@@ -131,6 +187,7 @@ app.get('/api/status', async (_req, res) => {
     netDiff: 0, height: 0, chain: 'main',
     stratum: `stratum+tcp://${STRATUM_HOST}:${STRATUM_PORT}`,
     workerList: [], version: VERSION, address: readAddress(),
+    blockList: [...blockState.blocks].sort((a, b) => b.height - a.height).slice(0, 25),
   };
 
   try {
@@ -141,6 +198,7 @@ app.get('/api/status', async (_req, res) => {
     out.accepted = Number(p.accepted) || 0;
     out.rejected = Number(p.rejected) || 0;
     out.bestShare = Number(p.bestshare) || 0;
+    lastBestSeen = out.bestShare;
     const h = parseHash(p.hashrate5m || p.hashrate1m);
     out.hashrate = { val: h.val, unit: h.unit };
     out.workerList = readWorkers();
