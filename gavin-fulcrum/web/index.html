@@ -86,7 +86,7 @@
     </div>
   </div>
 
-  <footer>Fulcrum (BCH) v1.2.0 · requires Bitcoin Cash Node</footer>
+  <footer>Fulcrum (BCH) v1.2.5 · requires Bitcoin Cash Node</footer>
 </div>
 <script>
 function heights(o,acc){
@@ -108,34 +108,54 @@ function busyState(t,sub,bar,dot){
   sub.textContent=(window.__lastSub?('last: '+window.__lastSub):'stats will answer when the build lets it breathe');
   bar.classList.add('busy');
 }
+async function jget(url,ms){
+  const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),ms||6000);
+  try{const r=await fetch(url,{cache:'no-store',signal:ac.signal});
+      if(!r.ok)return null;return await r.text();}
+  catch(e){return null;}
+  finally{clearTimeout(tm);}
+}
+function paint(idx,tip,dot,t,sub,bar){
+  bar.classList.remove('busy');
+  window.__ok=true; window.__miss=0;
+  if(tip>idx+1){
+    const pct=Math.min(100,idx/tip*100);
+    bar.style.width=pct.toFixed(2)+'%';
+    dot.style.background='#FCD34D';
+    t.textContent='Indexing \u2014 '+pct.toFixed(1)+'%';
+    sub.textContent=idx.toLocaleString()+' / '+tip.toLocaleString()+' blocks';
+    window.__lastSub=sub.textContent;
+  }else{
+    bar.style.width='100%';
+    dot.style.background='#34D399';
+    t.textContent='Ready \u2014 fully indexed';
+    sub.textContent='height '+tip.toLocaleString()+' \u00b7 wallets can connect';
+  }
+}
 async function poll(){
   const dot=document.getElementById('dot'),t=document.getElementById('stTxt'),
         sub=document.getElementById('stSub'),bar=document.getElementById('bar');
-  try{
-    const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),10000);
-    const r=await fetch('/stats',{cache:'no-store',signal:ac.signal}).finally(()=>clearTimeout(tm)); if(!r.ok)throw 0;
-    const j=await r.json();
-    if(j&&j.error)throw 0;
-    const hs=heights(j,[]);
-    if(!hs.length)throw 0;
-    const idx=Math.min.apply(null,hs), tip=Math.max.apply(null,hs);
-    bar.classList.remove('busy');
-    window.__ok=true; window.__miss=0;
-    if(tip>idx){
-      const pct=Math.min(100,idx/tip*100);
-      bar.style.width=pct.toFixed(2)+'%';
-      dot.style.background='#FCD34D';
-      t.textContent='Indexing \u2014 '+pct.toFixed(1)+'%';
-      sub.textContent=idx.toLocaleString()+' / '+tip.toLocaleString()+' blocks';
-      window.__lastSub=sub.textContent;
-    }else{
-      bar.style.width='100%';
-      dot.style.background='#34D399';
-      t.textContent='Ready \u2014 fully indexed';
-      sub.textContent='height '+tip.toLocaleString()+' \u00b7 wallets can connect';
-    }
-    return;
-  }catch(e){}
+  // primary: log-tapped progress + node tip — immune to Fulcrum being busy
+  const [pTxt,tTxt]=await Promise.all([jget('/progress',5000),jget('/tip',8000)]);
+  const idx=pTxt&&/^[0-9]+$/.test(pTxt.trim())?parseInt(pTxt.trim(),10):null;
+  let tip=null;
+  if(tTxt){try{const j=JSON.parse(tTxt);if(typeof j.result==='number')tip=j.result;}catch(e){}}
+  if(idx!=null&&tip!=null&&tip>1000){paint(idx,tip,dot,t,sub,bar);return;}
+  // fallback: stats (works when Fulcrum isn't slammed)
+  const sTxt=await jget('/stats',10000);
+  if(sTxt){
+    try{
+      const j=JSON.parse(sTxt);
+      if(!(j&&j.error)){
+        const hs=heights(j,[]);
+        if(hs.length){
+          const i2=Math.min.apply(null,hs),t2=Math.max.apply(null,hs);
+          paint(idx!=null?idx:i2, t2, dot,t,sub,bar); return;
+        }
+      }
+    }catch(e){}
+  }
+  // nothing answered
   window.__miss=(window.__miss||0)+1;
   if(!window.__ok){
     if(window.__miss>=3){
