@@ -91,6 +91,7 @@ const NODE_CONF = '/nodedata/bitcoin.conf';
 const dnsp = require('dns').promises;
 // bitcoind's -torcontrol cannot resolve hostnames — we resolve the sidecar IP and write numbers
 async function torSidecarIp() {
+  if (process.env.TOR_IP) return process.env.TOR_IP;
   try { return (await dnsp.lookup('tor', { family: 4 })).address; } catch (_) { return null; }
 }
 function torBlock(mode, ip) {
@@ -117,7 +118,7 @@ async function writeTorMode(mode) {
 
 app.post('/api/tor', async (req, res) => {
   const mode = ((req.body && req.body.mode) || '').toString();
-  if (!TOR_BLOCKS[mode]) return res.status(400).json({ ok: false, error: 'bad mode' });
+  if (!['off', 'onion', 'full'].includes(mode)) return res.status(400).json({ ok: false, error: 'bad mode' });
   try { await writeTorMode(mode); } catch (e) { return res.status(500).json({ ok: false, error: 'conf write failed: ' + e.message }); }
   try { await rpc('stop'); } catch (_) { /* node restarting */ }
   res.json({ ok: true, mode, note: 'node restarting' });
