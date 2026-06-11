@@ -6,9 +6,18 @@ services:
       APP_HOST: gavin-bitcoin-cash-node_web_1
       APP_PORT: 3000
 
+  tor:
+    image: getumbrel/tor:0.4.7.8
+    restart: on-failure
+    environment:
+      HOME: /tmp
+    volumes:
+      - ${APP_DATA_DIR}/torrc:/etc/tor/torrc:ro
+      - ${APP_DATA_DIR}/data/tor:/data
+
   bitcoind:
     image: zquestz/bitcoin-cash-node:29.0.0
-    restart: on-failure
+    restart: always
     stop_grace_period: 1m
     volumes:
       - ${APP_DATA_DIR}/data/bitcoind:/data
@@ -26,11 +35,16 @@ services:
       - -dbcache=512
       - -maxmempool=300
       - -txindex=1
+      - -maxconnections=64
       - -zmqpubhashblock=tcp://0.0.0.0:28332   # for SoloStrike Cash (lowest-latency)
+    ports:
+      - 8335:8333   # BCH P2P — forward this on your router for clearnet inbound peers
 
   web:
     image: ghcr.io/danhaus93-ops/bchn-dashboard:latest
     restart: on-failure
+    volumes:
+      - ${APP_DATA_DIR}/data/bitcoind:/nodedata
     depends_on:
       - bitcoind
     environment:
