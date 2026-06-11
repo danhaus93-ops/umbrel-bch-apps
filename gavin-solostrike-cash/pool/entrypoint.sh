@@ -8,6 +8,7 @@ set -uo pipefail
 mkdir -p /pool/logs /pool/config
 ADDR_FILE=/pool/config/bch_address
 RESET_FILE=/pool/config/reset_request
+DIFF_FILE=/pool/config/diff
 
 # Seed the address file from the env var on first run (back-compat).
 if [ ! -f "$ADDR_FILE" ] && [ -n "${BCH_ADDRESS:-}" ]; then
@@ -25,6 +26,16 @@ write_conf() {
   else
     btcd="{ \"url\": \"${RPC_HOST}:${RPC_PORT}\", \"auth\": \"${RPC_USER}\", \"pass\": \"${RPC_PASS}\" }"
   fi
+  local mind=1 startd=42 maxd=0 maxline=""
+  if [ -f "$DIFF_FILE" ]; then
+    read -r mind startd maxd < "$DIFF_FILE" 2>/dev/null || true
+    case "$mind" in ''|*[!0-9]*) mind=1;; esac
+    case "$startd" in ''|*[!0-9]*) startd=42;; esac
+    case "$maxd" in ''|*[!0-9]*) maxd=0;; esac
+  fi
+  if [ "$maxd" -gt 0 ] 2>/dev/null; then
+    maxline="\"maxdiff\": ${maxd},"
+  fi
   cat > /pool/asicseer-pool.conf <<JSON
 {
   "btcd": [ ${btcd} ],
@@ -33,8 +44,9 @@ write_conf() {
   "pool_fee": 0.0,
   "disable_dev_donation": true,
   "serverurl": "0.0.0.0:3333",
-  "mindiff": 1,
-  "startdiff": 42,
+  "mindiff": ${mind},
+  "startdiff": ${startd},
+  ${maxline}
   "logdir": "/pool/logs"
 }
 JSON
@@ -72,9 +84,13 @@ do_reset() {
       sed -i -E 's/"best(share|ever)" *: *[0-9.eE+\-]+/"best\1": 0/g' "$fp" 2>/dev/null || true
     done
   else
-    grep -rl -- "$scope" /pool/logs/users /pool/logs 2>/dev/null | while read -r fp; do
-      sed -i -E 's/"best(share|ever)" *: *[0-9.eE+\-]+/"best\1": 0/g' "$fp" 2>/dev/null || true
+    # surgical per-worker reset: dashboard (Node) edits only this worker's JSON
+    touch /pool/config/pool_stopped
+    i=0
+    while [ $i -lt 25 ] && [ ! -f /pool/config/edit_done ]; do
+      sleep 1; i=$((i+1))
     done
+    rm -f /pool/config/pool_stopped /pool/config/edit_done
   fi
   rm -f "$RESET_FILE"
   start_pool "$CUR_ADDR"
@@ -89,6 +105,16 @@ while true; do
   if [ -f "$RESET_FILE" ]; then
     do_reset "$(tr -d '\r\n' < "$RESET_FILE")"
   fi
+  NEW_DIFF="$(cat "$DIFF_FILE" 2>/dev/null || true)"
+  if [ "$NEW_DIFF" != "${CUR_DIFF:-}" ]; then
+    CUR_DIFF="$NEW_DIFF"
+    if [ -n "${FIRST_DIFF_SEEN:-}" ]; then
+      echo "[SoloStrike Cash] difficulty change detected ($NEW_DIFF) — restarting pool"
+      stop_pool
+      start_pool "$CUR_ADDR"
+    fi
+  fi
+  FIRST_DIFF_SEEN=1
   NEW_ADDR="$(read_addr)"
   if [ "$NEW_ADDR" != "$CUR_ADDR" ]; then
     echo "[SoloStrike Cash] address changed -> '${NEW_ADDR}'; restarting pool"
