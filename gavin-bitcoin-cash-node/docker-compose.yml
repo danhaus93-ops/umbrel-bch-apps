@@ -21,8 +21,8 @@ services:
     stop_grace_period: 1m
     volumes:
       - ${APP_DATA_DIR}/data/bitcoind:/data
+    entrypoint: ["bitcoind"]
     command:
-      - bitcoind
       - -datadir=/data
       - -printtoconsole
       - -server=1
