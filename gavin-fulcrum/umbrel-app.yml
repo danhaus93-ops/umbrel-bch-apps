@@ -2,7 +2,7 @@ manifestVersion: 1
 id: gavin-fulcrum
 category: networking
 name: Fulcrum (BCH)
-version: "1.2.5"
+version: "1.2.6"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-fulcrum/icon.svg
 tagline: Electrum server for your Bitcoin Cash node — connect your wallet
 description: >-
@@ -15,7 +15,7 @@ description: >-
   uses extra disk; once done, point your wallet at the endpoints shown in the app.
 
   Donations are never expected — but if SoloStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
-releaseNotes: Real filling progress bar during the first index — reads progress from Fulcrum logs and the chain tip from your node, so it works even while Fulcrum is too busy for stats.
+releaseNotes: Progress bar now reaches 100 percent and flips to Ready when the index completes (no more sticking at 99.9).
 developer: Gavin
 website: https://github.com/cculianu/Fulcrum
 dependencies:
