@@ -88,6 +88,34 @@ function fulcrumHeight(stats) {
 }
 
 
+// ---- extras: peers, recent blocks (cached), uptime, network hashrate ----
+const blockMetaCache = new Map(); // height -> {height,time,size,txs,tag}
+async function minerTag(blockhash, txid) {
+  try {
+    const tx = await rpc('getrawtransaction', [txid, true, blockhash]);
+    const hex = (tx.vin && tx.vin[0] && tx.vin[0].coinbase) || '';
+    const ascii = Buffer.from(hex, 'hex').toString('latin1').replace(/[^\x20-\x7E]+/g, ' ').trim();
+    const m = ascii.match(/\/([^\/]{2,40})\//);
+    return (m ? m[1] : ascii.slice(0, 24)).trim() || 'unknown';
+  } catch (_) { return 'unknown'; }
+}
+async function recentBlocks(tip, n) {
+  const out = [];
+  for (let h = tip; h > tip - n && h > 0; h--) {
+    if (!blockMetaCache.has(h)) {
+      try {
+        const hash = await rpc('getblockhash', [h]);
+        const b = await rpc('getblock', [hash, 1]);
+        const tag = await minerTag(hash, b.tx[0]);
+        blockMetaCache.set(h, { height: h, time: b.time, size: b.size, txs: b.tx.length, tag });
+        if (blockMetaCache.size > 40) blockMetaCache.delete(Math.min(...blockMetaCache.keys()));
+      } catch (_) { break; }
+    }
+    out.push(blockMetaCache.get(h));
+  }
+  return out;
+}
+
 // ---- Tor mode (off | onion | full) -----------------------------------------
 const NODE_CONF = '/nodedata/bitcoin.conf';
 const dnsp = require('dns').promises;
@@ -189,6 +217,22 @@ app.get('/api/status', async (_req, res) => {
     try {
       out.nettotals = await rpc('getnettotals');
     } catch { /* non-fatal */ }
+    try {
+      const [peers, up, nh] = await Promise.all([
+        rpc('getpeerinfo'), rpc('uptime'), rpc('getnetworkhashps'),
+      ]);
+      out.uptime = up;
+      out.nethashps = nh;
+      out.peers_list = (peers || []).slice(0, 40).map(p => ({
+        addr: p.addr,
+        inbound: Boolean(p.inbound),
+        tor: /\.onion/.test(p.addr || ''),
+        ping: p.pingtime != null ? Math.round(p.pingtime * 1000) : null,
+        age: p.conntime ? Math.floor(Date.now() / 1000) - p.conntime : null,
+        sub: (p.subver || '').replace(/\//g, ''),
+      }));
+      out.recent_blocks = await recentBlocks(chain.blocks, 8);
+    } catch { /* non-fatal extras */ }
   } catch (err) {
     out.stage = 'starting';
     out.error = String(err.message || err);
