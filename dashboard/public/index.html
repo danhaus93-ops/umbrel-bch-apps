@@ -160,6 +160,8 @@
   @media (prefers-reduced-motion:reduce){
     .beacon .arc{transition:none}.beacon .core{animation:none!important}
   }
+  .toropt{display:flex;align-items:center;gap:7px;border:1px solid var(--line2);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:12px;color:var(--text);cursor:pointer}
+  .toropt input{accent-color:#34D399}
 </style>
 </head>
 <body>
@@ -251,7 +253,22 @@
         <button class="copy" id="passToggle">Show</button>
         <button class="copy" data-copy="rpcPass">Copy</button>
       </div>
+      <div class="field" id="torRow" style="display:none">
+        <label>Tor</label><div class="val" id="torAddr" style="word-break:break-all">&mdash;</div>
+        <button class="copy" data-copy="torAddr">Copy</button>
+      </div>
       <div class="note">The RPC port is not published to your network by default. Expose it deliberately in the app's compose file if an external app needs it, and change the default credentials first.</div>
+    </div>
+    <div class="conn">
+      <h3>Tor</h3>
+      <p>Run your node as a Tor hidden service. <b>Onion add-on</b> keeps fast clearnet peers and adds a .onion address; <b>All traffic</b> routes every connection through Tor (more private, slower).</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 12px">
+        <label class="toropt"><input type="radio" name="torMode" value="off"/> Off</label>
+        <label class="toropt"><input type="radio" name="torMode" value="onion"/> Onion add-on</label>
+        <label class="toropt"><input type="radio" name="torMode" value="full"/> All traffic via Tor</label>
+      </div>
+      <button class="copy" id="torApply" style="padding:10px 16px">Apply</button>
+      <div class="note" id="torNote" style="margin-top:9px">Applying restarts the node (about 30&ndash;60s); the dashboard reconnects on its own.</div>
     </div>
   </div>
 
@@ -384,6 +401,14 @@ async function tick(){
 
   $('rpcEp').textContent = d.connect.rpc;
   $('rpcUser').textContent = d.connect.rpc_user;
+  if(d.node&&d.node.onion){
+    document.getElementById('torRow').style.display='';
+    $('torAddr').textContent=d.node.onion;
+  }
+  if(d.node&&d.node.torMode&&!window.__torTouched){
+    const r=document.querySelector('input[name="torMode"][value="'+d.node.torMode+'"]');
+    if(r)r.checked=true;
+  }
   const pp=$('rpcPass'); pp.dataset.real=d.connect.rpc_pass||'';
   if(pp.dataset.shown==='1')pp.textContent=pp.dataset.real;
 
@@ -483,6 +508,27 @@ setInterval(tick, 5000);
       var o=b.textContent;b.textContent='Copied';setTimeout(function(){b.textContent=o;},1200);
       e.stopImmediatePropagation();}
   },true);
+})();
+</script>
+<script>
+(function(){
+  document.querySelectorAll('input[name="torMode"]').forEach(function(r){
+    r.addEventListener('change',function(){window.__torTouched=true;});
+  });
+  var b=document.getElementById('torApply');
+  if(!b)return;
+  b.addEventListener('click',async function(){
+    var sel=document.querySelector('input[name="torMode"]:checked');
+    if(!sel)return;
+    if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Restart node?';
+      setTimeout(function(){b.dataset.arm='';b.textContent='Apply';},3000);return;}
+    b.dataset.arm='';b.textContent='Applying\u2026';
+    try{
+      await fetch('/api/tor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:sel.value})});
+      b.textContent='Node restarting\u2026';
+      setTimeout(function(){b.textContent='Apply';window.__torTouched=false;},25000);
+    }catch(e){b.textContent='Failed';setTimeout(function(){b.textContent='Apply';},2000);}
+  });
 })();
 </script>
 </body>
