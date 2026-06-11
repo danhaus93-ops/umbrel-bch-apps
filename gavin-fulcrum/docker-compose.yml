@@ -4,13 +4,46 @@ services:
       APP_HOST: gavin-fulcrum_web_1
       APP_PORT: 80
 
+  # Writes fulcrum.conf into the data volume with this install's RPC password.
+  init:
+    image: alpine:3.20
+    restart: "no"
+    environment:
+      RPC_PASS: ${APP_GAVIN_BITCOIN_CASH_NODE_RPC_PASS:-bchn_local_rpc_pw_2f9c}
+    volumes:
+      - ${APP_DATA_DIR}/data/fulcrum:/data
+    command:
+      - sh
+      - -c
+      - |
+        cat > /data/fulcrum.conf <<CONF
+        datadir = /data
+        bitcoind = gavin-bitcoin-cash-node_bitcoind_1:8332
+        rpcuser = bchn
+        rpcpassword = $${RPC_PASS}
+        tcp = 0.0.0.0:50021
+        ssl = 0.0.0.0:50022
+        cert = /data/fulcrum.crt
+        key  = /data/fulcrum.key
+        peering  = false
+        announce = false
+        stats = 0.0.0.0:8081
+        fast-sync          = 1024
+        db_max_open_files  = 200
+        bitcoind_timeout   = 600
+        bitcoind_clients   = 1
+        worker_threads     = 1
+        CONF
+
   fulcrum:
     image: cculianu/fulcrum:latest
     restart: on-failure
     stop_grace_period: 1m
+    depends_on:
+      init:
+        condition: service_completed_successfully
     volumes:
       - ${APP_DATA_DIR}/data/fulcrum:/data
-      - ${APP_DATA_DIR}/fulcrum.conf:/data/fulcrum.conf:ro
     command: ["Fulcrum", "/data/fulcrum.conf"]
     ports:
       - 50021:50021   # Electrum TCP
