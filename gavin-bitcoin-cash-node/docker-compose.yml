@@ -43,6 +43,7 @@ services:
   web:
     image: ghcr.io/danhaus93-ops/bchn-dashboard:latest
     restart: on-failure
+    user: "0:0"
     volumes:
       - ${APP_DATA_DIR}/data/bitcoind:/nodedata
     depends_on:
