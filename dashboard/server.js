@@ -104,6 +104,7 @@ app.get('/api/status', async (_req, res) => {
       electrum_tcp_port: FULCRUM_TCP_PORT,
       rpc: `${RPC_HOST}:${RPC_PORT}`,
       rpc_user: RPC_USER,
+      rpc_pass: RPC_PASS,
     },
     stage: 'starting',
   };
