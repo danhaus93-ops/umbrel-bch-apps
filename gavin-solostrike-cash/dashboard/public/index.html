@@ -184,6 +184,13 @@
     <div class="empty" id="workersEmpty">No miners connected yet — point one at the stratum URL above.</div>
   </div>
 
+
+  <div class="sec">Found blocks</div>
+  <div class="workers" id="blocksTable">
+    <div class="wh" style="grid-template-columns:1fr 1.2fr 1fr 1.6fr"><div>Height</div><div class="wcol-r">When</div><div class="wcol-r">Best at hit</div><div class="wcol-r">Block</div></div>
+    <div class="empty" id="blocksEmpty">No blocks yet &mdash; keep striking.</div>
+  </div>
+
   <div class="sec">Backing node</div>
   <div class="panel">
     <div class="row"><div class="rk">Node</div><div class="rv" id="nodeName">Bitcoin Cash Node (BCHN)</div><span class="dot" id="nodeDot" style="margin-right:8px"></span></div>
@@ -193,7 +200,7 @@
 
   <footer>
     <span class="badge">solo</span><span class="badge">zero-fee</span><span class="badge">your node</span><br/>
-    SoloStrike Cash <span id="ver">v1.0.0</span> · powered by asicseer-pool
+    SoloStrike Cash <span id="ver">v1.2.0</span> · powered by asicseer-pool<br/><span style="font-size:10px;color:var(--dim)">donations never expected, always fuel: <span style="color:var(--muted)">bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk</span></span>
   </footer>
 </div>
 
@@ -251,6 +258,20 @@ function render(d){
       t.appendChild(r);
     });
   }else{emp.style.display='block';}
+  const bt=document.getElementById('blocksTable');
+  bt.querySelectorAll('.wr').forEach(e=>e.remove());
+  const bemp=document.getElementById('blocksEmpty');
+  if(d.blockList&&d.blockList.length){
+    bemp.style.display='none';
+    document.getElementById('blocks').textContent=d.blockList.length;
+    d.blockList.forEach(b=>{
+      const r=document.createElement('div');r.className='wr';
+      r.style.gridTemplateColumns='1fr 1.2fr 1fr 1.6fr';
+      const short=b.hash?b.hash.slice(0,8)+'\u2026'+b.hash.slice(-6):'\u2014';
+      r.innerHTML=`<div class="bd">${b.height.toLocaleString()}</div><div class="ls wcol-r">${ago(b.time)} ago</div><div class="hr wcol-r">${fmtDiff(b.best)}</div><div class="wcol-r"><a href="https://blockchair.com/bitcoin-cash/block/${b.hash}" target="_blank" rel="noopener" style="color:var(--mint);text-decoration:none;font-family:var(--fm)">${short}</a></div>`;
+      bt.appendChild(r);
+    });
+  }else{bemp.style.display='block';}
 }
 const COPY={pass:'x'};
 document.addEventListener('click',e=>{
@@ -291,7 +312,7 @@ document.getElementById('addrSave').addEventListener('click',saveAddr);
 document.getElementById('addrInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveAddr();});
 const MOCK={poolUp:true,nodeUp:true,bestShare:4.1e6,netDiff:5.75e11,
   hashrate:{val:'92.4',unit:'TH/s'},workers:3,users:1,blocks:0,accepted:18420,rejected:12,
-  stratum:'stratum+tcp://umbrel.local:3335',height:954112,version:'v1.0.1',address:'bitcoincash:qq8e2x9f0n3l7k2m5p4r6t8w1y3u5i7o9a2s4d6f8g',
+  stratum:'stratum+tcp://umbrel.local:3335',height:954112,version:'v1.2.0',address:'bitcoincash:qq8e2x9f0n3l7k2m5p4r6t8w1y3u5i7o9a2s4d6f8g',blockList:[],
   workerList:[
     {name:'S21XP-board1',hashrate:'90.1 TH/s',best:4.1e6,last:Math.floor(Date.now()/1000)-4},
     {name:'NerdQAxe++',hashrate:'1.9 TH/s',best:88200,last:Math.floor(Date.now()/1000)-11},
