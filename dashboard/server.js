@@ -88,30 +88,37 @@ function fulcrumHeight(stats) {
 
 // ---- Tor mode (off | onion | full) -----------------------------------------
 const NODE_CONF = '/nodedata/bitcoin.conf';
-const TOR_BLOCKS = {
-  off:   '# tor disabled\n',
-  onion: 'onion=tor:9050\nlistenonion=1\ntorcontrol=tor:9051\ntorpassword=solostrike_tor_ctrl_7f2c\nbind=0.0.0.0:8333\n',
-  full:  'proxy=tor:9050\nlistenonion=1\ntorcontrol=tor:9051\ntorpassword=solostrike_tor_ctrl_7f2c\nbind=0.0.0.0:8333\n',
-};
+const dnsp = require('dns').promises;
+// bitcoind's -torcontrol cannot resolve hostnames — we resolve the sidecar IP and write numbers
+async function torSidecarIp() {
+  try { return (await dnsp.lookup('tor', { family: 4 })).address; } catch (_) { return null; }
+}
+function torBlock(mode, ip) {
+  if (mode === 'off' || !ip) return '# tor disabled\n';
+  const key = mode === 'full' ? 'proxy' : 'onion';
+  return `${key}=${ip}:9050\nlistenonion=1\ntorcontrol=${ip}:9051\ntorpassword=solostrike_tor_ctrl_7f2c\nbind=0.0.0.0:8333\n`;
+}
 function readTorMode() {
   try {
     const c = fs.readFileSync(NODE_CONF, 'utf8');
-    if (/^proxy=tor/m.test(c)) return 'full';
-    if (/^onion=tor/m.test(c)) return 'onion';
+    if (/^proxy=/m.test(c)) return 'full';
+    if (/^onion=/m.test(c)) return 'onion';
     return 'off';
   } catch (_) { return 'off'; }
 }
-function writeTorMode(mode) {
-  const body = '# Managed by the Bitcoin Cash Node dashboard (Tor settings)\n' + TOR_BLOCKS[mode];
+async function writeTorMode(mode) {
+  const ip = mode === 'off' ? null : await torSidecarIp();
+  if (mode !== 'off' && !ip) throw new Error('tor sidecar not resolvable');
+  const body = '# Managed by the Bitcoin Cash Node dashboard (Tor settings)\n' + torBlock(mode, ip);
   fs.writeFileSync(NODE_CONF, body);
 }
 // seed default (onion add-on) on first run so Tor works out of the box
-try { if (!fs.existsSync(NODE_CONF)) writeTorMode('onion'); } catch (_) {}
+(async () => { try { if (!fs.existsSync(NODE_CONF)) await writeTorMode('onion'); } catch (_) {} })();
 
 app.post('/api/tor', async (req, res) => {
   const mode = ((req.body && req.body.mode) || '').toString();
   if (!TOR_BLOCKS[mode]) return res.status(400).json({ ok: false, error: 'bad mode' });
-  try { writeTorMode(mode); } catch (e) { return res.status(500).json({ ok: false, error: 'conf write failed' }); }
+  try { await writeTorMode(mode); } catch (e) { return res.status(500).json({ ok: false, error: 'conf write failed: ' + e.message }); }
   try { await rpc('stop'); } catch (_) { /* node restarting */ }
   res.json({ ok: true, mode, note: 'node restarting' });
 });
