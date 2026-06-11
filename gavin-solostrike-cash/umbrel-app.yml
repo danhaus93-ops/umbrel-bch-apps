@@ -2,7 +2,7 @@ manifestVersion: 1
 id: gavin-solostrike-cash
 category: bitcoin
 name: SoloStrike Cash
-version: "1.2.1"
+version: "1.2.2"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-solostrike-cash/icon.svg
 description: >-
@@ -42,6 +42,6 @@ support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
 port: 3000
 gallery: []
 
-releaseNotes: HOTFIX — restores node RPC connection (password mismatch). Update together with the Node app.
+releaseNotes: Copy buttons now work over plain HTTP (Tailscale/LAN) — stratum URL, payout address, and password copy reliably on iOS and Android.
 submitter: Gavin
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
