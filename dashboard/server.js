@@ -99,7 +99,7 @@ async function torSidecarIp() {
 function torBlock(mode, ip) {
   if (mode === 'off' || !ip) return '# tor disabled\n';
   const key = mode === 'full' ? 'proxy' : 'onion';
-  return `${key}=${ip}:9050\nlistenonion=1\ntorcontrol=${ip}:9051\ntorpassword=solostrike_tor_ctrl_7f2c\nbind=0.0.0.0:8333\n`;
+  return `${key}=${ip}:9050\nlistenonion=1\ntorcontrol=${ip}:9051\ntorpassword=solostrike_tor_ctrl_7f2c\n`;
 }
 function readTorMode() {
   try {
