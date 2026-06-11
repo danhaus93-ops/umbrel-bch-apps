@@ -48,6 +48,12 @@ const RPC_PASS = process.env.RPC_PASS || 'bchn_local_rpc_pw_2f9c';
 const SUFFIX = { E:1e18, P:1e15, T:1e12, G:1e9, M:1e6, K:1e3 };
 const UNIT   = { E:'EH/s', P:'PH/s', T:'TH/s', G:'GH/s', M:'MH/s', K:'KH/s', '':'H/s' };
 
+function hashToHs(str) {
+  const m = String(str || '0').trim().match(/^([0-9.]+)\s*([KMGTPE]?)/i);
+  if (!m) return 0;
+  const mult = { '': 1, K: 1e3, M: 1e6, G: 1e9, T: 1e12, P: 1e15, E: 1e18 }[m[2].toUpperCase()] || 1;
+  return parseFloat(m[1]) * mult;
+}
 // ckpool reports hashrate as strings like "92.4T". Split into display + numeric.
 function parseHash(s) {
   if (s == null) return { val: '0', unit: 'H/s', n: 0 };
@@ -85,6 +91,8 @@ function readWorkers() {
       out.push({
         name: wn,
         hashrate: (() => { const h = parseHash(w.hashrate5m || w.hashrate1m); return h.val + ' ' + h.unit; })(),
+        trend: [w.hashrate1m, w.hashrate5m, w.hashrate1hr, w.hashrate1d, w.hashrate7d].map(hashToHs),
+        idle: (Math.floor(Date.now() / 1000) - (Number(w.lastshare) || 0)) > 300,
         best: Number(w.bestshare) || 0,
         last: Number(w.lastshare) || 0,
       });
@@ -143,6 +151,7 @@ function rpc(method, params = []) {
 // configured payout address. Persists to /pool/config/blocks.json.
 const BLOCKS_FILE = path.join(POOL_DIR, 'config', 'blocks.json');
 let blockState = { lastScanned: 0, blocks: [] };
+let lastAcceptedTotal = 0;
 try { blockState = JSON.parse(fs.readFileSync(BLOCKS_FILE, 'utf8')); } catch (_) {}
 let lastBestSeen = 0;
 
@@ -183,6 +192,7 @@ async function scanBlocks() {
       const hit = await coinbasePaysUs(hash, mine);
       if (hit && !blockState.blocks.some(b => b.hash === hash)) {
         blockState.blocks.push({ height: h, hash, time: hit.time, best: lastBestSeen });
+        blockState.acceptedAtLastBlock = lastAcceptedTotal || 0;
         console.log(`[SoloStrike Cash] BLOCK FOUND at height ${h} (${hash})`);
       }
       blockState.lastScanned = h; h++;
@@ -220,6 +230,11 @@ app.get('/api/status', async (_req, res) => {
     lastBestSeen = out.bestShare;
     const h = parseHash(p.hashrate5m || p.hashrate1m);
     out.hashrate = { val: h.val, unit: h.unit };
+    lastAcceptedTotal = out.accepted;
+    const baseline = Number(blockState.acceptedAtLastBlock) || 0;
+    out.roundShares = Math.max(0, out.accepted - baseline);
+    const hs = hashToHs(p.hashrate5m || p.hashrate1m);
+    out.poolHs = hs;
     out.workerList = readWorkers();
     out.blocks = countBlocks();
   } catch (_) { /* pool not started yet */ }
