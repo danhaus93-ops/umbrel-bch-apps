@@ -213,6 +213,8 @@
     <div class="card"><div class="k">Received</div><div class="v" id="cRecv">—</div></div>
     <div class="card"><div class="k">Sent</div><div class="v" id="cSent">—</div></div>
     <div class="card"><div class="k">Difficulty</div><div class="v" id="cDiff">—</div></div>
+    <div class="card"><div class="k">Net hashrate</div><div class="v" id="tNetHash">—</div></div>
+    <div class="card"><div class="k">Node uptime</div><div class="v" id="tUptime">—</div></div>
     <div class="card"><div class="k" id="cSlotK">Electrum index</div><div class="v" id="cSlot">—</div></div>
   </div>
 
@@ -259,6 +261,15 @@
         <button class="copy" data-copy="torAddr">Copy</button>
       </div>
       <div class="note">The RPC port is not published to your network by default. Expose it deliberately in the app's compose file if an external app needs it, and change the default credentials first.</div>
+    </div>
+    <div class="conn">
+      <h3>Peers</h3>
+      <p id="peersSummary" style="margin-bottom:10px">&mdash;</p>
+      <div id="peersTable" style="font-family:var(--mono);font-size:11.5px"></div>
+    </div>
+    <div class="conn">
+      <h3>Recent blocks</h3>
+      <div id="blocksTable" style="font-family:var(--mono);font-size:11.5px"></div>
     </div>
     <div class="conn">
       <h3>Tor</h3>
@@ -319,6 +330,9 @@
 </div>
 
 <script>
+function fmtAge(s){if(s==null)return '';if(s<90)return s+'s';if(s<5400)return Math.round(s/60)+'m';if(s<172800)return Math.round(s/3600)+'h';return Math.round(s/86400)+'d';}
+function fmtHs(h){const u=['H/s','KH/s','MH/s','GH/s','TH/s','PH/s','EH/s'];let i=0;while(h>=1000&&i<u.length-1){h/=1000;i++;}return h.toFixed(2)+' '+u[i];}
+
 function copyText(txt){
   if(navigator.clipboard&&window.isSecureContext){return navigator.clipboard.writeText(txt);}
   return new Promise(function(res,rej){
@@ -405,6 +419,29 @@ async function tick(){
   if(d.node&&d.node.onion){
     document.getElementById('torRow').style.display='';
     $('torAddr').textContent=d.node.onion;
+  }
+  if(d.nethashps){$('tNetHash').textContent=fmtHs(d.nethashps);}
+  if(d.uptime){$('tUptime').textContent=fmtAge(d.uptime);}
+  if(d.peers_list){
+    const inb=d.peers_list.filter(p=>p.inbound).length;
+    $('peersSummary').textContent=d.peers_list.length+' connected \u00b7 '+inb+' inbound \u00b7 '+
+      d.peers_list.filter(p=>p.tor).length+' via Tor';
+    document.getElementById('peersTable').innerHTML=d.peers_list.map(p=>
+      '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:center">'+
+      '<span style="color:'+(p.inbound?'#34D399':'var(--muted)')+';min-width:28px">'+(p.inbound?'IN':'OUT')+'</span>'+
+      '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(p.tor?'[tor] ':'')+p.addr+'</span>'+
+      '<span style="color:var(--muted)">'+(p.ping!=null?p.ping+'ms':'')+'</span>'+
+      '<span style="color:var(--muted);min-width:46px;text-align:right">'+(p.age!=null?fmtAge(p.age):'')+'</span></div>'
+    ).join('');
+  }
+  if(d.recent_blocks){
+    document.getElementById('blocksTable').innerHTML=d.recent_blocks.map(b=>
+      '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:center">'+
+      '<span style="color:var(--green);min-width:64px">'+b.height.toLocaleString()+'</span>'+
+      '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)">'+b.tag+'</span>'+
+      '<span style="color:var(--muted)">'+b.txs+' tx</span>'+
+      '<span style="color:var(--muted);min-width:46px;text-align:right">'+fmtAge(Math.floor(Date.now()/1000)-b.time)+'</span></div>'
+    ).join('');
   }
   if(d.node&&d.node.torMode&&!window.__torTouched){
     const r=document.querySelector('input[name="torMode"][value="'+d.node.torMode+'"]');
