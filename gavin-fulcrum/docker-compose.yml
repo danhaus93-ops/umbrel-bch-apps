@@ -56,6 +56,10 @@ services:
                 h="$${l#*Processed height: }"
                 printf '%s' "$${h%%,*}" > /data/progress.txt
                 ;;
+              *"Block height "*", up-to-date"*)
+                h="$${l#*Block height }"
+                printf '%s' "$${h%%,*}" > /data/progress.txt
+                ;;
             esac
           done < /tmp/logpipe ) &
         trap 'kill -TERM "$$FPID" 2>/dev/null' TERM INT
