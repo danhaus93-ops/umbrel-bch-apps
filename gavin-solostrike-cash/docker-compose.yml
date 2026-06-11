@@ -14,7 +14,7 @@ services:
       RPC_HOST: gavin-bitcoin-cash-node_bitcoind_1
       RPC_PORT: "8332"
       RPC_USER: bchn
-      RPC_PASS: ${APP_GAVIN_BITCOIN_CASH_NODE_RPC_PASS:-bchn_local_rpc_pw_2f9c}
+      RPC_PASS: bchn_local_rpc_pw_2f9c
       # Lowest-latency block notifications via BCHN's ZMQ hashblock publisher.
       # Requires BCHN to run with: -zmqpubhashblock=tcp://0.0.0.0:28332
       ZMQ_ENDPOINT: tcp://gavin-bitcoin-cash-node_bitcoind_1:28332
@@ -35,7 +35,7 @@ services:
       RPC_HOST: gavin-bitcoin-cash-node_bitcoind_1
       RPC_PORT: "8332"
       RPC_USER: bchn
-      RPC_PASS: ${APP_GAVIN_BITCOIN_CASH_NODE_RPC_PASS:-bchn_local_rpc_pw_2f9c}
+      RPC_PASS: bchn_local_rpc_pw_2f9c
       APP_VERSION: v1.2.0
     volumes:
       - ${APP_DATA_DIR}/data/pool:/pool
