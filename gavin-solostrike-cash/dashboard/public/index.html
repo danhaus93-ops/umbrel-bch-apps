@@ -185,9 +185,9 @@
       <label style="flex:1;min-width:90px;font-family:var(--fm);font-size:11px;color:var(--dim)">MIN<input id="diffMin" type="number" min="1" style="width:100%;margin-top:5px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:14px;padding:9px 10px"/></label>
       <label style="flex:1;min-width:90px;font-family:var(--fm);font-size:11px;color:var(--dim)">START<input id="diffStart" type="number" min="1" style="width:100%;margin-top:5px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:14px;padding:9px 10px"/></label>
       <label style="flex:1;min-width:90px;font-family:var(--fm);font-size:11px;color:var(--dim)">MAX (0 = none)<input id="diffMax" type="number" min="0" style="width:100%;margin-top:5px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:14px;padding:9px 10px"/></label>
-      <button class="save" id="diffSave" style="height:38px">Save</button>
+      <button class="copy" id="diffSave" style="height:38px;padding:10px 16px">Save</button>
     </div>
-    <div class="hint" style="margin-top:9px">NiceHash needs START around 500000. Saving restarts the pool (~5s); miners reconnect automatically.</div>
+    <div class="hint" style="margin-top:9px">Saving restarts the pool (~5s); miners reconnect automatically.</div>
   </div>
 
   <div class="sec">Workers</div>
@@ -212,7 +212,7 @@
 
   <footer>
     <span class="badge">solo</span><span class="badge">zero-fee</span><span class="badge">your node</span><br/>
-    SoloStrike Cash <span id="ver">v1.3.1</span> · powered by asicseer-pool<br/><span style="font-size:10px;color:var(--dim)">donations never expected, always fuel: <span style="color:var(--muted)">bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk</span></span>
+    SoloStrike Cash <span id="ver">v1.3.2</span> · powered by asicseer-pool<br/><span style="font-size:10px;color:var(--dim)">donations never expected, always fuel: <span style="color:var(--muted)">bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk</span></span>
   </footer>
 </div>
 
@@ -242,7 +242,7 @@ function render(d){
   if(ai&&document.activeElement!==ai&&d.address&&ai.value!==d.address)ai.value=d.address;
   const uh=document.getElementById('userHint');
   if(uh)uh.innerHTML=d.address?`<span style="color:var(--mint)">${d.address}</span>`:'your BCH address — <span style="color:var(--muted)">set it above</span>';
-  const frac=strikeFrac(d.bestShare,d.netDiff);
+  const frac=Math.min(1,Math.max((d.netDiff>0&&d.bestShare>0)?d.bestShare/d.netDiff:0,0.004));
   document.getElementById('arc').style.strokeDashoffset=628*(1-frac);
   const lin=(d.netDiff>0&&d.bestShare>0)?(d.bestShare/d.netDiff*100):0;
   document.getElementById('strikePct').textContent=(lin>=1?lin.toFixed(1):lin>=0.01?lin.toFixed(3):lin>0?lin.toExponential(1):'0')+'% of a block';
@@ -268,7 +268,7 @@ function render(d){
     emp.style.display='none';
     d.workerList.forEach(w=>{
       const r=document.createElement('div');r.className='wr';
-      r.innerHTML=`<div class="name">${w.name}</div><div class="hr wcol-r">${w.hashrate}</div><div class="bd wcol-r bd-col">${fmtDiff(w.best)}</div><div class="ls">${ago(w.last)}</div><button class="wreset" data-w="${w.name}" title="reset this miner's best">⟲</button><button class="wreset whide" data-h="${w.name}" title="remove from list">✕</button>`;
+      r.innerHTML=`<div class="name">${w.name}</div><div class="hr wcol-r">${w.hashrate}</div><div class="bd wcol-r bd-col">${fmtDiff(w.best)}</div><div class="ls">${ago(w.last)}</div><div style="display:flex;gap:4px;justify-content:flex-end"><button class="wreset" data-w="${w.name}" title="reset this miner's best">⟲</button><button class="wreset whide" data-h="${w.name}" title="remove from list">✕</button></div>`;
       t.appendChild(r);
     });
   }else{emp.style.display='block';}
@@ -363,7 +363,7 @@ document.getElementById('addrSave').addEventListener('click',saveAddr);
 document.getElementById('addrInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveAddr();});
 const MOCK={poolUp:true,nodeUp:true,bestShare:4.1e6,netDiff:5.75e11,
   hashrate:{val:'92.4',unit:'TH/s'},workers:3,users:1,blocks:0,accepted:18420,rejected:12,
-  stratum:'stratum+tcp://umbrel.local:3335',height:954112,version:'v1.3.1',address:'bitcoincash:qq8e2x9f0n3l7k2m5p4r6t8w1y3u5i7o9a2s4d6f8g',blockList:[],diff:{min:1,start:42,max:0},
+  stratum:'stratum+tcp://umbrel.local:3335',height:954112,version:'v1.3.2',address:'bitcoincash:qq8e2x9f0n3l7k2m5p4r6t8w1y3u5i7o9a2s4d6f8g',blockList:[],diff:{min:1,start:42,max:0},
   workerList:[
     {name:'S21XP-board1',hashrate:'90.1 TH/s',best:4.1e6,last:Math.floor(Date.now()/1000)-4},
     {name:'NerdQAxe++',hashrate:'1.9 TH/s',best:88200,last:Math.floor(Date.now()/1000)-11},
