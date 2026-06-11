@@ -91,6 +91,21 @@ function readWorkers() {
     }
   }
   out.sort((a, b) => b.best - a.best);
+  // hidden workers: stay hidden unless they show fresh activity
+  try {
+    const hf = path.join(POOL_DIR, 'config', 'hidden.json');
+    let hidden = {};
+    try { hidden = JSON.parse(fs.readFileSync(hf, 'utf8')); } catch (_) {}
+    let changed = false;
+    const vis = out.filter(w => {
+      const t = hidden[w.name];
+      if (!t) return true;
+      if ((w.last || 0) > t) { delete hidden[w.name]; changed = true; return true; }
+      return false;
+    });
+    if (changed) { try { fs.writeFileSync(hf, JSON.stringify(hidden)); } catch (_) {} }
+    return vis;
+  } catch (_) { return out; }
   return out;
 }
 
@@ -188,6 +203,10 @@ app.get('/api/status', async (_req, res) => {
     stratum: `stratum+tcp://${STRATUM_HOST}:${STRATUM_PORT}`,
     workerList: [], version: VERSION, address: readAddress(),
     blockList: [...blockState.blocks].sort((a, b) => b.height - a.height).slice(0, 25),
+    diff: (() => { try {
+      const [mi, st, mx] = fs.readFileSync(path.join(POOL_DIR, 'config', 'diff'), 'utf8').trim().split(/\s+/).map(Number);
+      return { min: mi || 1, start: st || 42, max: mx || 0 };
+    } catch (_) { return { min: 1, start: 42, max: 0 }; } })(),
   };
 
   try {
@@ -214,6 +233,82 @@ app.get('/api/status', async (_req, res) => {
   } catch (_) { /* node unreachable */ }
 
   res.json(out);
+});
+
+
+// ---- surgical per-worker best reset (runs while entrypoint holds pool stopped) ----
+function zeroBestIn(obj) {
+  for (const k of Object.keys(obj)) {
+    if (/^best/i.test(k) && (typeof obj[k] === 'number' || /^[0-9.eE+-]+$/.test(String(obj[k])))) obj[k] = 0;
+  }
+}
+function surgicalReset(scope) {
+  const usersDir = path.join(POOL_DIR, 'logs', 'users');
+  let files = [];
+  try { files = fs.readdirSync(usersDir); } catch (_) { return; }
+  for (const fn of files) {
+    const fp = path.join(usersDir, fn);
+    try {
+      const j = JSON.parse(fs.readFileSync(fp, 'utf8'));
+      let touched = false;
+      const stack = [j];
+      while (stack.length) {
+        const o = stack.pop();
+        if (Array.isArray(o)) { o.forEach(x => x && typeof x === 'object' && stack.push(x)); continue; }
+        if (o && typeof o === 'object') {
+          if (o.workername === scope) { zeroBestIn(o); touched = true; }
+          else Object.values(o).forEach(v => v && typeof v === 'object' && stack.push(v));
+        }
+      }
+      if (touched) {
+        // user-level best = max of remaining workers
+        const workers = Array.isArray(j.worker) ? j.worker : [];
+        const maxBest = (key) => workers.reduce((m, w) => Math.max(m, Number(w[key]) || 0), 0);
+        if ('bestshare' in j) j.bestshare = maxBest('bestshare');
+        if ('bestever' in j) j.bestever = maxBest('bestever');
+        fs.writeFileSync(fp, JSON.stringify(j));
+        console.log(`[SoloStrike Cash] surgical best reset: ${scope} in ${fn}`);
+      }
+    } catch (_) { /* not JSON or unreadable — skip */ }
+  }
+}
+setInterval(() => {
+  try {
+    const stopMark = path.join(POOL_DIR, 'config', 'pool_stopped');
+    const doneMark = path.join(POOL_DIR, 'config', 'edit_done');
+    if (!fs.existsSync(stopMark) || fs.existsSync(doneMark)) return;
+    let scope = '';
+    try { scope = fs.readFileSync(path.join(POOL_DIR, 'config', 'reset_request'), 'utf8').trim(); } catch (_) {}
+    if (scope && scope !== 'all') surgicalReset(scope);
+    fs.writeFileSync(doneMark, '1');
+  } catch (_) {}
+}, 1500);
+
+app.post('/api/worker/hide', (req, res) => {
+  const name = ((req.body && req.body.name) || '').toString().slice(0, 120);
+  if (!name) return res.status(400).json({ ok: false });
+  const hf = path.join(POOL_DIR, 'config', 'hidden.json');
+  let hidden = {};
+  try { hidden = JSON.parse(fs.readFileSync(hf, 'utf8')); } catch (_) {}
+  hidden[name] = Math.floor(Date.now() / 1000);
+  try {
+    fs.mkdirSync(path.dirname(hf), { recursive: true });
+    fs.writeFileSync(hf, JSON.stringify(hidden));
+  } catch (e) { return res.status(500).json({ ok: false }); }
+  res.json({ ok: true, name });
+});
+
+app.post('/api/diff', (req, res) => {
+  const b = req.body || {};
+  const min = Math.max(1, parseInt(b.min, 10) || 1);
+  const start = Math.max(min, parseInt(b.start, 10) || 42);
+  let max = parseInt(b.max, 10) || 0;
+  if (max && max < start) max = 0;
+  try {
+    fs.mkdirSync(path.join(POOL_DIR, 'config'), { recursive: true });
+    fs.writeFileSync(path.join(POOL_DIR, 'config', 'diff'), `${min} ${start} ${max}`);
+  } catch (e) { return res.status(500).json({ ok: false }); }
+  res.json({ ok: true, min, start, max });
 });
 
 app.post('/api/reset', (req, res) => {
