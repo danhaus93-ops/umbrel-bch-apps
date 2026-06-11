@@ -30,6 +30,7 @@ services:
       - -printtoconsole
       - -server=1
       - -listen=1
+      - -port=8335
       - -rpcbind=0.0.0.0
       - -rpcallowip=0.0.0.0/0
       - -rpcuser=bchn
@@ -41,7 +42,7 @@ services:
       - -maxconnections=64
       - -zmqpubhashblock=tcp://0.0.0.0:28332   # for SoloStrike Cash (lowest-latency)
     ports:
-      - 8335:8333   # BCH P2P — forward this on your router for clearnet inbound peers
+      - 8335:8335   # BCH P2P — forward this on your router for clearnet inbound peers
 
   web:
     image: ghcr.io/danhaus93-ops/bchn-dashboard:latest
