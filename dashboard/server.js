@@ -85,6 +85,37 @@ function fulcrumHeight(stats) {
   return null;
 }
 
+
+// ---- Tor mode (off | onion | full) -----------------------------------------
+const NODE_CONF = '/nodedata/bitcoin.conf';
+const TOR_BLOCKS = {
+  off:   '# tor disabled\n',
+  onion: 'onion=tor:9050\nlistenonion=1\ntorcontrol=tor:9051\ntorpassword=solostrike_tor_ctrl_7f2c\nbind=0.0.0.0:8333\n',
+  full:  'proxy=tor:9050\nlistenonion=1\ntorcontrol=tor:9051\ntorpassword=solostrike_tor_ctrl_7f2c\nbind=0.0.0.0:8333\n',
+};
+function readTorMode() {
+  try {
+    const c = fs.readFileSync(NODE_CONF, 'utf8');
+    if (/^proxy=tor/m.test(c)) return 'full';
+    if (/^onion=tor/m.test(c)) return 'onion';
+    return 'off';
+  } catch (_) { return 'off'; }
+}
+function writeTorMode(mode) {
+  const body = '# Managed by the Bitcoin Cash Node dashboard (Tor settings)\n' + TOR_BLOCKS[mode];
+  fs.writeFileSync(NODE_CONF, body);
+}
+// seed default (onion add-on) on first run so Tor works out of the box
+try { if (!fs.existsSync(NODE_CONF)) writeTorMode('onion'); } catch (_) {}
+
+app.post('/api/tor', async (req, res) => {
+  const mode = ((req.body && req.body.mode) || '').toString();
+  if (!TOR_BLOCKS[mode]) return res.status(400).json({ ok: false, error: 'bad mode' });
+  try { writeTorMode(mode); } catch (e) { return res.status(500).json({ ok: false, error: 'conf write failed' }); }
+  try { await rpc('stop'); } catch (_) { /* node restarting */ }
+  res.json({ ok: true, mode, note: 'node restarting' });
+});
+
 app.get('/api/status', async (_req, res) => {
   const out = {
     ready: false,
@@ -118,6 +149,9 @@ app.get('/api/status', async (_req, res) => {
     out.node.online = true;
     out.node.version = netinfo.version;
     out.node.subversion = netinfo.subversion;
+    out.node.torMode = readTorMode();
+    out.node.onion = (netinfo.localaddresses || [])
+      .map(a => a.address).find(a => /\.onion$/.test(a || '')) || null;
     out.chain = {
       chain: chain.chain,
       blocks: chain.blocks,
