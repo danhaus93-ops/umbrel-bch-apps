@@ -28,7 +28,7 @@ services:
         peering  = false
         announce = false
         stats = 0.0.0.0:8081
-        fast-sync          = 1024
+        db_mem             = 1024
         db_max_open_files  = 200
         bitcoind_timeout   = 600
         bitcoind_clients   = 1
