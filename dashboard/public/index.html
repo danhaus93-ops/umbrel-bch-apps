@@ -301,6 +301,20 @@
 </div>
 
 <script>
+function copyText(txt){
+  if(navigator.clipboard&&window.isSecureContext){return navigator.clipboard.writeText(txt);}
+  return new Promise(function(res,rej){
+    var ta=document.createElement("textarea");
+    ta.value=txt; ta.setAttribute("readonly","");
+    ta.style.position="fixed"; ta.style.left="-9999px"; ta.style.top="0"; ta.style.opacity="0";
+    document.body.appendChild(ta);
+    ta.focus(); ta.select(); ta.setSelectionRange(0, txt.length);
+    var ok=false; try{ok=document.execCommand("copy");}catch(e){}
+    document.body.removeChild(ta);
+    ok?res():rej(new Error("copy failed"));
+  });
+}
+
 const C = 2 * Math.PI * 86;
 const $ = (id) => document.getElementById(id);
 
@@ -443,7 +457,7 @@ document.addEventListener('click',(e)=>{
   const copyBtn = e.target.closest('.copy');
   if(copyBtn){
     const txt = $(copyBtn.dataset.copy).textContent;
-    navigator.clipboard?.writeText(txt).then(()=>{
+    copyText(txt).then(()=>{
       const old = copyBtn.textContent; copyBtn.textContent='Copied'; copyBtn.classList.add('done');
       setTimeout(()=>{ copyBtn.textContent=old; copyBtn.classList.remove('done'); },1400);
     });
@@ -465,7 +479,7 @@ setInterval(tick, 5000);
   });}
   document.addEventListener('click',function(e){
     var b=e.target.closest('[data-copy="rpcPass"]');
-    if(b&&p&&p.dataset.real){navigator.clipboard&&navigator.clipboard.writeText(p.dataset.real);
+    if(b&&p&&p.dataset.real){copyText(p.dataset.real).catch(function(){});
       var o=b.textContent;b.textContent='Copied';setTimeout(function(){b.textContent=o;},1200);
       e.stopImmediatePropagation();}
   },true);
