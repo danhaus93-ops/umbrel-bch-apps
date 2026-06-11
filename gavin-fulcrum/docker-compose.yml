@@ -9,7 +9,7 @@ services:
     image: alpine:3.20
     restart: "no"
     environment:
-      RPC_PASS: ${APP_GAVIN_BITCOIN_CASH_NODE_RPC_PASS:-bchn_local_rpc_pw_2f9c}
+      RPC_PASS: bchn_local_rpc_pw_2f9c
     volumes:
       - ${APP_DATA_DIR}/data/fulcrum:/data
     command:
