@@ -79,7 +79,7 @@
   .copy:active{transform:scale(.96)}
 
   .workers{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface)}
-  .workers .wh,.workers .wr{display:grid;grid-template-columns:1.5fr 1fr 1fr .9fr 30px;gap:8px;padding:11px 15px;align-items:center}
+  .workers .wh,.workers .wr{display:grid;grid-template-columns:1.5fr 1fr 1fr .9fr 62px;gap:8px;padding:11px 15px;align-items:center}
   .wreset{border:1px solid var(--line2);background:none;color:var(--dim);font-family:var(--fm);font-size:12px;width:26px;height:24px;border-radius:var(--r);cursor:pointer}
   .wreset:hover{color:var(--red);border-color:var(--red)}
   .workers .wh{background:var(--raised);font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
@@ -95,8 +95,9 @@
   @media(max-width:520px){
     .gauge{width:202px;height:202px}.gauge .best{font-size:35px}
     .row .rk{width:78px}
-    .workers .wh,.workers .wr{grid-template-columns:1.4fr 1fr .9fr}
-    .workers .bd-col{display:none}
+    .workers .wh,.workers .wr{grid-template-columns:1.2fr .9fr .9fr .7fr 50px;gap:5px;padding:9px 8px;font-size:11px}
+    .workers .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .wreset{width:22px;height:21px;font-size:11px}
   }
 </style>
 </head>
@@ -178,9 +179,20 @@
     <div class="row"><div class="rk">Password</div><div class="rv">x</div><button class="copy" data-c="pass">Copy</button></div>
   </div>
 
+  <div class="sec">Pool difficulty</div>
+  <div class="addr">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <label style="flex:1;min-width:90px;font-family:var(--fm);font-size:11px;color:var(--dim)">MIN<input id="diffMin" type="number" min="1" style="width:100%;margin-top:5px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:14px;padding:9px 10px"/></label>
+      <label style="flex:1;min-width:90px;font-family:var(--fm);font-size:11px;color:var(--dim)">START<input id="diffStart" type="number" min="1" style="width:100%;margin-top:5px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:14px;padding:9px 10px"/></label>
+      <label style="flex:1;min-width:90px;font-family:var(--fm);font-size:11px;color:var(--dim)">MAX (0 = none)<input id="diffMax" type="number" min="0" style="width:100%;margin-top:5px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:14px;padding:9px 10px"/></label>
+      <button class="save" id="diffSave" style="height:38px">Save</button>
+    </div>
+    <div class="hint" style="margin-top:9px">NiceHash needs START around 500000. Saving restarts the pool (~5s); miners reconnect automatically.</div>
+  </div>
+
   <div class="sec">Workers</div>
   <div class="workers" id="workersTable">
-    <div class="wh"><div>Worker</div><div class="wcol-r">Hashrate</div><div class="wcol-r bd-col">Best</div><div class="wcol-r">Last</div><div></div></div>
+    <div class="wh"><div>Worker</div><div class="wcol-r">Hashrate</div><div class="wcol-r bd-col">Best</div><div class="wcol-r ls-h">Last</div><div></div></div>
     <div class="empty" id="workersEmpty">No miners connected yet — point one at the stratum URL above.</div>
   </div>
 
@@ -200,7 +212,7 @@
 
   <footer>
     <span class="badge">solo</span><span class="badge">zero-fee</span><span class="badge">your node</span><br/>
-    SoloStrike Cash <span id="ver">v1.2.2</span> · powered by asicseer-pool<br/><span style="font-size:10px;color:var(--dim)">donations never expected, always fuel: <span style="color:var(--muted)">bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk</span></span>
+    SoloStrike Cash <span id="ver">v1.3.1</span> · powered by asicseer-pool<br/><span style="font-size:10px;color:var(--dim)">donations never expected, always fuel: <span style="color:var(--muted)">bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk</span></span>
   </footer>
 </div>
 
@@ -232,8 +244,10 @@ function render(d){
   if(uh)uh.innerHTML=d.address?`<span style="color:var(--mint)">${d.address}</span>`:'your BCH address — <span style="color:var(--muted)">set it above</span>';
   const frac=strikeFrac(d.bestShare,d.netDiff);
   document.getElementById('arc').style.strokeDashoffset=628*(1-frac);
-  document.getElementById('strikePct').textContent=(frac*100).toFixed(frac>=0.999?0:4)+'% there';
+  const lin=(d.netDiff>0&&d.bestShare>0)?(d.bestShare/d.netDiff*100):0;
+  document.getElementById('strikePct').textContent=(lin>=1?lin.toFixed(1):lin>=0.01?lin.toFixed(3):lin>0?lin.toExponential(1):'0')+'% of a block';
   document.getElementById('bestShare').textContent=fmtDiff(d.bestShare);
+  loadDiff(d);
   document.getElementById('netDiff').textContent=fmtDiff(d.netDiff);
   document.getElementById('netDiff2').textContent=fmtDiff(d.netDiff);
   document.getElementById('hashrate').firstChild.textContent=d.hashrate.val;
@@ -254,7 +268,7 @@ function render(d){
     emp.style.display='none';
     d.workerList.forEach(w=>{
       const r=document.createElement('div');r.className='wr';
-      r.innerHTML=`<div class="name">${w.name}</div><div class="hr wcol-r">${w.hashrate}</div><div class="bd wcol-r bd-col">${fmtDiff(w.best)}</div><div class="ls">${ago(w.last)}</div><button class="wreset" data-w="${w.name}" title="reset this miner's best">⟲</button>`;
+      r.innerHTML=`<div class="name">${w.name}</div><div class="hr wcol-r">${w.hashrate}</div><div class="bd wcol-r bd-col">${fmtDiff(w.best)}</div><div class="ls">${ago(w.last)}</div><button class="wreset" data-w="${w.name}" title="reset this miner's best">⟲</button><button class="wreset whide" data-h="${w.name}" title="remove from list">✕</button>`;
       t.appendChild(r);
     });
   }else{emp.style.display='block';}
@@ -318,14 +332,38 @@ async function doReset(scope,btn){
     btn.textContent='Resetting…';setTimeout(tick,8000);}catch{}
 }
 document.getElementById('resetAll').addEventListener('click',e=>doReset('all',e.target));
-document.getElementById('workersTable').addEventListener('click',e=>{
+let diffLoaded=false;
+function loadDiff(d){
+  if(diffLoaded||!d.diff)return;
+  document.getElementById('diffMin').value=d.diff.min;
+  document.getElementById('diffStart').value=d.diff.start;
+  document.getElementById('diffMax').value=d.diff.max;
+  diffLoaded=true;
+}
+document.getElementById('diffSave').addEventListener('click',async e=>{
+  const btn=e.target,body={min:+document.getElementById('diffMin').value||1,
+    start:+document.getElementById('diffStart').value||42,max:+document.getElementById('diffMax').value||0};
+  btn.textContent='Saving…';
+  try{await fetch('/api/diff',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    btn.textContent='Saved ✓';}catch(_){btn.textContent='Failed';}
+  setTimeout(()=>btn.textContent='Save',1800);
+});
+document.getElementById('workersTable').addEventListener('click',async e=>{
+  const h=e.target.closest('.whide');
+  if(h){
+    if(h.dataset.arm!=='1'){h.dataset.arm='1';h.textContent='?';h.style.color='var(--red)';
+      setTimeout(()=>{h.dataset.arm='';h.textContent='✕';h.style.color='';},2500);return;}
+    h.dataset.arm='';
+    try{await fetch('/api/worker/hide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:h.dataset.h})});setTimeout(tick,600);}catch(_){}
+    return;
+  }
   const b=e.target.closest('.wreset');if(b)doReset(b.dataset.w,b);
 });
 document.getElementById('addrSave').addEventListener('click',saveAddr);
 document.getElementById('addrInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveAddr();});
 const MOCK={poolUp:true,nodeUp:true,bestShare:4.1e6,netDiff:5.75e11,
   hashrate:{val:'92.4',unit:'TH/s'},workers:3,users:1,blocks:0,accepted:18420,rejected:12,
-  stratum:'stratum+tcp://umbrel.local:3335',height:954112,version:'v1.2.2',address:'bitcoincash:qq8e2x9f0n3l7k2m5p4r6t8w1y3u5i7o9a2s4d6f8g',blockList:[],
+  stratum:'stratum+tcp://umbrel.local:3335',height:954112,version:'v1.3.1',address:'bitcoincash:qq8e2x9f0n3l7k2m5p4r6t8w1y3u5i7o9a2s4d6f8g',blockList:[],diff:{min:1,start:42,max:0},
   workerList:[
     {name:'S21XP-board1',hashrate:'90.1 TH/s',best:4.1e6,last:Math.floor(Date.now()/1000)-4},
     {name:'NerdQAxe++',hashrate:'1.9 TH/s',best:88200,last:Math.floor(Date.now()/1000)-11},
