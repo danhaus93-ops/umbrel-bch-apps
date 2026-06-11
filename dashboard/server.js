@@ -1,10 +1,12 @@
 'use strict';
 
 const express = require('express');
+const fs = require('fs');
 const net = require('net');
 const path = require('path');
 
 const app = express();
+app.use(express.json());
 const PORT = Number(process.env.PORT || 3000);
 
 // --- Bitcoin Cash Node RPC (internal network only) ---
