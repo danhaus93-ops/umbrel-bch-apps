@@ -365,7 +365,7 @@
 
   <footer>
     <span id="fulStatus"><span class="dot no"></span>Electrum server</span>
-    <span>Refreshes every 5s · <a href="https://bitcoincashnode.org" target="_blank" rel="noopener">BCHN</a> + <a href="https://github.com/cculianu/Fulcrum" target="_blank" rel="noopener">Fulcrum</a></span>
+    <span>Refreshes every 5s · <a href="https://bitcoincashnode.org" target="_blank" rel="noopener">BCHN</a> + <a href="https://github.com/cculianu/Fulcrum" target="_blank" rel="noopener">Fulcrum</a> · <span id="dashVer">—</span></span>
   </footer>
 </div>
 
@@ -463,6 +463,7 @@ async function tick(){
   }
   if(d.nethashps){$('tNetHash').textContent=fmtHs(d.nethashps);}
   if(d.uptime){$('tUptime').textContent=fmtAge(d.uptime);}
+  if(d.dash_version){const dv=$('dashVer'); if(dv) dv.textContent=d.dash_version;}
 
   // ZMQ hashblock hook (for SoloStrike Cash)
   const zmqEl=$('zmqNote');
