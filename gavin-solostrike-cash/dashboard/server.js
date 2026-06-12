@@ -99,13 +99,19 @@ function readWorkers() {
     }
   }
   out.sort((a, b) => b.best - a.best);
+  // Inactive miners fall off the roster after ~1h of no shares. asicseer-pool keeps
+  // a per-user file around indefinitely, so without this a powered-off ASIC lingers
+  // forever. Override with WORKER_TTL_SEC if you want a different window.
+  const WORKER_TTL = Number(process.env.WORKER_TTL_SEC || 3600);
+  const nowS = Math.floor(Date.now() / 1000);
+  let live = out.filter(w => (w.last || 0) > 0 && (nowS - w.last) <= WORKER_TTL);
   // hidden workers: stay hidden unless they show fresh activity
   try {
     const hf = path.join(POOL_DIR, 'config', 'hidden.json');
     let hidden = {};
     try { hidden = JSON.parse(fs.readFileSync(hf, 'utf8')); } catch (_) {}
     let changed = false;
-    const vis = out.filter(w => {
+    const vis = live.filter(w => {
       const t = hidden[w.name];
       if (!t) return true;
       if ((w.last || 0) > t) { delete hidden[w.name]; changed = true; return true; }
@@ -113,8 +119,7 @@ function readWorkers() {
     });
     if (changed) { try { fs.writeFileSync(hf, JSON.stringify(hidden)); } catch (_) {} }
     return vis;
-  } catch (_) { return out; }
-  return out;
+  } catch (_) { return live; }
 }
 
 // count solved blocks if asicseer-pool logged any (logdir/pool/blocks.log)
