@@ -5,12 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0A1410" />
 <title>Bitcoin Cash Node</title>
-<link rel="manifest" href="manifest.webmanifest" />
-<link rel="apple-touch-icon" href="apple-touch-icon.png" />
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="BCH Node" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -36,10 +30,12 @@
 
   header{display:flex;align-items:center;gap:14px;padding:6px 2px 22px}
   .mark{
-    width:38px;height:38px;border-radius:9px;flex:none;overflow:hidden;
-    box-shadow:0 0 0 1px rgba(10,193,142,.22),0 8px 22px -10px rgba(10,193,142,.55);
+    width:38px;height:38px;border-radius:9px;flex:none;
+    background:linear-gradient(150deg,var(--green),#0a8f6a);
+    display:grid;place-items:center;color:#06120d;font-weight:700;
+    font-family:var(--mono);font-size:20px;
+    box-shadow:0 0 0 1px rgba(10,193,142,.35),0 8px 22px -10px rgba(10,193,142,.7);
   }
-  .mark svg{display:block;width:38px;height:38px}
   header h1{font-size:17px;font-weight:600;margin:0;letter-spacing:.2px}
   header .sub{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:1px}
   header .right{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;min-width:0}
@@ -154,26 +150,12 @@
   .dot.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
   .dot.no{background:#5a3a3a}
 
-  /* Grid/flex children default to min-width:auto and refuse to shrink below their
-     content, which lets one long row blow a card past the viewport (then body's
-     overflow-x:hidden clips the right edge). Force them to be allowed to shrink. */
-  .grid>*,.connect>*,.modes>*{min-width:0}
-  .conn,.card,.mode-card{min-width:0;overflow:hidden}
-  .conn p,.note{overflow-wrap:anywhere}
-
   @media (max-width:760px){
     .hero{grid-template-columns:1fr;gap:18px;text-align:center;padding:26px 18px}
     .hero .blurb{margin:0 auto}.hero .ticks{justify-content:center}
     .grid{grid-template-columns:repeat(2,1fr)}
     .connect,.modes{grid-template-columns:1fr}
     .hero .headline{font-size:23px}
-    /* Stack each connect row: value on its own full-width line, copy buttons below.
-       Guarantees the Copy/Show chips can never be pushed off the right edge. */
-    .field{flex-wrap:wrap}
-    .field label{width:auto}
-    .field .val{flex:1 1 100%;order:2}
-    .field .copy{order:3}
-    .field label{order:1}
   }
   @media (prefers-reduced-motion:reduce){
     .beacon .arc{transition:none}.beacon .core{animation:none!important}
@@ -186,22 +168,7 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="mark">
-      <svg viewBox="0 0 1024 1024" aria-hidden="true">
-        <defs>
-          <radialGradient id="nmbg" cx="0.5" cy="0.4" r="0.78">
-            <stop offset="0" stop-color="#12361F"/><stop offset="0.55" stop-color="#0A2017"/><stop offset="1" stop-color="#06110C"/>
-          </radialGradient>
-          <linearGradient id="nmmk" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#35F0BD"/><stop offset="0.5" stop-color="#10C795"/><stop offset="1" stop-color="#0A8E6A"/>
-          </linearGradient>
-        </defs>
-        <rect width="1024" height="1024" rx="232" fill="url(#nmbg)"/>
-        <g transform="translate(256.74,720.47) scale(0.29803,-0.29803)">
-          <path d="M945 1409H972Q1230 1409 1362.5 1319.5Q1495 1230 1495 1055Q1495 935 1428.5 852.5Q1362 770 1226 741Q1397 721 1486.5 633.5Q1576 546 1576 402Q1576 210 1432.0 105.0Q1288 0 1032 0H948V-240H750V0H626V-240H419V0H137V207H327V1216H137V1409H416V1639H619V1409H743V1639H945ZM1198 1015Q1198 1110 1137.5 1150.0Q1077 1190 958 1190H622V841H960Q1085 841 1141.5 884.5Q1198 928 1198 1015ZM1280 425Q1280 623 996 623H622V219H1007Q1149 219 1214.5 270.5Q1280 322 1280 425Z" fill="url(#nmmk)"/>
-        </g>
-      </svg>
-    </div>
+    <div class="mark">฿</div>
     <div>
       <h1>Bitcoin Cash Node</h1>
       <div class="sub" id="versionLine">connecting…</div>
@@ -237,23 +204,17 @@
     </div>
   </div>
 
-  <div id="warnBanner" style="display:none;margin:18px 2px 0;border:1px solid rgba(224,147,78,.4);background:rgba(224,147,78,.07);color:var(--warn);border-radius:12px;padding:12px 14px;font-family:var(--mono);font-size:12.5px"></div>
-
   <div class="section-label">Node telemetry</div>
   <div class="grid">
     <div class="card"><div class="k">Blocks</div><div class="v" id="cBlocks">—</div></div>
     <div class="card"><div class="k">Headers</div><div class="v" id="cHeaders">—</div></div>
     <div class="card"><div class="k">Connections</div><div class="v" id="cConn">—</div></div>
     <div class="card"><div class="k">Mempool</div><div class="v" id="cMempool">—</div></div>
-    <div class="card"><div class="k">Mempool size</div><div class="v" id="cMemMB">—</div></div>
-    <div class="card"><div class="k">Transactions</div><div class="v" id="cTx">—</div></div>
-    <div class="card"><div class="k">Tx / sec</div><div class="v" id="cTxRate">—</div></div>
     <div class="card"><div class="k">Received</div><div class="v" id="cRecv">—</div></div>
     <div class="card"><div class="k">Sent</div><div class="v" id="cSent">—</div></div>
     <div class="card"><div class="k">Difficulty</div><div class="v" id="cDiff">—</div></div>
     <div class="card"><div class="k">Net hashrate</div><div class="v" id="tNetHash">—</div></div>
     <div class="card"><div class="k">Node uptime</div><div class="v" id="tUptime">—</div></div>
-    <div class="card"><div class="k">Banned peers</div><div class="v" id="cBanned">—</div></div>
     <div class="card"><div class="k" id="cSlotK">Electrum index</div><div class="v" id="cSlot">—</div></div>
   </div>
 
@@ -295,11 +256,13 @@
         <button class="copy" id="passToggle">Show</button>
         <button class="copy" data-copy="rpcPass">Copy</button>
       </div>
+      <div class="field" id="extRow" style="display:none">
+        <label>Public</label><div class="val" id="extAddr">&mdash;</div>
+      </div>
       <div class="field" id="torRow" style="display:none">
         <label>Tor</label><div class="val" id="torAddr" style="word-break:break-all;white-space:normal">&mdash;</div>
         <button class="copy" data-copy="torAddr">Copy</button>
       </div>
-      <div class="note" id="zmqNote" style="display:none">&mdash;</div>
       <div class="note">The RPC port is not published to your network by default. Expose it deliberately in the app's compose file if an external app needs it, and change the default credentials first.</div>
     </div>
     <div class="conn">
@@ -365,14 +328,13 @@
 
   <footer>
     <span id="fulStatus"><span class="dot no"></span>Electrum server</span>
-    <span>Refreshes every 5s · <a href="https://bitcoincashnode.org" target="_blank" rel="noopener">BCHN</a> + <a href="https://github.com/cculianu/Fulcrum" target="_blank" rel="noopener">Fulcrum</a> · <span id="dashVer">—</span></span>
+    <span>Refreshes every 5s · <a href="https://bitcoincashnode.org" target="_blank" rel="noopener">BCHN</a> + <a href="https://github.com/cculianu/Fulcrum" target="_blank" rel="noopener">Fulcrum</a></span>
   </footer>
 </div>
 
 <script>
 function fmtAge(s){if(s==null)return '';if(s<90)return s+'s';if(s<5400)return Math.round(s/60)+'m';if(s<172800)return Math.round(s/3600)+'h';return Math.round(s/86400)+'d';}
 function fmtHs(h){const u=['H/s','KH/s','MH/s','GH/s','TH/s','PH/s','EH/s'];let i=0;while(h>=1000&&i<u.length-1){h/=1000;i++;}return h.toFixed(2)+' '+u[i];}
-function fmtRate(r){if(r==null)return '—';if(r>=1)return r.toFixed(2)+' /s';if(r>0)return (r*60).toFixed(1)+' /min';return '0 /s';}
 
 function copyText(txt){
   if(navigator.clipboard&&window.isSecureContext){return navigator.clipboard.writeText(txt);}
@@ -457,34 +419,16 @@ async function tick(){
 
   $('rpcEp').textContent = d.connect.rpc;
   $('rpcUser').textContent = d.connect.rpc_user;
+  if(d.node&&d.node.externalip){
+    document.getElementById('extRow').style.display='';
+    $('extAddr').textContent=d.node.externalip+':8335'+(d.node.ipPending?' \u00b7 updated \u2014 applies on next node restart':'');
+  }
   if(d.node&&d.node.onion){
     document.getElementById('torRow').style.display='';
     $('torAddr').textContent=d.node.onion;
   }
   if(d.nethashps){$('tNetHash').textContent=fmtHs(d.nethashps);}
   if(d.uptime){$('tUptime').textContent=fmtAge(d.uptime);}
-  if(d.dash_version){const dv=$('dashVer'); if(dv) dv.textContent=d.dash_version;}
-
-  // ZMQ hashblock hook (for SoloStrike Cash)
-  const zmqEl=$('zmqNote');
-  if(zmqEl){
-    const hb=(d.zmq||[]).find(z=>/hashblock/i.test(z.type||''));
-    if(hb){
-      const port=(hb.address||'').split(':').pop();
-      zmqEl.innerHTML='<span class="dot ok"></span>ZMQ hashblock live on :'+port+' — SoloStrike Cash can subscribe.';
-      zmqEl.style.display='';
-    }else{ zmqEl.style.display='none'; }
-  }
-
-  // Banned peers
-  if(d.banned_count!=null){ $('cBanned').textContent=fmtInt(d.banned_count); }
-
-  // Node warnings banner
-  const wb=$('warnBanner');
-  if(wb){
-    if(d.warnings){ wb.textContent='⚠ '+d.warnings; wb.style.display=''; }
-    else{ wb.style.display='none'; }
-  }
   if(d.peers_list){
     const inb=d.peers_list.filter(p=>p.inbound).length;
     $('peersSummary').textContent=d.peers_list.length+' connected \u00b7 '+inb+' inbound \u00b7 '+
@@ -574,10 +518,6 @@ async function tick(){
   $('cConn').innerHTML = fmtInt(d.network.connections) +
     ' <small>'+fmtInt(d.network.connections_in)+' in / '+fmtInt(d.network.connections_out)+' out</small>';
   $('cMempool').innerHTML = fmtInt(d.mempool.size) + ' <small>txs</small>';
-  $('cMemMB').innerHTML = (d.mempool.usage!=null) ? fmtBytes(d.mempool.usage)
-    : (d.mempool.bytes!=null ? fmtBytes(d.mempool.bytes) : '—');
-  $('cTx').textContent = (d.txstats&&d.txstats.count!=null) ? fmtInt(d.txstats.count) : '—';
-  $('cTxRate').innerHTML = (d.txstats&&d.txstats.rate!=null) ? fmtRate(d.txstats.rate) : '—';
   $('cRecv').textContent = d.nettotals ? fmtBytes(d.nettotals.totalbytesrecv) : '—';
   $('cSent').textContent = d.nettotals ? fmtBytes(d.nettotals.totalbytessent) : '—';
   $('cDiff').textContent = fmtDiff(c.difficulty);
