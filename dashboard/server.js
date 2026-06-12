@@ -24,6 +24,7 @@ const FULCRUM_SSL_PORT = process.env.FULCRUM_SSL_PORT || '50022';
 
 // Host people type into their wallet. Umbrel injects DEVICE_DOMAIN_NAME.
 const PUBLIC_HOST = process.env.PUBLIC_HOST || 'umbrel.local';
+const APP_VERSION = process.env.APP_VERSION || 'dev';
 
 const RPC_URL = `http://${RPC_HOST}:${RPC_PORT}/`;
 const RPC_AUTH = 'Basic ' + Buffer.from(`${RPC_USER}:${RPC_PASS}`).toString('base64');
@@ -215,6 +216,7 @@ app.get('/api/status', async (_req, res) => {
       rpc_pass: RPC_PASS,
     },
     stage: 'starting',
+    dash_version: APP_VERSION,
   };
 
   try {
@@ -226,6 +228,7 @@ app.get('/api/status', async (_req, res) => {
     out.node.online = true;
     out.node.version = netinfo.version;
     out.node.subversion = netinfo.subversion;
+    out.node.protocol = netinfo.protocolversion ?? null;
     out.node.torMode = readTorMode();
     out.node.externalip = readExternalIp();
     out.node.ipPending = ipChangedAt > 0 && (Date.now() - ipChangedAt) < 6 * 3600 * 1000;
@@ -240,18 +243,27 @@ app.get('/api/status', async (_req, res) => {
       size_on_disk: chain.size_on_disk,
       bestblockhash: chain.bestblockhash,
       difficulty: chain.difficulty,
+      mediantime: chain.mediantime ?? null,
       pruned: Boolean(chain.pruned),
       pruneheight: chain.pruneheight ?? null,
       prune_target_size: chain.prune_target_size ?? null,
       automatic_pruning: chain.automatic_pruning ?? null,
     };
+    out.warnings = (chain.warnings || netinfo.warnings || '').toString().trim() || null;
     out.mode = chain.pruned ? 'pruned' : 'full';
     out.network = {
       connections: netinfo.connections,
       connections_in: netinfo.connections_in,
       connections_out: netinfo.connections_out,
+      networkactive: netinfo.networkactive,
+      relayfee: netinfo.relayfee ?? null,
     };
-    out.mempool = { size: mempool.size, bytes: mempool.bytes };
+    out.mempool = {
+      size: mempool.size,
+      bytes: mempool.bytes,
+      usage: mempool.usage ?? null,
+      maxmempool: mempool.maxmempool ?? null,
+    };
     out.ready = true;
     out.stage = chain.initialblockdownload ? 'syncing' : 'synced';
 
@@ -259,11 +271,18 @@ app.get('/api/status', async (_req, res) => {
       out.nettotals = await rpc('getnettotals');
     } catch { /* non-fatal */ }
     try {
-      const [peers, up, nh] = await Promise.all([
+      const [peers, up, nh, cts, zmq, banned] = await Promise.all([
         rpc('getpeerinfo'), rpc('uptime'), rpc('getnetworkhashps'),
+        // Cheap. Deliberately NOT calling gettxoutsetinfo/verifychain (full chainstate scans).
+        rpc('getchaintxstats').catch(() => null),
+        rpc('getzmqnotifications').catch(() => null),
+        rpc('listbanned').catch(() => null),
       ]);
       out.uptime = up;
       out.nethashps = nh;
+      out.txstats = cts ? { count: cts.txcount ?? null, rate: cts.txrate ?? null, window: cts.window_block_count ?? null } : null;
+      out.zmq = Array.isArray(zmq) ? zmq.map(z => ({ type: z.type, address: z.address })) : null;
+      out.banned_count = Array.isArray(banned) ? banned.length : null;
       out.peers_list = (peers || []).slice(0, 40).map(p => ({
         addr: p.addr,
         inbound: Boolean(p.inbound),
