@@ -2,7 +2,7 @@ manifestVersion: 1
 id: gavin-fulcrum
 category: networking
 name: Fulcrum (BCH)
-version: "1.3.0"
+version: "1.3.1"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-fulcrum/icon.svg
 tagline: Electrum server for your Bitcoin Cash node — connect your wallet
 description: >-
@@ -15,7 +15,7 @@ description: >-
   uses extra disk; once done, point your wallet at the endpoints shown in the app.
 
   Donations are never expected — but if SoloStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
-releaseNotes: Shows how many wallets are connected to your server, plus uptime, once the index is serving.
+releaseNotes: Connection counter now reports real Electrum client sessions from the server listeners (no longer mistakes the node RPC pool for a connected wallet).
 developer: Gavin
 website: https://github.com/cculianu/Fulcrum
 dependencies:
