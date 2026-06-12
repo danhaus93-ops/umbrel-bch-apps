@@ -36,6 +36,7 @@ services:
       - -rpcuser=bchn
       - -rpcpassword=bchn_local_rpc_pw_2f9c
       - -rpcworkqueue=512
+      - -rpcthreads=64          # default is 4 — plenty of headroom, idle threads are nearly free
       - -dbcache=512
       - -maxmempool=300
       - -txindex=1
