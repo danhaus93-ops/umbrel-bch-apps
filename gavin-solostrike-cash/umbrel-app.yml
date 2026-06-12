@@ -2,7 +2,7 @@ manifestVersion: 1
 id: gavin-solostrike-cash
 category: bitcoin
 name: SoloStrike Cash
-version: "1.4.5"
+version: "1.4.6"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-solostrike-cash/icon.svg
 description: >-
@@ -42,6 +42,6 @@ support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
 port: 3000
 gallery: []
 
-releaseNotes: Blocks Found counter now matches the found-blocks table, and "best at hit" shows the real block-solving share diff instead of the rolling best. Also adds per-worker session uptime.
+releaseNotes: Worker session uptime now persists reliably (was resetting to zero) and is easier to read under each worker name.
 submitter: Gavin
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
