@@ -24,6 +24,7 @@ const FULCRUM_SSL_PORT = process.env.FULCRUM_SSL_PORT || '50022';
 
 // Host people type into their wallet. Umbrel injects DEVICE_DOMAIN_NAME.
 const PUBLIC_HOST = process.env.PUBLIC_HOST || 'umbrel.local';
+const APP_VERSION = process.env.APP_VERSION || 'dev';
 
 const RPC_URL = `http://${RPC_HOST}:${RPC_PORT}/`;
 const RPC_AUTH = 'Basic ' + Buffer.from(`${RPC_USER}:${RPC_PASS}`).toString('base64');
@@ -176,6 +177,7 @@ app.get('/api/status', async (_req, res) => {
       rpc_pass: RPC_PASS,
     },
     stage: 'starting',
+    dash_version: APP_VERSION,
   };
 
   try {
@@ -281,7 +283,14 @@ app.get('/api/status', async (_req, res) => {
 });
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
+app.get('/api/version', (_req, res) => res.json({ version: APP_VERSION }));
 
+// index.html must never be cached, or app updates won't show until the browser
+// cache expires. Static assets (icons, fonts) can still cache for an hour.
+app.get(['/', '/index.html'], (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 
 app.listen(PORT, '0.0.0.0', () => {
