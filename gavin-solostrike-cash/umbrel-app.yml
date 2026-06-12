@@ -2,7 +2,7 @@ manifestVersion: 1
 id: gavin-solostrike-cash
 category: bitcoin
 name: SoloStrike Cash
-version: "1.4.0"
+version: "1.4.1"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-solostrike-cash/icon.svg
 description: >-
@@ -42,6 +42,6 @@ support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
 port: 3000
 gallery: []
 
-releaseNotes: Round effort percentage with progress bar, honest time-to-block estimate, per-worker hashrate trend sparklines, and idle-worker alerts (red dot when a rig goes quiet 5+ minutes).
+releaseNotes: Inactive miners now fall off the roster after about an hour of no shares, so a powered-off rig no longer lingers on the dashboard forever.
 submitter: Gavin
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
