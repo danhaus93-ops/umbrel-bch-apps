@@ -2,7 +2,7 @@ manifestVersion: 1
 id: gavin-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.1.1"
+version: "29.1.5"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
@@ -18,7 +18,7 @@ description: >-
   First sync downloads the full chain, so use an SSD (NVMe strongly recommended).
 
   Donations are never expected — but if SoloStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
-releaseNotes: Automatic public IP management — your node learns its WAN address from its own peers (majority vote, no external services), keeps the config in sync when your ISP rotates it, and preserves it across Tor toggle changes. Advertised address shown in the connect card.
+releaseNotes: Restored the full dashboard (real header mark, extra telemetry, home-screen icons, mobile layout fix, footer build version) merged with automatic public-IP detection.
   Split out from Fulcrum — Fulcrum is now its own app. ZMQ enabled for
   SoloStrike Cash. Update (don't reinstall) to keep your synced chain.
 developer: Gavin
