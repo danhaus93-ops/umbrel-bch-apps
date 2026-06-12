@@ -150,12 +150,26 @@
   .dot.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
   .dot.no{background:#5a3a3a}
 
+  /* Grid/flex children default to min-width:auto and refuse to shrink below their
+     content, which lets one long row blow a card past the viewport (then body's
+     overflow-x:hidden clips the right edge). Force them to be allowed to shrink. */
+  .grid>*,.connect>*,.modes>*{min-width:0}
+  .conn,.card,.mode-card{min-width:0;overflow:hidden}
+  .conn p,.note{overflow-wrap:anywhere}
+
   @media (max-width:760px){
     .hero{grid-template-columns:1fr;gap:18px;text-align:center;padding:26px 18px}
     .hero .blurb{margin:0 auto}.hero .ticks{justify-content:center}
     .grid{grid-template-columns:repeat(2,1fr)}
     .connect,.modes{grid-template-columns:1fr}
     .hero .headline{font-size:23px}
+    /* Stack each connect row: value on its own full-width line, copy buttons below.
+       Guarantees the Copy/Show chips can never be pushed off the right edge. */
+    .field{flex-wrap:wrap}
+    .field label{width:auto}
+    .field .val{flex:1 1 100%;order:2}
+    .field .copy{order:3}
+    .field label{order:1}
   }
   @media (prefers-reduced-motion:reduce){
     .beacon .arc{transition:none}.beacon .core{animation:none!important}
@@ -204,17 +218,23 @@
     </div>
   </div>
 
+  <div id="warnBanner" style="display:none;margin:18px 2px 0;border:1px solid rgba(224,147,78,.4);background:rgba(224,147,78,.07);color:var(--warn);border-radius:12px;padding:12px 14px;font-family:var(--mono);font-size:12.5px"></div>
+
   <div class="section-label">Node telemetry</div>
   <div class="grid">
     <div class="card"><div class="k">Blocks</div><div class="v" id="cBlocks">—</div></div>
     <div class="card"><div class="k">Headers</div><div class="v" id="cHeaders">—</div></div>
     <div class="card"><div class="k">Connections</div><div class="v" id="cConn">—</div></div>
     <div class="card"><div class="k">Mempool</div><div class="v" id="cMempool">—</div></div>
+    <div class="card"><div class="k">Mempool size</div><div class="v" id="cMemMB">—</div></div>
+    <div class="card"><div class="k">Transactions</div><div class="v" id="cTx">—</div></div>
+    <div class="card"><div class="k">Tx / sec</div><div class="v" id="cTxRate">—</div></div>
     <div class="card"><div class="k">Received</div><div class="v" id="cRecv">—</div></div>
     <div class="card"><div class="k">Sent</div><div class="v" id="cSent">—</div></div>
     <div class="card"><div class="k">Difficulty</div><div class="v" id="cDiff">—</div></div>
     <div class="card"><div class="k">Net hashrate</div><div class="v" id="tNetHash">—</div></div>
     <div class="card"><div class="k">Node uptime</div><div class="v" id="tUptime">—</div></div>
+    <div class="card"><div class="k">Banned peers</div><div class="v" id="cBanned">—</div></div>
     <div class="card"><div class="k" id="cSlotK">Electrum index</div><div class="v" id="cSlot">—</div></div>
   </div>
 
@@ -260,6 +280,7 @@
         <label>Tor</label><div class="val" id="torAddr" style="word-break:break-all;white-space:normal">&mdash;</div>
         <button class="copy" data-copy="torAddr">Copy</button>
       </div>
+      <div class="note" id="zmqNote" style="display:none">&mdash;</div>
       <div class="note">The RPC port is not published to your network by default. Expose it deliberately in the app's compose file if an external app needs it, and change the default credentials first.</div>
     </div>
     <div class="conn">
@@ -332,6 +353,7 @@
 <script>
 function fmtAge(s){if(s==null)return '';if(s<90)return s+'s';if(s<5400)return Math.round(s/60)+'m';if(s<172800)return Math.round(s/3600)+'h';return Math.round(s/86400)+'d';}
 function fmtHs(h){const u=['H/s','KH/s','MH/s','GH/s','TH/s','PH/s','EH/s'];let i=0;while(h>=1000&&i<u.length-1){h/=1000;i++;}return h.toFixed(2)+' '+u[i];}
+function fmtRate(r){if(r==null)return '—';if(r>=1)return r.toFixed(2)+' /s';if(r>0)return (r*60).toFixed(1)+' /min';return '0 /s';}
 
 function copyText(txt){
   if(navigator.clipboard&&window.isSecureContext){return navigator.clipboard.writeText(txt);}
@@ -422,6 +444,27 @@ async function tick(){
   }
   if(d.nethashps){$('tNetHash').textContent=fmtHs(d.nethashps);}
   if(d.uptime){$('tUptime').textContent=fmtAge(d.uptime);}
+
+  // ZMQ hashblock hook (for SoloStrike Cash)
+  const zmqEl=$('zmqNote');
+  if(zmqEl){
+    const hb=(d.zmq||[]).find(z=>/hashblock/i.test(z.type||''));
+    if(hb){
+      const port=(hb.address||'').split(':').pop();
+      zmqEl.innerHTML='<span class="dot ok"></span>ZMQ hashblock live on :'+port+' — SoloStrike Cash can subscribe.';
+      zmqEl.style.display='';
+    }else{ zmqEl.style.display='none'; }
+  }
+
+  // Banned peers
+  if(d.banned_count!=null){ $('cBanned').textContent=fmtInt(d.banned_count); }
+
+  // Node warnings banner
+  const wb=$('warnBanner');
+  if(wb){
+    if(d.warnings){ wb.textContent='⚠ '+d.warnings; wb.style.display=''; }
+    else{ wb.style.display='none'; }
+  }
   if(d.peers_list){
     const inb=d.peers_list.filter(p=>p.inbound).length;
     $('peersSummary').textContent=d.peers_list.length+' connected \u00b7 '+inb+' inbound \u00b7 '+
@@ -511,6 +554,10 @@ async function tick(){
   $('cConn').innerHTML = fmtInt(d.network.connections) +
     ' <small>'+fmtInt(d.network.connections_in)+' in / '+fmtInt(d.network.connections_out)+' out</small>';
   $('cMempool').innerHTML = fmtInt(d.mempool.size) + ' <small>txs</small>';
+  $('cMemMB').innerHTML = (d.mempool.usage!=null) ? fmtBytes(d.mempool.usage)
+    : (d.mempool.bytes!=null ? fmtBytes(d.mempool.bytes) : '—');
+  $('cTx').textContent = (d.txstats&&d.txstats.count!=null) ? fmtInt(d.txstats.count) : '—';
+  $('cTxRate').innerHTML = (d.txstats&&d.txstats.rate!=null) ? fmtRate(d.txstats.rate) : '—';
   $('cRecv').textContent = d.nettotals ? fmtBytes(d.nettotals.totalbytesrecv) : '—';
   $('cSent').textContent = d.nettotals ? fmtBytes(d.nettotals.totalbytessent) : '—';
   $('cDiff').textContent = fmtDiff(c.difficulty);
