@@ -148,6 +148,29 @@ function countBlocks() {
   } catch (_) { return 0; }
 }
 
+// Pull the real block-solving share diff out of the asicseer-pool log, e.g.
+//   "Solved block 954947 ..."  near  "... solve ... diff 1972695353385 !"
+// Returns 0 if no readable log / no match (caller falls back to the block's net diff).
+function solveDiffFromLog(height) {
+  const files = [
+    path.join(POOL_LOGDIR, 'pool.log'),
+    path.join(POOL_LOGDIR, 'pool', 'pool.log'),
+    path.join(POOL_DIR, 'pool.log'),
+  ];
+  for (const f of files) {
+    let lines;
+    try { lines = fs.readFileSync(f, 'utf8').split('\n'); } catch (_) { continue; }
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].indexOf('Solved block ' + height) === -1) continue;
+      for (let j = Math.max(0, i - 5); j <= Math.min(lines.length - 1, i + 3); j++) {
+        const m = lines[j].match(/diff\s+([0-9]+(?:\.[0-9]+)?)/i);
+        if (m) return Math.round(parseFloat(m[1]));
+      }
+    }
+  }
+  return 0;
+}
+
 // minimal JSON-RPC call to BCHN
 function rpc(method, params = []) {
   return new Promise((resolve, reject) => {
@@ -194,7 +217,7 @@ async function coinbasePaysUs(hash, mine) {
   for (const v of (tx.vout || [])) {
     const spk = v.scriptPubKey || {};
     const addrs = spk.addresses || (spk.address ? [spk.address] : []);
-    if (addrs.some(a => addrKey(a) === mine)) return { time: blk.time, height: blk.height };
+    if (addrs.some(a => addrKey(a) === mine)) return { time: blk.time, height: blk.height, netdiff: Number(blk.difficulty) || 0 };
   }
   return null;
 }
@@ -214,11 +237,26 @@ async function scanBlocks() {
       const hash = await rpc('getblockhash', [h]);
       const hit = await coinbasePaysUs(hash, mine);
       if (hit && !blockState.blocks.some(b => b.hash === hash)) {
-        blockState.blocks.push({ height: h, hash, time: hit.time, best: lastBestSeen });
+        const solveDiff = solveDiffFromLog(h);
+        const bestAtHit = solveDiff || hit.netdiff || lastBestSeen;
+        blockState.blocks.push({ height: h, hash, time: hit.time, best: bestAtHit, solveDiff: solveDiff || null, netdiff: hit.netdiff || null, healed: true });
         blockState.acceptedAtLastBlock = lastAcceptedTotal || 0;
         console.log(`[SoloStrike Cash] BLOCK FOUND at height ${h} (${hash})`);
       }
       blockState.lastScanned = h; h++;
+    }
+    // Heal older entries stamped with the rolling best (e.g. 148G) instead of the
+    // real solving diff. Prefer the pool log; fall back to the block's net diff.
+    for (const b of blockState.blocks) {
+      if (b.healed) continue;
+      const sd = solveDiffFromLog(b.height);
+      let val = sd;
+      if (!val && b.hash) {
+        try { const blk = await rpc('getblock', [b.hash, 1]); val = Number(blk.difficulty) || 0; } catch (_) {}
+      }
+      if (val && val > (b.best || 0)) b.best = val;
+      if (sd) b.solveDiff = sd;
+      b.healed = true;
     }
     saveBlocks();
   } catch (_) { /* node not ready — retry next pass */ }
@@ -259,7 +297,7 @@ app.get('/api/status', async (_req, res) => {
     const hs = hashToHs(p.hashrate5m || p.hashrate1m);
     out.poolHs = hs;
     out.workerList = readWorkers();
-    out.blocks = countBlocks();
+    out.blocks = Math.max(blockState.blocks.length, countBlocks());
   } catch (_) { /* pool not started yet */ }
 
   try {
