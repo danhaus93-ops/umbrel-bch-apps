@@ -127,6 +127,7 @@ function readWorkers() {
   // when it falls off the roster — so a reconnect starts a fresh session.
   try {
     const sf = path.join(POOL_DIR, 'config', 'sessions.json');
+    try { fs.mkdirSync(path.dirname(sf), { recursive: true }); } catch (_) {}
     let sessions = {};
     try { sessions = JSON.parse(fs.readFileSync(sf, 'utf8')); } catch (_) {}
     const next = {};
