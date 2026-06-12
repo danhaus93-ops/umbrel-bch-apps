@@ -24,7 +24,6 @@ const FULCRUM_SSL_PORT = process.env.FULCRUM_SSL_PORT || '50022';
 
 // Host people type into their wallet. Umbrel injects DEVICE_DOMAIN_NAME.
 const PUBLIC_HOST = process.env.PUBLIC_HOST || 'umbrel.local';
-const APP_VERSION = process.env.APP_VERSION || 'dev';
 
 const RPC_URL = `http://${RPC_HOST}:${RPC_PORT}/`;
 const RPC_AUTH = 'Basic ' + Buffer.from(`${RPC_USER}:${RPC_PASS}`).toString('base64');
@@ -130,6 +129,42 @@ function torBlock(mode, ip) {
   const key = mode === 'full' ? 'proxy' : 'onion';
   return `${key}=${ip}:9050\nlistenonion=1\ntorcontrol=${ip}:9051\ntorpassword=solostrike_tor_ctrl_7f2c\n`;
 }
+function readExternalIp() {
+  try {
+    const m = fs.readFileSync(NODE_CONF, 'utf8').match(/^externalip=([0-9.]+):/m);
+    return m ? m[1] : null;
+  } catch (_) { return null; }
+}
+// peers report the address they see us as — majority vote, no external services
+async function detectPublicIp() {
+  try {
+    const peers = await rpc('getpeerinfo');
+    const votes = {};
+    for (const p of peers || []) {
+      if (p.inbound) continue;
+      const m = String(p.addrlocal || '').match(/^([0-9]{1,3}(?:\.[0-9]{1,3}){3}):/);
+      if (!m) continue;
+      const ip = m[1];
+      if (/^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.|127\.|100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.)/.test(ip)) continue;
+      votes[ip] = (votes[ip] || 0) + 1;
+    }
+    const best = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
+    return best && best[1] >= 2 ? best[0] : null;
+  } catch (_) { return null; }
+}
+let ipChangedAt = 0;
+setInterval(async () => {
+  try {
+    const detected = await detectPublicIp();
+    if (!detected) return;
+    const stored = readExternalIp();
+    if (detected !== stored) {
+      await writeTorMode(readTorMode()); // rewrites conf with current mode + fresh externalip
+      ipChangedAt = Date.now();
+      console.log(`[bchn-dashboard] public IP ${stored || 'unset'} -> ${detected}; conf updated (applies on next node restart)`);
+    }
+  } catch (_) {}
+}, 5 * 60 * 1000);
 function readTorMode() {
   try {
     const c = fs.readFileSync(NODE_CONF, 'utf8');
@@ -141,7 +176,10 @@ function readTorMode() {
 async function writeTorMode(mode) {
   const ip = mode === 'off' ? null : await torSidecarIp();
   if (mode !== 'off' && !ip) throw new Error('tor sidecar not resolvable');
-  const body = '# Managed by the Bitcoin Cash Node dashboard (Tor settings)\n' + torBlock(mode, ip);
+  const ext = (await detectPublicIp()) || readExternalIp();
+  const body = '# Managed by the Bitcoin Cash Node dashboard (Tor settings)\n'
+    + torBlock(mode, ip)
+    + (ext ? `externalip=${ext}:8335\n` : '');
   fs.writeFileSync(NODE_CONF, body);
 }
 // seed default (onion add-on) on first run so Tor works out of the box
@@ -177,7 +215,6 @@ app.get('/api/status', async (_req, res) => {
       rpc_pass: RPC_PASS,
     },
     stage: 'starting',
-    dash_version: APP_VERSION,
   };
 
   try {
@@ -189,8 +226,9 @@ app.get('/api/status', async (_req, res) => {
     out.node.online = true;
     out.node.version = netinfo.version;
     out.node.subversion = netinfo.subversion;
-    out.node.protocol = netinfo.protocolversion ?? null;
     out.node.torMode = readTorMode();
+    out.node.externalip = readExternalIp();
+    out.node.ipPending = ipChangedAt > 0 && (Date.now() - ipChangedAt) < 6 * 3600 * 1000;
     out.node.onion = (netinfo.localaddresses || [])
       .map(a => a.address).find(a => /\.onion$/.test(a || '')) || null;
     out.chain = {
@@ -202,28 +240,18 @@ app.get('/api/status', async (_req, res) => {
       size_on_disk: chain.size_on_disk,
       bestblockhash: chain.bestblockhash,
       difficulty: chain.difficulty,
-      mediantime: chain.mediantime ?? null,
       pruned: Boolean(chain.pruned),
       pruneheight: chain.pruneheight ?? null,
       prune_target_size: chain.prune_target_size ?? null,
       automatic_pruning: chain.automatic_pruning ?? null,
     };
-    out.warnings = (chain.warnings || netinfo.warnings || '').toString().trim() || null;
     out.mode = chain.pruned ? 'pruned' : 'full';
     out.network = {
       connections: netinfo.connections,
       connections_in: netinfo.connections_in,
       connections_out: netinfo.connections_out,
-      networkactive: netinfo.networkactive,
-      relayfee: netinfo.relayfee ?? null,
     };
-    // getmempoolinfo is cheap; surface usage (RAM) for the mempool MB card.
-    out.mempool = {
-      size: mempool.size,
-      bytes: mempool.bytes,
-      usage: mempool.usage ?? null,
-      maxmempool: mempool.maxmempool ?? null,
-    };
+    out.mempool = { size: mempool.size, bytes: mempool.bytes };
     out.ready = true;
     out.stage = chain.initialblockdownload ? 'syncing' : 'synced';
 
@@ -231,25 +259,11 @@ app.get('/api/status', async (_req, res) => {
       out.nettotals = await rpc('getnettotals');
     } catch { /* non-fatal */ }
     try {
-      const [peers, up, nh, cts, zmq, banned] = await Promise.all([
+      const [peers, up, nh] = await Promise.all([
         rpc('getpeerinfo'), rpc('uptime'), rpc('getnetworkhashps'),
-        // Cheap. Skipping gettxoutsetinfo/verifychain on purpose — those scan the
-        // whole chainstate and would stall this 5s loop.
-        rpc('getchaintxstats').catch(() => null),
-        rpc('getzmqnotifications').catch(() => null),
-        rpc('listbanned').catch(() => null),
       ]);
       out.uptime = up;
       out.nethashps = nh;
-      out.txstats = cts ? {
-        count: cts.txcount ?? null,
-        rate: cts.txrate ?? null,
-        window: cts.window_block_count ?? null,
-      } : null;
-      // Proves the ZMQ hashblock hook SoloStrike Cash depends on is actually live.
-      out.zmq = Array.isArray(zmq)
-        ? zmq.map(z => ({ type: z.type, address: z.address })) : null;
-      out.banned_count = Array.isArray(banned) ? banned.length : null;
       out.peers_list = (peers || []).slice(0, 40).map(p => ({
         addr: p.addr,
         inbound: Boolean(p.inbound),
@@ -283,14 +297,7 @@ app.get('/api/status', async (_req, res) => {
 });
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
-app.get('/api/version', (_req, res) => res.json({ version: APP_VERSION }));
 
-// index.html must never be cached, or app updates won't show until the browser
-// cache expires. Static assets (icons, fonts) can still cache for an hour.
-app.get(['/', '/index.html'], (_req, res) => {
-  res.set('Cache-Control', 'no-store');
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 
 app.listen(PORT, '0.0.0.0', () => {
