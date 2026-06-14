@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/app",
+    "types": ["node", "@angular/localize"],
+    "paths": {
+      "@app/*": ["src/app/*"],
+      "@components/*": ["src/app/components/*"],
+      "@environments/*": ["src/environments/*"],
+      "@interfaces/*": ["src/app/interfaces/*"]
+    }
+  },
+  "files": ["src/main.ts", "src/main.server.ts"],
+  "include": ["src/**/*.ts", "src/**/*.d.ts"]
+}

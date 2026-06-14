@@ -1,0 +1,25 @@
+<span
+  *ngIf="isCheap"
+  class="badge bg-success me-1"
+  i18n-ngbTooltip="Tooltip about Cheap"
+  ngbTooltip="This transaction has a low transaction fee on L1, because of BCH"
+  placement="bottom"
+  i18n="tx-features.tag.cheap|Cheap"
+  >Cheap</span
+>
+
+<span
+  *ngIf="hasCashToken"
+  class="badge bg-success me-1"
+  i18n-ngbTooltip="Transaction contains CashTokens"
+  ngbTooltip="This transaction contains CashToken(s)"
+  placement="bottom"
+  i18n="tx-features.tag.token|Token"
+  >CashToken
+  <a
+    class="info-link"
+    [routerLink]="['/docs/faq' | relativeUrl]"
+    fragment="what-are-cashtokens"
+    ><fa-icon [icon]="['fas', 'info-circle']" [fixedWidth]="true"></fa-icon
+  ></a>
+</span>

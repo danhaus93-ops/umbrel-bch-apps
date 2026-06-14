@@ -1,0 +1,207 @@
+default:
+  image: registry.melroy.org/melroy/docker-images/rust:1.95-node-24.15.0
+
+variables:
+  GHCR_USERNAME: melroy89
+  GHCR_ORG: bitcoincash1
+  GHCR_REGISTRY: ghcr.io
+
+.cache_backend_template: &cache_backend_definition
+  cache:
+    key:
+      files:
+        - backend/pnpm-lock.yaml
+        - rust/gbt/Cargo.lock
+    paths:
+      # pnpm
+      - backend/.pnpm-store
+      # cargo
+      - .cargo
+
+.cache_frontend_template: &cache_frontend_definition
+  cache:
+    key:
+      files:
+        - frontend/pnpm-lock.yaml
+    paths:
+      - frontend/.pnpm-store
+
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible
+
+stages:
+  - test
+  - build
+  - deploy
+
+lint-format-test-backend:
+  stage: test
+  <<: *cache_backend_definition
+  interruptible: true
+  script:
+    - cd backend
+    - mkdir rust-gbt # Placeholder directory (if pnpm install is triggered during preinstall)
+    - pnpm preinstall
+    # pnpm v11 caches install state here; deleting it forces re-linking of the freshly built rust-gbt binary.
+    - rm -rf node_modules/.pnpm-workspace-state-v1.json
+    - pnpm install --prefer-offline --prefer-frozen-lockfile
+    #- pnpm run lint
+    - pnpm prettier:check
+    - pnpm test
+
+#test-frontend:
+#  stage: test
+#  image: cypress/browsers:22.15.0
+#  <<: *cache_frontend_definition
+#  interruptible: true
+#  variables:
+#    ELECTRON_EXTRA_LAUNCH_ARGS: "--headless --disable-gpu --disable-software-rasterizer --no-sandbox"
+#  script:
+#    - cd frontend
+#    - pnpm install --prefer-offline --prefer-frozen-lockfile
+#    - pnpm config:defaults:explorer
+#    - pnpm e2e:ci
+
+lint-format-test-frontend:
+  stage: test
+  <<: *cache_frontend_definition
+  interruptible: true
+  script:
+    - cd frontend
+    - pnpm install --prefer-offline --prefer-frozen-lockfile
+    - pnpm config:defaults:explorer
+    #- pnpm run lint
+    - pnpm prettier:check
+    - pnpm test:unit
+
+build-backend:
+  stage: build
+  variables:
+    NODE_ENV: production
+    CARGO_HOME: $CI_PROJECT_DIR/.cargo
+  <<: *cache_backend_definition
+  interruptible: true
+  script:
+    - cd backend
+    - mkdir rust-gbt # Placeholder directory (if pnpm install is triggered during preinstall)
+    - pnpm preinstall
+    # pnpm v11 caches install state here; deleting it forces re-linking of the freshly built rust-gbt binary.
+    - rm -rf node_modules/.pnpm-workspace-state-v1.json
+    - pnpm install --prefer-offline --prefer-frozen-lockfile
+    - pnpm package
+  artifacts:
+    name: "Backend Build"
+    expire_in: 1 week
+    paths:
+      - backend/package
+
+build-frontend:
+  stage: build
+  variables:
+    NODE_ENV: production
+  <<: *cache_frontend_definition
+  interruptible: true
+  script:
+    - cd frontend
+    - pnpm install --prefer-offline --prefer-frozen-lockfile
+    - pnpm config:defaults:explorer
+    - pnpm build
+  artifacts:
+    name: "Frontend Build"
+    expire_in: 1 week
+    paths:
+      - frontend/dist/explorer/browser
+
+docker-build-deploy:
+  stage: deploy
+  rules:
+    - if: '$CI_PROJECT_NAMESPACE == "bitcoincash" && $CI_COMMIT_TAG'
+  variables:
+    DOCKER_BUILDKIT: 1
+    COMPOSE_DOCKER_CLI_BUILD: 0
+  parallel:
+    matrix:
+      - SERVICE: ["frontend", "backend"]
+  tags:
+    - shell
+  before_script:
+    # ghcr.io
+    - echo "$GITHUB_TOKEN" | docker login -u "$GHCR_USERNAME" --password-stdin "$GHCR_REGISTRY"
+    # GitLab Container Registry
+    - echo "$CI_DEPLOY_PASSWORD" | docker login -u "$CI_DEPLOY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - docker/init.sh "$CI_COMMIT_TAG"
+
+    #--cache-from "type=local,src=/tmp/.buildx-cache" \
+    #--cache-to "type=local,dest=/tmp/.buildx-cache,mode=max" \
+
+    - export IMAGE_NAME="bch-explorer-$SERVICE:$CI_COMMIT_TAG"
+    - |
+      docker buildx build \
+        --build-arg commitHash="$CI_COMMIT_SHORT_SHA" \
+        --build-context rustgbt=./rust \
+        --build-context backend=./backend \
+        --tag $CI_REGISTRY_IMAGE/$IMAGE_NAME \
+        --tag $GHCR_REGISTRY/$GHCR_ORG/$IMAGE_NAME \
+        ./$SERVICE/
+    # Publishes to GitLab Container Registry
+    - docker push $CI_REGISTRY_IMAGE/$IMAGE_NAME
+    # Publishes to GitHub Container Registry
+    - docker push $GHCR_REGISTRY/$GHCR_ORG/$IMAGE_NAME
+
+# Deploy frontend via Artifactory Deployer: https://gitlab.melroy.org/melroy/gitlab-artifact-deployer-go
+deploy-frontend:
+  stage: deploy
+  needs:
+    - job: build-frontend
+      artifacts: true
+  image: alpine:3
+  rules:
+    - if: '$CI_PROJECT_NAMESPACE == "bitcoincash" && $CI_COMMIT_TAG'
+  environment:
+    name: production
+    url: https://bchexplorer.cash
+  script:
+    # Enable testnet4 and Chipnet + official site + enable audit + more...
+    - CONFIG=frontend/dist/explorer/browser/resources/config.js
+    - sed -i "s/window.__env.TESTNET4_ENABLED = false;/window.__env.TESTNET4_ENABLED = true;/" $CONFIG
+    - sed -i "s/window.__env.CHIPNET_ENABLED = false;/window.__env.CHIPNET_ENABLED = true;/" $CONFIG
+    - sed -i "/window.__env.BASE_MODULE = 'explorer';/a \ \ \ \ window.__env.OFFICIAL_BCH_EXPLORER = true;" $CONFIG
+    - sed -i "/window.__env.BASE_MODULE = 'explorer';/a \ \ \ \ window.__env.AUDIT = true;" $CONFIG
+    - sed -i "/window.__env.BASE_MODULE = 'explorer';/a \ \ \ \ window.__env.MAINNET_ENABLED = true;" $CONFIG
+    - sed -i "/window.__env.BASE_MODULE = 'explorer';/a \ \ \ \ window.__env.MEMPOOL_BLOCKS_AMOUNT = 1;" $CONFIG
+    - sed -i "/window.__env.BASE_MODULE = 'explorer';/a \ \ \ \ window.__env.MAINNET_BLOCK_AUDIT_START_HEIGHT = 949237;" $CONFIG
+    - sed -i "/window.__env.BASE_MODULE = 'explorer';/a \ \ \ \ window.__env.TESTNET4_BLOCK_AUDIT_START_HEIGHT = 305189;" $CONFIG
+    - sed -i "/window.__env.BASE_MODULE = 'explorer';/a \ \ \ \ window.__env.CHIPNET_BLOCK_AUDIT_START_HEIGHT = 305194;" $CONFIG
+    # Disable notification message
+    # - sed -i "/window.__env.BASE_MODULE = 'explorer';/a \ \ \ \ window.__env.NOTIFICATION_MESSAGE = 'place-holder text';" $CONFIG
+  artifacts:
+    name: "Frontend"
+    expire_in: 3 months
+    paths:
+      - frontend/dist/explorer/browser
+
+# Trigger https://github.com/BitcoinCash1/bch-explorer-startos to build Start9 packages for this release
+trigger-start9-build:
+  stage: deploy
+  image: curlimages/curl:latest
+  needs:
+    - job: docker-build-deploy
+  rules:
+    - if: '$CI_PROJECT_NAMESPACE == "bitcoincash" && $CI_COMMIT_TAG && $GITHUB_TOKEN'
+  script:
+    - |
+      HTTP_STATUS=$(curl -o /dev/null -w "%{http_code}" -fsSL \
+        -X POST \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer $GITHUB_TOKEN" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        "https://api.github.com/repos/BitcoinCash1/bch-explorer-startos/dispatches" \
+        -d "{\"event_type\":\"upstream-release\",\"client_payload\":{\"tag\":\"$CI_COMMIT_TAG\"}}")
+      if [ "$HTTP_STATUS" = "204" ]; then
+        echo "Start9 build triggered for $CI_COMMIT_TAG"
+      else
+        echo "Warning: dispatch returned HTTP $HTTP_STATUS"
+        exit 1
+      fi

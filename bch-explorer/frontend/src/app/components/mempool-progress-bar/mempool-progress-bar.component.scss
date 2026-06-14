@@ -1,0 +1,10 @@
+.progress {
+  display: inline-flex;
+  width: 180px;
+  background-color: var(--secondary);
+  height: 1.1rem;
+}
+
+.progress-bar {
+  padding: 2px;
+}

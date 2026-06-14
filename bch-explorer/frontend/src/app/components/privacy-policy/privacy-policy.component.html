@@ -1,0 +1,117 @@
+<div class="container-xl">
+  <div class="text-center">
+    <br />
+    <img
+      [src]="
+        isLightMode
+          ? '/resources/explorer_bitcoin_cash_logo_bigger_light.png'
+          : '/resources/explorer_bitcoin_cash_logo_bigger.png'
+      "
+      style="width: 387px; height: 100px"
+    />
+    <br /><br />
+
+    <h2>Privacy Policy</h2>
+    <h6>Updated: April 12, 2026</h6>
+
+    <br /><br />
+
+    <div class="text-start">
+      <p *ngIf="officialBCHExplorer">
+        For maximum privacy, we recommend that you use your own self-hosted
+        instance of BCH Explorer on your own hardware. You can easily install
+        your own self-hosted instance of this website on a Raspberry Pi. See our
+        project's GitLab page for more details about self-hosting this website.
+        By using your own self-hosted instance you will have maximum security,
+        privacy and freedom.
+      </p>
+
+      <br />
+      <p *ngIf="officialBCHExplorer">
+        The <a href="https://bchexplorer.cash">bchexplorer.cash</a> website, its
+        associated API services, and related network and server infrastructure
+        (collectively, the "Website") are operated by Melroy van den Berg. It is
+        self-hosted and is the official Bitcoin Cash explorer (bchexplorer.cash)
+        website.
+      </p>
+      <p *ngIf="!officialBCHExplorer">
+        This website and its API service (collectively, the "Website") are
+        operated by a member of the Bitcoin Cash community ("We" or "Us"). This
+        is <b>not</b> the official Bitcoin Cash explorer website, for support
+        please contact the operator of this site.
+      </p>
+
+      <br />
+
+      <h5>
+        By accessing this Website, you agree to the following Privacy Policy:
+      </h5>
+
+      <br />
+
+      <h4>USING THIS WEBSITE</h4>
+      <p>
+        Out of respect for the Bitcoin Cash community, this Website does not use
+        any first-party cookies, except to store your preferred language and
+        theme settings (if any).
+        <span *ngIf="officialBCHExplorer"
+          >However, we do use minimal first-party analytics and logging as
+          needed for the operation of this Website, as follows:</span
+        >
+      </p>
+
+      <ul *ngIf="officialBCHExplorer">
+        <li>
+          We use webserver logging (Angie) for sysadmin purposes, which collects
+          your IP address along with the requests you make. These logs are
+          deleted after 30 days, and we do not share this data with any
+          third-party.
+        </li>
+
+        <br />
+
+        <li>
+          We use self-hosted statistics applications (Telegraf, Grafana and
+          Fail2Ban) for analytics purposes, which collects your IP address along
+          with the requests you make. Our Grafana instances are configured to
+          respect your privacy by keeping this data local and by
+          <b>not</b> sharing this data with any third-party.
+        </li>
+
+        <br />
+
+        <li>
+          We do <b>NOT</b> use any third-party tracking or analytics services.
+        </li>
+      </ul>
+
+      <h2>External Services</h2>
+      <p>
+        We make use of one external service to support CashTokens on the Bitcoin
+        Cash (BCH) network:
+      </p>
+      <ul>
+        <li>
+          <b
+            ><a
+              href="https://bcmr.flowee.cash"
+              target="_blank"
+              rel="noopener noreferrer"
+              >https://bcmr.flowee.cash</a
+            ></b
+          >
+          &mdash; a Bitcoin Cash Metadata Registries (BCMR) indexer provided by
+          Flowee. This service is used solely to retrieve token metadata (such
+          as token names, icons, and other registry information) for CashTokens
+          displayed on this explorer. No personal data is sent to this service.
+        </li>
+      </ul>
+
+      <br />
+
+      <p>EOF</p>
+    </div>
+  </div>
+
+  <br /><br />
+</div>

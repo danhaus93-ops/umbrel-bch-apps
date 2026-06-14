@@ -1,0 +1,34 @@
+.input-group-text {
+  min-width: 90px;
+}
+
+.result-card {
+  background-color: var(--card-bg, #1d1f31);
+  border: 1px solid var(--border-color, #3a3a4a);
+  border-radius: 6px;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.result-address-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.result-address {
+  font-family: monospace;
+  font-size: 0.95rem;
+  word-break: break-all;
+}
+
+.qr-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.row {
+  margin: auto;
+}

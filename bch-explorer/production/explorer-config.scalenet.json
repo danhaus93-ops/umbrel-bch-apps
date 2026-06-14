@@ -1,0 +1,45 @@
+{
+  "EXPLORER": {
+    "OFFICIAL": true,
+    "NETWORK": "scalenet",
+    "BACKEND": "electrum",
+    "HTTP_PORT": 8997,
+    "MINED_BLOCKS_CACHE": 144,
+    "SPAWN_CLUSTER_PROCS": 0,
+    "API_URL_PREFIX": "/api/v1/",
+    "INDEXING_BLOCKS_AMOUNT": -1,
+    "AUTOMATIC_POOLS_UPDATE": true,
+    "POOLS_UPDATE_DELAY": 3600,
+    "AUDIT": true,
+    "RUST_GBT": true,
+    "POLL_RATE_MS": 1000,
+    "DISK_CACHE_BLOCK_INTERVAL": 1,
+    "ALLOW_UNREACHABLE": true,
+    "MAX_TRACKED_ADDRESSES": 10
+  },
+  "SYSLOG" : {
+    "MIN_PRIORITY": "debug"
+  },
+  "CORE_RPC": {
+    "PORT": 38332,
+    "USERNAME": "__BITCOIN_RPC_USER__",
+    "PASSWORD": "__BITCOIN_RPC_PASS__"
+  },
+  "ELECTRUM": {
+    "HOST": "127.0.0.1",
+    "PORT": 60004,
+    "TLS_ENABLED": false
+  },
+  "DATABASE": {
+    "ENABLED": true,
+    "HOST": "127.0.0.1",
+    "SOCKET": "/var/run/mysql/mysql.sock",
+    "USERNAME": "__EXPLORER_SCALENET_USER__",
+    "PASSWORD": "__EXPLORER_SCALENET_PASS__",
+    "DATABASE": "explorer_scalenet"
+  },
+  "STATISTICS": {
+    "ENABLED": true,
+    "TX_PER_SECOND_SAMPLE_PERIOD": 150
+  }
+}

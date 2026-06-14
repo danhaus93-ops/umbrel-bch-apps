@@ -1,0 +1,20 @@
+<div
+  class="container p-lg-0 pb-0"
+  style="max-width: 100%; margin-top: 7px"
+  *ngIf="
+    stateService.env.NOTIFICATION_MESSAGE &&
+    storageService.getValue('hideNotification') !== 'hidden'
+  "
+>
+  <div class="alert alert-warning mb-0 text-center">
+    <div class="message-container">
+      <span>{{ stateService.env.NOTIFICATION_MESSAGE }}</span>
+    </div>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="dismissNotification()"
+      aria-label="Dismiss notification"
+    ></button>
+  </div>
+</div>

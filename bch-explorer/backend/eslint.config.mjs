@@ -1,0 +1,43 @@
+import js from "@eslint/js";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+import eslintConfigPrettier from "eslint-config-prettier";
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+    globalIgnores(["**/dist"]),
+    { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: globals.node } },
+    tseslint.configs.recommended,
+    eslintConfigPrettier,
+    {
+        rules: {
+            "@typescript-eslint/ban-ts-comment": 1,
+            "@typescript-eslint/no-empty-function": 1,
+            "@typescript-eslint/no-explicit-any": 0,
+            "@typescript-eslint/no-namespace": 1,
+            "@typescript-eslint/no-this-alias": 1,
+            "@typescript-eslint/no-var-requires": 1,
+            "@typescript-eslint/explicit-function-return-type": 0,
+            "@typescript-eslint/no-unused-vars": 1,
+            "no-console": 0,
+            "no-constant-condition": 1,
+            "no-dupe-else-if": 1,
+            "no-empty": 1,
+            "no-prototype-builtins": 1,
+            "no-self-assign": 1,
+            "no-useless-catch": 1,
+            "no-var": 1,
+            "prefer-const": 1,
+            "prefer-rest-params": 1,
+
+            quotes: [1, "single", {
+                allowTemplateLiterals: true,
+            }],
+
+            semi: 1,
+            curly: [1, "all"],
+            eqeqeq: 1,
+            "no-trailing-spaces": 1,
+        },
+    },
+]);

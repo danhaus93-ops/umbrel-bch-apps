@@ -1,0 +1,140 @@
+<div
+  *ngIf="
+    stateService.env.MINING_DASHBOARD ||
+    (stateService.env.HISTORICAL_PRICE && isMainnet)
+  "
+  class="mb-3 d-flex menu"
+>
+  <a
+    routerLinkActive="active"
+    class="btn btn-purple w-50"
+    [routerLink]="['/graphs/mempool' | relativeUrl]"
+    >Mempool</a
+  >
+
+  <div ngbDropdown class="w-50" *ngIf="stateService.env.MINING_DASHBOARD">
+    <button
+      class="btn btn-purple w-100"
+      id="dropdownBasic1"
+      ngbDropdownToggle
+      i18n="mining"
+    >
+      Mining
+    </button>
+    <div ngbDropdownMenu aria-labelledby="dropdownBasic1">
+      <a
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/pools' | relativeUrl]"
+        i18n="mining.pools"
+        >Pools Ranking</a
+      >
+      <a
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/pools-dominance' | relativeUrl]"
+        i18n="mining.pools-dominance"
+        >Pools Dominance</a
+      >
+      <a
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/hashrate-difficulty' | relativeUrl]"
+        i18n="mining.hashrate-difficulty"
+        >Hashrate & Difficulty</a
+      >
+      <a
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/asert-deviation' | relativeUrl]"
+        i18n="mining.asert-deviation"
+        >Difficulty Adjustment Deviation</a
+      >
+      <a
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/block-fee-rates' | relativeUrl]"
+        i18n="mining.block-fee-rates"
+        >Block Fee Rates</a
+      >
+      <a
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/block-fees' | relativeUrl]"
+        i18n="mining.block-fees"
+        >Block Fees</a
+      >
+      <a
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/block-fees-subsidy' | relativeUrl]"
+        i18n="mining.block-fees-subsidy-subsidy"
+        >Block Fees Vs Subsidy</a
+      >
+      <a
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/block-rewards' | relativeUrl]"
+        i18n="mining.block-rewards"
+        >Block Rewards</a
+      >
+      <a
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/block-sizes' | relativeUrl]"
+        i18n="mining.block-sizes"
+        >Block Sizes</a
+      >
+      <a
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/block-times' | relativeUrl]"
+        i18n="mining.block-times"
+        >Block Time Variation</a
+      >
+      <a
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/block-volume' | relativeUrl]"
+        i18n="mining.block-volume"
+        >Block Volume</a
+      >
+      <a
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/block-tx-counts' | relativeUrl]"
+        i18n="mining.block-tx-counts"
+        >Transactions Per Block</a
+      >
+      <a
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/utxo-size' | relativeUrl]"
+        i18n="mining.utxo-size"
+        >Unspent Transaction Outputs</a
+      >
+      <a
+        *ngIf="stateService.env.AUDIT"
+        class="dropdown-item"
+        routerLinkActive="active"
+        [routerLink]="['/graphs/mining/block-health' | relativeUrl]"
+        i18n="mining.blocks-health"
+        >Block Health</a
+      >
+    </div>
+  </div>
+
+  @if (isMainnet) {
+    @if (stateService.env.HISTORICAL_PRICE) {
+      <a
+        routerLinkActive="active"
+        class="btn btn-purple w-50"
+        [routerLink]="['/graphs/price' | relativeUrl]"
+        i18n
+        >Price</a
+      >
+    }
+  }
+</div>
+
+<router-outlet></router-outlet>

@@ -1,0 +1,20 @@
+<ng-container *ngIf="fee !== undefined; else noFee">
+  {{ fee / size | feeRounding: rounding : dp }}
+  <span
+    *ngIf="showUnit"
+    [class]="unitClass"
+    [style]="unitStyle"
+    i18n="shared.sat-byte|sat/B"
+    >sat/B</span
+  >
+</ng-container>
+<ng-template #noFee>
+  -
+  <span
+    *ngIf="showUnit"
+    [class]="unitClass"
+    [style]="unitStyle"
+    i18n="shared.sat-byte|sat/B"
+    >sat/B</span
+  >
+</ng-template>

@@ -1,0 +1,389 @@
+<div class="box">
+  <div class="row">
+    @if (isMobile) {
+      <div class="col-sm">
+        <table class="table table-borderless table-striped">
+          <tbody>
+            <ng-container *ngTemplateOutlet="detailsLeft"></ng-container>
+            <ng-container *ngTemplateOutlet="detailsRight"></ng-container>
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="col-sm">
+        <table class="table table-borderless table-striped">
+          <tbody>
+            <ng-container *ngTemplateOutlet="detailsLeft"></ng-container>
+          </tbody>
+        </table>
+      </div>
+      <div class="col-sm">
+        <table class="table table-borderless table-striped">
+          <tbody>
+            <ng-container *ngTemplateOutlet="detailsRight"></ng-container>
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<ng-template #detailsLeft>
+  @if (tx?.status?.confirmed) {
+    <ng-container *ngTemplateOutlet="timestampRow"></ng-container>
+    <ng-container *ngTemplateOutlet="confirmedAfterRow"></ng-container>
+    <ng-container *ngTemplateOutlet="inBlock"></ng-container>
+  } @else {
+    <ng-container *ngTemplateOutlet="firstSeenRow"></ng-container>
+    <ng-container *ngTemplateOutlet="etaRow"></ng-container>
+  }
+  <ng-container *ngTemplateOutlet="featuresRow"></ng-container>
+  @if (tx?.status?.confirmed) {
+    <ng-container *ngTemplateOutlet="auditRow"></ng-container>
+  }
+  <ng-container *ngTemplateOutlet="gogglesRow"></ng-container>
+</ng-template>
+
+<ng-template #detailsRight>
+  <ng-container *ngTemplateOutlet="feeRow"></ng-container>
+  <ng-container *ngTemplateOutlet="feeRateRow"></ng-container>
+  @if (tx?.status?.confirmed) {
+    <ng-container *ngTemplateOutlet="minerRow"></ng-container>
+  }
+</ng-template>
+
+<ng-template #timestampRow>
+  @if (!isLoadingTx) {
+    <tr>
+      <td i18n="block.timestamp">Timestamp</td>
+      <td>
+        <app-timestamp
+          [customFormat]="'yyyy-MM-dd HH:mm:ss'"
+          [unixTime]="tx.status.block_time"
+        ></app-timestamp>
+      </td>
+    </tr>
+  } @else {
+    <ng-container *ngTemplateOutlet="skeletonDetailsRow"></ng-container>
+  }
+</ng-template>
+
+<ng-template #confirmedAfterRow>
+  @if (!isLoadingTx) {
+    @if (transactionTime > 0) {
+      <tr>
+        <td i18n="transaction.confirmed|Transaction Confirmed state">
+          Confirmed
+        </td>
+        <td>
+          <app-time
+            kind="span"
+            [time]="tx.status.block_time - transactionTime"
+            [fastRender]="true"
+            [showTooltip]="true"
+          ></app-time>
+        </td>
+      </tr>
+    }
+  } @else {
+    <ng-container *ngTemplateOutlet="skeletonDetailsRow"></ng-container>
+  }
+</ng-template>
+
+<ng-template #inBlock>
+  @if (!isLoadingTx) {
+    @if (tx?.status?.block_height) {
+      <tr>
+        <td i18n="transaction.included-in-block|Transaction included in block">
+          Included in block
+        </td>
+        <td>
+          <a [routerLink]="['/block' | relativeUrl, tx.status.block_hash]">
+            {{ tx.status.block_height }}
+          </a>
+        </td>
+      </tr>
+    }
+  } @else {
+    <ng-container *ngTemplateOutlet="skeletonDetailsRow"></ng-container>
+  }
+</ng-template>
+
+<ng-template #firstSeenRow>
+  @if (isLoadingTx) {
+    <ng-container *ngTemplateOutlet="skeletonDetailsRow"></ng-container>
+  } @else if (transactionTime > 0) {
+    <tr>
+      <td i18n="transaction.first-seen|Transaction first seen">First seen</td>
+      <td>
+        <i
+          ><app-time
+            kind="since"
+            [time]="transactionTime"
+            [fastRender]="true"
+            [showTooltip]="true"
+          ></app-time
+        ></i>
+      </td>
+    </tr>
+  } @else if (isLoadingFirstSeen) {
+    <tr>
+      <td i18n="transaction.first-seen|Transaction first seen">First seen</td>
+      <td><span class="skeleton-loader"></span></td>
+    </tr>
+  }
+</ng-template>
+
+<ng-template #featuresRow>
+  @if (!isLoadingTx) {
+    <tr>
+      <td class="td-width" i18n="transaction.features|Transaction features">
+        Features
+      </td>
+      <td>
+        <app-tx-features [tx]="tx"></app-tx-features>
+      </td>
+    </tr>
+  } @else {
+    <ng-container *ngTemplateOutlet="skeletonDetailsRow"></ng-container>
+  }
+</ng-template>
+
+<ng-template #auditRow>
+  @if (network === "") {
+    @if (!isLoadingTx) {
+      @if (auditStatus) {
+        <tr>
+          <td class="td-width" i18n="block.toggle-audit|Toggle Audit">Audit</td>
+          <td class="wrap-cell">
+            <ng-container>
+              @if (auditStatus.coinbase) {
+                <span
+                  class="badge bg-primary me-1"
+                  i18n="transactions-list.coinbase"
+                  >Coinbase</span
+                >
+              } @else if (auditStatus.expected) {
+                <span
+                  class="badge bg-success me-1"
+                  i18n-ngbTooltip="Expected in block tooltip"
+                  ngbTooltip="This transaction was projected to be included in the block"
+                  placement="bottom"
+                  i18n="tx-features.tag.expected|Expected in Block"
+                  >Expected in Block</span
+                >
+              } @else if (auditStatus.seen) {
+                <span
+                  class="badge bg-success me-1"
+                  i18n-ngbTooltip="Seen in mempool tooltip"
+                  ngbTooltip="This transaction was seen in the mempool prior to mining"
+                  placement="bottom"
+                  i18n="tx-features.tag.seen|Seen in Mempool"
+                  >Seen in Mempool</span
+                >
+              } @else if (!auditStatus.conflict) {
+                <span
+                  class="badge bg-warning me-1"
+                  i18n-ngbTooltip="Not seen in mempool tooltip"
+                  ngbTooltip="This transaction was missing from our mempool prior to mining"
+                  placement="bottom"
+                  i18n="tx-features.tag.not-seen|Not seen in Mempool"
+                  >Not seen in Mempool</span
+                >
+              }
+              @if (auditStatus.added) {
+                <span
+                  class="badge bg-warning me-1"
+                  i18n-ngbTooltip="Added transaction tooltip"
+                  ngbTooltip="This transaction may have been added out-of-band"
+                  placement="bottom"
+                  i18n="tx-features.tag.added|Added"
+                  >Added</span
+                >
+              }
+              @if (auditStatus.conflict) {
+                <span
+                  class="badge bg-warning me-1"
+                  i18n-ngbTooltip="Conflict in mempool tooltip"
+                  ngbTooltip="This transaction conflicted with another version in our mempool"
+                  placement="bottom"
+                  i18n="tx-features.tag.conflict|Conflict"
+                  >Conflict</span
+                >
+              }
+            </ng-container>
+          </td>
+        </tr>
+      }
+    } @else {
+      <ng-container *ngTemplateOutlet="skeletonDetailsRow"></ng-container>
+    }
+  }
+</ng-template>
+
+<ng-template #etaRow>
+  @if (!isLoadingTx) {
+    @if (!isCached && !unbroadcasted) {
+      <tr>
+        <td
+          class="td-width align-items-center align-middle"
+          i18n="transaction.eta|Transaction ETA"
+        >
+          ETA
+        </td>
+        <td>
+          <ng-container *ngIf="ETA$ | async as eta; else etaSkeleton">
+            <span class="etaDeepMempool d-flex justify-content-between">
+              @if (eta.blocks >= 7) {
+                <span
+                  i18n="
+                    transaction.eta.not-any-time-soon|Transaction ETA not any
+                    time soon
+                  "
+                  >Not any time soon</span
+                >
+              } @else {
+                <app-time
+                  kind="until"
+                  [time]="eta.time"
+                  [fastRender]="false"
+                  [fixedRender]="true"
+                ></app-time>
+              }
+            </span>
+          </ng-container>
+          <ng-template #etaSkeleton>
+            <span class="skeleton-loader"></span>
+          </ng-template>
+        </td>
+      </tr>
+    }
+  } @else if (!unbroadcasted) {
+    <ng-container *ngTemplateOutlet="skeletonDetailsRow"></ng-container>
+  }
+</ng-template>
+
+<ng-template #gogglesRow>
+  @if (!isLoadingTx) {
+    @if (filters.length) {
+      <tr>
+        <td class="td-width">
+          <span class="goggles-icon"
+            ><app-svg-images
+              name="goggles"
+              width="100%"
+              height="100%"
+            ></app-svg-images
+          ></span>
+          <a
+            class="goggles-link"
+            [routerLink]="['/docs/faq/' | relativeUrl]"
+            fragment="how-do-explorer-goggles-work"
+            title="How do Explorer goggles work?"
+          >
+            <fa-icon
+              [icon]="['fas', 'info-circle']"
+              [fixedWidth]="true"
+            ></fa-icon>
+          </a>
+        </td>
+        <td class="wrap-cell">
+          <ng-container *ngFor="let filter of filters">
+            <span class="badge bg-primary filter-tag me-1">{{
+              filter.label
+            }}</span>
+          </ng-container>
+        </td>
+      </tr>
+    }
+  }
+</ng-template>
+
+<ng-template #feeRow>
+  @if (!isLoadingTx) {
+    <tr>
+      <td class="td-width" i18n="transaction.fee|Transaction fee">Fee</td>
+      <td class="text-wrap">
+        {{ (tx.fee | number) ?? "-" }}
+        <span class="symbol" i18n="shared.sats">sats</span>
+        <span class="fiat"
+          ><app-fiat
+            *ngIf="tx.fee >= 0"
+            [blockConversion]="tx.price"
+            [value]="tx.fee"
+            digitsInfo="1.2-4"
+          ></app-fiat
+        ></span>
+      </td>
+    </tr>
+  } @else {
+    <ng-container *ngTemplateOutlet="skeletonDetailsRow"></ng-container>
+  }
+</ng-template>
+
+<ng-template #feeRateRow>
+  @if (!isLoadingTx) {
+    <tr>
+      <td i18n="transaction.fee-rate|Transaction fee rate">Fee rate</td>
+      <td>
+        <app-fee-rate [fee]="tx.feePerSize"></app-fee-rate>
+        @if (tx?.status?.confirmed && tx.fee) {
+          &nbsp;
+          <app-tx-fee-rating [tx]="tx"></app-tx-fee-rating>
+        }
+      </td>
+    </tr>
+  } @else {
+    <ng-container *ngTemplateOutlet="skeletonDetailsRow"></ng-container>
+  }
+</ng-template>
+
+<ng-template #minerRow>
+  @if (network === "") {
+    @if (!isLoadingTx) {
+      <tr>
+        <td class="td-width" i18n="block.miner">Miner</td>
+        @if (pool) {
+          <td class="wrap-cell">
+            <a
+              placement="bottom"
+              [routerLink]="['/mining/pool' | relativeUrl, pool.slug]"
+              class="badge"
+              style="color: #fff; padding: 0"
+            >
+              <span
+                class="miner-name"
+                *ngIf="pool.minerNames?.length > 1 && pool.minerNames[1] != ''"
+              >
+                @if (pool.minerNames[1].length > 16) {
+                  {{ pool.minerNames[1].slice(0, 15) }}…
+                } @else {
+                  {{ pool.minerNames[1] }}
+                }
+              </span>
+              <img
+                class="pool-logo"
+                [src]="'/resources/mining-pools/' + pool.slug + '.svg'"
+                onError="this.src = '/resources/mining-pools/default.svg'"
+                [alt]="'Logo of ' + pool.name + ' mining pool'"
+              />
+              {{ pool.name }}
+            </a>
+          </td>
+        } @else {
+          <td>
+            <span class="skeleton-loader"></span>
+          </td>
+        }
+      </tr>
+    } @else {
+      <ng-container *ngTemplateOutlet="skeletonDetailsRow"></ng-container>
+    }
+  }
+</ng-template>
+
+<ng-template #skeletonDetailsRow>
+  <tr>
+    <td><span class="skeleton-loader"></span></td>
+  </tr>
+</ng-template>

@@ -1,0 +1,128 @@
+{
+  "EXPLORER": {
+    "OFFICIAL": false,
+    "NETWORK": "mainnet",
+    "BACKEND": "electrum",
+    "ENABLED": true,
+    "HTTP_PORT": 8999,
+    "SPAWN_CLUSTER_PROCS": 0,
+    "API_URL_PREFIX": "/api/v1/",
+    "POLL_RATE_MS": 2000,
+    "CACHE_DIR": "./cache",
+    "CACHE_ENABLED": true,
+    "CLEAR_PROTECTION_MINUTES": 20,
+    "RECOMMENDED_FEE_PERCENTILE": 50,
+    "MIN_BLOCK_SIZE_UNITS": 32000000,
+    "INITIAL_BLOCKS_AMOUNT": 8,
+    "MEMPOOL_BLOCKS_AMOUNT": 1,
+    "INDEXING_BLOCKS_AMOUNT": 11000,
+    "BLOCKS_SUMMARIES_INDEXING": true,
+    "GOGGLES_INDEXING": false,
+    "USE_SECOND_NODE_FOR_MINFEE": false,
+    "EXTERNAL_ASSETS": [],
+    "EXTERNAL_MAX_RETRY": 1,
+    "EXTERNAL_RETRY_INTERVAL": 0,
+    "USER_AGENT": "explorer",
+    "STDOUT_LOG_MIN_PRIORITY": "debug",
+    "AUTOMATIC_POOLS_UPDATE": false,
+    "POOLS_JSON_URL": "https://gitlab.melroy.org/bitcoincash/mining-pools/-/raw/main/pools-v2.json",
+    "POOLS_JSON_TREE_URL": "https://gitlab.melroy.org/api/v4/projects/199/repository/tree",
+    "POOLS_UPDATE_DELAY": 604800,
+    "POOLS_SOURCE": "gitlab",
+    "AUDIT": false,
+    "RUST_GBT": true,
+    "LIMIT_GBT": false,
+    "DISK_CACHE_BLOCK_INTERVAL": 6,
+    "PRICE_UPDATES_PER_HOUR": 1,
+    "MAX_TRACKED_ADDRESSES": 100,
+    "UNIX_SOCKET_PATH": ""
+  },
+  "CORE_RPC": {
+    "HOST": "127.0.0.1",
+    "PORT": 8332,
+    "USERNAME": "explorer",
+    "PASSWORD": "explorer",
+    "TIMEOUT": 60000,
+    "COOKIE": false,
+    "COOKIE_PATH": "/path/to/bitcoin/.cookie",
+    "DEBUG_LOG_PATH": "/path/to/bitcoin/debug.log"
+  },
+  "ELECTRUM": {
+    "HOST": "127.0.0.1",
+    "PORT": 50001,
+    "TLS_ENABLED": false
+  },
+  "SECOND_CORE_RPC": {
+    "HOST": "127.0.0.1",
+    "PORT": 8332,
+    "USERNAME": "explorer",
+    "PASSWORD": "explorer",
+    "TIMEOUT": 60000,
+    "COOKIE": false,
+    "COOKIE_PATH": "/path/to/bitcoin/.cookie"
+  },
+  "DATABASE": {
+    "ENABLED": true,
+    "HOST": "127.0.0.1",
+    "PORT": 3306,
+    "SOCKET": "/var/run/mysqld/mysqld.sock",
+    "DATABASE": "explorer",
+    "USERNAME": "explorer",
+    "PASSWORD": "explorer",
+    "TIMEOUT": 180000,
+    "PID_DIR": ""
+  },
+  "SYSLOG": {
+    "ENABLED": true,
+    "HOST": "127.0.0.1",
+    "PORT": 514,
+    "MIN_PRIORITY": "info",
+    "FACILITY": "local7"
+  },
+  "STATISTICS": {
+    "ENABLED": true,
+    "TX_PER_SECOND_SAMPLE_PERIOD": 150
+  },
+  "SOCKS5PROXY": {
+    "ENABLED": false,
+    "USE_ONION": true,
+    "HOST": "127.0.0.1",
+    "PORT": 9050,
+    "USERNAME": "",
+    "PASSWORD": ""
+  },
+  "EXTERNAL_DATA_SERVER": {
+    "EXPLORER_API": "https://bchexplorer.cash/api/v1",
+    "EXPLORER_ONION": "http://someuniondomain.onion/api/v1"
+  },
+  "VALKEY": {
+    "ENABLED": false,
+    "UNIX_SOCKET_PATH": "/var/run/valkey/valkey.sock",
+    "BATCH_QUERY_BASE_SIZE": 5000
+  },
+  "REPLICATION": {
+    "ENABLED": false,
+    "AUDIT": false,
+    "AUDIT_START_HEIGHT": 774000,
+    "STATISTICS": false,
+    "STATISTICS_START_TIME": 1481932800,
+    "SERVERS": [
+      "list",
+      "of",
+      "trusted",
+      "servers"
+    ]
+  },
+  "MELROY_EXPLORER_SERVICES": {
+    "API": "http://bchexplorer.cash/api/v1/services"
+  },
+  "STRATUM": {
+    "ENABLED": false,
+    "API": "http://localhost:1234"
+  },
+  "FIAT_PRICE": {
+    "ENABLED": true,
+    "PAID": false,
+    "API_KEY": "your-api-key-from-freecurrencyapi.com"
+  }
+}

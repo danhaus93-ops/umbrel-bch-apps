@@ -1,0 +1,388 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": {
+    "packageManager": "pnpm",
+    "analytics": false
+  },
+  "newProjectRoot": "projects",
+  "projects": {
+    "explorer": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "app",
+      "i18n": {
+        "sourceLocale": {
+          "code": "en-US",
+          "baseHref": "/"
+        },
+        "locales": {
+          "ar": {
+            "translation": "src/locale/messages.ar.xlf",
+            "baseHref": "/ar/"
+          },
+          "ca": {
+            "translation": "src/locale/messages.ca.xlf",
+            "baseHref": "/ca/"
+          },
+          "cs": {
+            "translation": "src/locale/messages.cs.xlf",
+            "baseHref": "/cs/"
+          },
+          "de": {
+            "translation": "src/locale/messages.de.xlf",
+            "baseHref": "/de/"
+          },
+          "da": {
+            "translation": "src/locale/messages.da.xlf",
+            "baseHref": "/da/"
+          },
+          "es": {
+            "translation": "src/locale/messages.es.xlf",
+            "baseHref": "/es/"
+          },
+          "fa": {
+            "translation": "src/locale/messages.fa.xlf",
+            "baseHref": "/fa/"
+          },
+          "fr": {
+            "translation": "src/locale/messages.fr.xlf",
+            "baseHref": "/fr/"
+          },
+          "hr": {
+            "translation": "src/locale/messages.hr.xlf",
+            "baseHref": "/hr/"
+          },
+          "ja": {
+            "translation": "src/locale/messages.ja.xlf",
+            "baseHref": "/ja/"
+          },
+          "ka": {
+            "translation": "src/locale/messages.ka.xlf",
+            "baseHref": "/ka/"
+          },
+          "ko": {
+            "translation": "src/locale/messages.ko.xlf",
+            "baseHref": "/ko/"
+          },
+          "it": {
+            "translation": "src/locale/messages.it.xlf",
+            "baseHref": "/it/"
+          },
+          "he": {
+            "translation": "src/locale/messages.he.xlf",
+            "baseHref": "/he/"
+          },
+          "nl": {
+            "translation": "src/locale/messages.nl.xlf",
+            "baseHref": "/nl/"
+          },
+          "nb": {
+            "translation": "src/locale/messages.nb.xlf",
+            "baseHref": "/nb/"
+          },
+          "pl": {
+            "translation": "src/locale/messages.pl.xlf",
+            "baseHref": "/pl/"
+          },
+          "pt": {
+            "translation": "src/locale/messages.pt.xlf",
+            "baseHref": "/pt/"
+          },
+          "sl": {
+            "translation": "src/locale/messages.sl.xlf",
+            "baseHref": "/sl/"
+          },
+          "sv": {
+            "translation": "src/locale/messages.sv.xlf",
+            "baseHref": "/sv/"
+          },
+          "th": {
+            "translation": "src/locale/messages.th.xlf",
+            "baseHref": "/th/"
+          },
+          "tr": {
+            "translation": "src/locale/messages.tr.xlf",
+            "baseHref": "/tr/"
+          },
+          "uk": {
+            "translation": "src/locale/messages.uk.xlf",
+            "baseHref": "/uk/"
+          },
+          "fi": {
+            "translation": "src/locale/messages.fi.xlf",
+            "baseHref": "/fi/"
+          },
+          "vi": {
+            "translation": "src/locale/messages.vi.xlf",
+            "baseHref": "/vi/"
+          },
+          "hu": {
+            "translation": "src/locale/messages.hu.xlf",
+            "baseHref": "/hu/"
+          },
+          "mk": {
+            "translation": "src/locale/messages.mk.xlf",
+            "baseHref": "/mk/"
+          },
+          "zh-Hant": {
+            "translation": "src/locale/messages.zh-Hant.xlf",
+            "baseHref": "/zh-Hant/"
+          },
+          "zh-Hans": {
+            "translation": "src/locale/messages.zh-Hans.xlf",
+            "baseHref": "/zh-Hans/"
+          },
+          "ro": {
+            "translation": "src/locale/messages.ro.xlf",
+            "baseHref": "/ro/"
+          },
+          "ru": {
+            "translation": "src/locale/messages.ru.xlf",
+            "baseHref": "/ru/"
+          },
+          "hi": {
+            "translation": "src/locale/messages.hi.xlf",
+            "baseHref": "/hi/"
+          },
+          "ne": {
+            "translation": "src/locale/messages.ne.xlf",
+            "baseHref": "/ne/"
+          },
+          "lt": {
+            "translation": "src/locale/messages.lt.xlf",
+            "baseHref": "/lt/"
+          }
+        }
+      },
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "index": "src/index.html",
+            "polyfills": ["zone.js", "@angular/localize/init"],
+            "tsConfig": "tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              "src/favicon.ico",
+              "src/robots.txt",
+              "src/config.js",
+              "src/customize.js",
+              "src/config.template.js"
+            ],
+            "styles": [
+              "src/styles.scss",
+              {
+                "input": "src/theme-contrast.scss",
+                "bundleName": "contrast",
+                "inject": false
+              },
+              {
+                "input": "src/theme-bch.scss",
+                "bundleName": "bch",
+                "inject": false
+              },
+              {
+                "input": "src/theme-softsimon.scss",
+                "bundleName": "softsimon",
+                "inject": false
+              },
+              {
+                "input": "src/theme-bukele.scss",
+                "bundleName": "bukele",
+                "inject": false
+              },
+              {
+                "input": "src/theme-light.scss",
+                "bundleName": "light",
+                "inject": false
+              },
+              "node_modules/@fortawesome/fontawesome-svg-core/styles.css"
+            ],
+            "allowedCommonJsDependencies": ["qrcode"],
+            "browser": "src/main.ts",
+            "outputMode": "static",
+            "localize": true
+          },
+          "configurations": {
+            "production": {
+              "optimization": true,
+              "outputHashing": "all",
+              "sourceMap": false,
+              "namedChunks": false,
+              "extractLicenses": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "3mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "9kB",
+                  "maximumError": "12kB"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "outputHashing": "none",
+              "namedChunks": true,
+              "assets": [
+                "src/favicon.ico",
+                "src/resources",
+                "src/robots.txt",
+                "src/config.js",
+                "src/customize.js",
+                "src/config.template.js"
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.development.ts"
+                }
+              ]
+            },
+            "nl": {
+              "localize": ["nl"]
+            },
+            "es": {
+              "localize": ["es"]
+            },
+            "ro": {
+              "localize": ["ro"]
+            },
+            "pt": {
+              "localize": ["pt"]
+            },
+            "zh-Hant": {
+              "localize": ["zh-Hant"]
+            },
+            "zh-Hans": {
+              "localize": ["zh-Hans"]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "buildTarget": "explorer:build"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "explorer:build:production"
+            },
+            "development": {
+              "buildTarget": "explorer:build:development"
+            },
+            "local": {
+              "buildTarget": "explorer:build:development",
+              "proxyConfig": "proxy.conf.local.js",
+              "verbose": true
+            },
+            "mixed": {
+              "buildTarget": "explorer:build:development",
+              "proxyConfig": "proxy.conf.mixed.js",
+              "verbose": true
+            },
+            "local-prod": {
+              "buildTarget": "explorer:build:production",
+              "proxyConfig": "proxy.conf.js",
+              "host": "0.0.0.0",
+              "verbose": false
+            },
+            "parameterized": {
+              "buildTarget": "explorer:build:development",
+              "proxyConfig": "proxy.conf.parameterized.js",
+              "host": "0.0.0.0",
+              "verbose": false
+            },
+            "nl": {
+              "buildTarget": "explorer:build:development,nl",
+              "proxyConfig": "proxy.conf.local.js",
+              "verbose": true
+            },
+            "es": {
+              "buildTarget": "explorer:build:development,es",
+              "proxyConfig": "proxy.conf.local.js",
+              "verbose": true
+            },
+            "ro": {
+              "buildTarget": "explorer:build:development,ro",
+              "proxyConfig": "proxy.conf.local.js",
+              "verbose": true
+            },
+            "pt": {
+              "buildTarget": "explorer:build:development,pt",
+              "proxyConfig": "proxy.conf.local.js",
+              "verbose": true
+            },
+            "zh-Hant": {
+              "buildTarget": "explorer:build:development,zh-Hant",
+              "proxyConfig": "proxy.conf.local.js",
+              "verbose": true
+            },
+            "zh-Hans": {
+              "buildTarget": "explorer:build:development,zh-Hans",
+              "proxyConfig": "proxy.conf.local.js",
+              "verbose": true
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "tsconfig.spec.json"
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular/build:extract-i18n",
+          "options": {
+            "buildTarget": "explorer:build"
+          }
+        },
+        "e2e": {
+          "builder": "@cypress/schematic:cypress",
+          "options": {
+            "devServerTarget": "explorer:serve:local-prod",
+            "watch": true,
+            "headless": false
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "explorer:serve:production"
+            }
+          }
+        },
+        "cypress-run": {
+          "builder": "@cypress/schematic:cypress",
+          "options": {
+            "devServerTarget": "explorer:serve"
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "explorer:serve:production"
+            }
+          }
+        },
+        "cypress-open": {
+          "builder": "@cypress/schematic:cypress",
+          "options": {
+            "watch": true,
+            "headless": false
+          }
+        }
+      }
+    }
+  }
+}

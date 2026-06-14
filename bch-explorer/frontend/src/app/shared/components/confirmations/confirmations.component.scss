@@ -1,0 +1,15 @@
+.no-cursor {
+  cursor: default !important;
+  pointer-events: none;
+}
+
+a.btn {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+@media (max-width: 430px) {
+  .confirmation-compact {
+    font-size: 12px;
+  }
+}

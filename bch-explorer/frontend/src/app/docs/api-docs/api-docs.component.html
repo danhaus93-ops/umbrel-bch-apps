@@ -1,0 +1,1330 @@
+<ng-container *ngIf="{ val: network$ | async } as network">
+  <div class="container-xl text-start">
+    <div id="faq" *ngIf="whichTab === 'faq'">
+      <div
+        id="doc-nav-desktop"
+        class="hide-on-mobile"
+        [ngClass]="desktopDocsNavPosition"
+      >
+        <app-api-docs-nav
+          (navLinkClickEvent)="anchorLinkClick($event)"
+          [network]="{ val: network$ | async }"
+          [whichTab]="whichTab"
+        ></app-api-docs-nav>
+      </div>
+
+      <div class="doc-content">
+        <div id="disclaimer">
+          <table *ngIf="!mobileViewport">
+            <tr>
+              <td>
+                <app-svg-images
+                  name="warning"
+                  class="disclaimer-warning"
+                  viewBox="0 0 304 304"
+                  fill="#ffc107"
+                  width="50"
+                  height="50"
+                ></app-svg-images>
+              </td>
+              <td>
+                <ng-container *ngTemplateOutlet="faqDisclaimer"></ng-container>
+              </td>
+            </tr>
+          </table>
+          <div *ngIf="mobileViewport">
+            <app-svg-images
+              name="warning"
+              class="disclaimer-warning"
+              viewBox="0 0 304 304"
+              fill="#ffc107"
+              width="50"
+              height="50"
+            ></app-svg-images
+            ><ng-container *ngTemplateOutlet="faqDisclaimer"></ng-container>
+          </div>
+          <ng-template #faqDisclaimer i18n="faq.big-disclaimer"
+            ><p>
+              <b
+                >bchexplorer.cash merely provides data about the Bitcoin Cash
+                network.</b
+              >
+              It cannot help you with retrieving funds, wallet issues, etc.
+            </p>
+            <p>
+              For any such requests, you need to get in touch with the entity
+              that helped make the transaction (wallet software, exchange
+              company, etc).
+            </p></ng-template
+          >
+        </div>
+
+        <div class="doc-item-container" *ngFor="let item of faq">
+          <div
+            *ngIf="
+              !item.hasOwnProperty('options') ||
+              (item.hasOwnProperty('options') &&
+                item.options.hasOwnProperty('officialOnly') &&
+                item.options.officialOnly &&
+                officialMempoolInstance) ||
+              (item.hasOwnProperty('options') &&
+                item.options.hasOwnProperty('auditOnly') &&
+                item.options.auditOnly &&
+                auditEnabled)
+            "
+          >
+            <h3 *ngIf="item.type === 'category'">{{ item.title }}</h3>
+            <div
+              *ngIf="item.type !== 'category'"
+              class="endpoint-container"
+              id="{{ item.fragment }}"
+            >
+              <a
+                id="{{ item.fragment + '-tab-header' }}"
+                class="section-header"
+                (click)="
+                  anchorLinkClick({ event: $event, fragment: item.fragment })
+                "
+                ><table>
+                  <tr>
+                    <td>{{ item.title }}</td>
+                    <td>
+                      <span>{{ item.category }}</span>
+                    </td>
+                  </tr>
+                </table></a
+              >
+              <div class="endpoint-content">
+                <ng-container
+                  *ngTemplateOutlet="dict[item.fragment]"
+                  class="endpoint"
+                ></ng-container>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="restAPI" *ngIf="whichTab === 'rest'">
+      <div
+        id="doc-nav-desktop"
+        class="hide-on-mobile"
+        [ngClass]="desktopDocsNavPosition"
+      >
+        <app-api-docs-nav
+          (navLinkClickEvent)="anchorLinkClick($event)"
+          [network]="{ val: network$ | async }"
+          [whichTab]="whichTab"
+        ></app-api-docs-nav>
+      </div>
+
+      <div class="doc-content">
+        <p class="doc-welcome-note">
+          Below is a reference for the
+          {{
+            network.val === ""
+              ? "Bitcoin Cash"
+              : network.val.charAt(0).toUpperCase() + network.val.slice(1)
+          }}
+          <ng-container i18n="api-docs.title">REST API service</ng-container>.
+        </p>
+        <div class="doc-item-container" *ngFor="let item of restDocs">
+          <div
+            *ngIf="
+              !item.hasOwnProperty('options') ||
+              (item.hasOwnProperty('options') &&
+                item.options.hasOwnProperty('officialOnly') &&
+                item.options.officialOnly &&
+                officialMempoolInstance)
+            "
+          >
+            <h3
+              *ngIf="
+                item.type === 'category' &&
+                item.showConditions.indexOf(network.val) > -1
+              "
+            >
+              {{ item.title }}
+            </h3>
+            <div
+              *ngIf="
+                item.type !== 'category' &&
+                item.showConditions.indexOf(network.val) > -1
+              "
+              class="endpoint-container"
+              id="{{ item.fragment }}"
+            >
+              <a
+                id="{{ item.fragment + '-tab-header' }}"
+                class="section-header"
+                (click)="
+                  anchorLinkClick({ event: $event, fragment: item.fragment })
+                "
+                >{{ item.title }} <span>{{ item.category }}</span></a
+              >
+              <div class="endpoint-content">
+                <div class="endpoint">
+                  <div class="subtitle" i18n="Api docs endpoint">Endpoint</div>
+                  <ng-container
+                    *ngIf="
+                      item.httpRequestMethod === 'GET' &&
+                        network.val === 'bisq' &&
+                        item.codeExample.hasOwnProperty('bisq');
+                      else default_link_example
+                    "
+                    #bisq_link_example
+                  >
+                    <a
+                      [href]="wrapUrl(network.val, item.codeExample.bisq)"
+                      target="_blank"
+                      rel="nofollow"
+                      >{{ item.httpRequestMethod }} {{ baseNetworkUrl }}/api{{
+                        item.urlString
+                      }}</a
+                    >
+                  </ng-container>
+                  <ng-template #default_link_example>
+                    <ng-container *ngIf="item.httpRequestMethod === 'GET'">
+                      <a
+                        [href]="wrapUrl(network.val, item.codeExample.default)"
+                        target="_blank"
+                        rel="nofollow"
+                        >{{ item.httpRequestMethod }} {{ baseNetworkUrl }}/api{{
+                          item.urlString
+                        }}</a
+                      >
+                    </ng-container>
+                  </ng-template>
+                  <div *ngIf="item.httpRequestMethod === 'POST'">
+                    {{ item.httpRequestMethod }} {{ item.urlString }}
+                  </div>
+                </div>
+                <div class="description">
+                  <div class="subtitle" i18n>Description</div>
+                  <ng-container
+                    *ngIf="
+                      network.val === 'bisq' &&
+                        item.description.hasOwnProperty('bisq');
+                      else default_description
+                    "
+                    #bisq_description
+                  >
+                    <div [innerHTML]="item.description.bisq" i18n></div>
+                  </ng-container>
+                  <ng-template #default_description>
+                    <div [innerHTML]="item.description.default" i18n></div>
+                  </ng-template>
+                </div>
+                <ng-container
+                  *ngIf="
+                    network.val === 'bisq' &&
+                    item.codeExample.hasOwnProperty('bisq')
+                  "
+                  #bisq_code_example
+                >
+                  <app-code-template
+                    [hostname]="hostname"
+                    [baseNetworkUrl]="baseNetworkUrl"
+                    [method]="item.httpRequestMethod"
+                    [code]="item.codeExample.bisq"
+                    [network]="network.val"
+                    [showCodeExample]="item.showJsExamples"
+                  ></app-code-template>
+                </ng-container>
+
+                <app-code-template
+                  [hostname]="hostname"
+                  [baseNetworkUrl]="baseNetworkUrl"
+                  [method]="item.httpRequestMethod"
+                  [code]="item.codeExample.default"
+                  [network]="network.val"
+                  [showCodeExample]="item.showJsExamples"
+                ></app-code-template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="websocketAPI" *ngIf="whichTab === 'websocket'">
+      <div
+        id="doc-nav-desktop"
+        class="hide-on-mobile"
+        [ngClass]="desktopDocsNavPosition"
+      >
+        <app-api-docs-nav
+          (navLinkClickEvent)="anchorLinkClick($event)"
+          [network]="{ val: network$ | async }"
+          [whichTab]="whichTab"
+        ></app-api-docs-nav>
+      </div>
+
+      <div class="doc-content">
+        <p class="doc-welcome-note">
+          Below is a reference for the
+          {{
+            network.val === ""
+              ? "Bitcoin Cash"
+              : network.val.charAt(0).toUpperCase() + network.val.slice(1)
+          }}
+          Websocket service running at {{ websocketUrl(network.val) }}.
+        </p>
+        <div class="doc-item-container" *ngFor="let item of wsDocs">
+          <div
+            *ngIf="
+              !item.hasOwnProperty('options') ||
+              (item.hasOwnProperty('options') &&
+                item.options.hasOwnProperty('officialOnly') &&
+                item.options.officialOnly &&
+                officialMempoolInstance)
+            "
+          >
+            <h3
+              *ngIf="
+                item.type === 'category' &&
+                item.showConditions.indexOf(network.val) > -1
+              "
+            >
+              {{ item.title }}
+            </h3>
+            <div
+              *ngIf="
+                item.type !== 'category' &&
+                item.showConditions.indexOf(network.val) > -1
+              "
+              class="endpoint-container"
+              id="{{ item.fragment }}"
+            >
+              <a
+                id="{{ item.fragment + '-tab-header' }}"
+                class="section-header"
+                (click)="
+                  anchorLinkClick({ event: $event, fragment: item.fragment })
+                "
+                >{{ item.title }} <span>{{ item.category }}</span></a
+              >
+              <div class="endpoint-content">
+                <div class="description">
+                  <div class="subtitle" i18n>Description</div>
+                  <div [innerHTML]="item.description.default" i18n></div>
+                </div>
+                <div class="description">
+                  <div class="subtitle">Payload</div>
+                  <pre><code [innerText]="item.payload"></code></pre>
+                </div>
+                <app-code-template
+                  [hostname]="hostname"
+                  [baseNetworkUrl]="baseNetworkUrl"
+                  [method]="item.httpRequestMethod"
+                  [code]="item.codeExample.default"
+                  [network]="network.val"
+                  [showCodeExample]="item.showJsExamples"
+                ></app-code-template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<ng-template type="what-is-a-mempool">
+  <p>
+    A mempool (short for "memory pool") is the queue of pending and unconfirmed
+    transactions for a cryptocurrency network node. There is no one global
+    mempool: every node on the network maintains its own mempool, so different
+    nodes may hold different transactions in their mempools.
+  </p>
+</ng-template>
+
+<ng-template type="what-is-a-mempool-explorer">
+  <p>
+    A mempool explorer is a tool that enables you to view real-time and
+    historical information about a node's mempool, visualize its transactions,
+    and search and view those transactions.
+  </p>
+  <p>
+    Projected blocks are on the left of the dotted white line, and confirmed
+    blocks are on the right.
+  </p>
+  <div
+    class="blockchain-wrapper"
+    [dir]="timeLtr ? 'rtl' : 'ltr'"
+    [class.time-ltr]="timeLtr"
+  >
+    <div class="position-container">
+      <span>
+        <div class="blocks-wrapper">
+          <app-mempool-blocks></app-mempool-blocks>
+          <app-blockchain-blocks></app-blockchain-blocks>
+        </div>
+        <div id="divider"></div>
+      </span>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template type="what-is-a-blockchain">
+  <p>
+    A blockchain is a distributed ledger that records the transactions for a
+    cryptocurrency network. Miners amend the blockchain ledger by mining new
+    blocks.
+  </p>
+</ng-template>
+
+<ng-template type="what-is-a-block-explorer">
+  <p>
+    A block explorer is a tool that enables you to explore real-time and
+    historical information about the blockchain of a cryptocurrency. This
+    includes data related to blocks, transactions, addresses, and more.
+  </p>
+</ng-template>
+
+<ng-template type="what-is-mining">
+  <p>
+    Mining is the process by which unconfirmed transactions in a mempool are
+    confirmed into a block on a blockchain. Miners select unconfirmed
+    transactions from their mempools and arrange them into a block such that
+    they solve a particular math problem.
+  </p>
+  <p>
+    The first miner on the network to find a suitable block earns all the
+    transaction fees from the transactions in that block. As a result, miners
+    tend to prioritize transactions with higher transaction fees.
+  </p>
+</ng-template>
+
+<ng-template type="what-are-mining-pools">
+  Mining pools are groups of miners that combine their computational power in
+  order to increase the probability of finding new blocks.
+</ng-template>
+
+<ng-template type="what-are-bytes">
+  <p>
+    Bytes (B) are used to measure the size of transactions and blocks on the
+    Bitcoin Cash network.
+  </p>
+  <p>
+    A Bitcoin Cash transaction's size in the blockchain is <i>not</i> determined
+    how much Bitcoin Cash it transfers—instead, a transaction's size is
+    determined by technical factors such as how many inputs and outputs it has,
+    how many signatures it has, and the format it uses (normal, etc). Since
+    space in the Bitcoin Cash blockchain is limited, bigger transactions pay
+    more in mining fees than smaller transactions.
+  </p>
+  <p>
+    Block sizes have a minimum size of 32MB. But the block size can be larger
+    than that, and is calculated dynamically by ABLA (Adaptive Blocksize Limit
+    Algorithm). With ABLA there is no upper limit on the block size (although
+    capped to ~2x increase per year).
+  </p>
+</ng-template>
+
+<ng-template type="what-is-sb">
+  <p>
+    The priority of a pending Bitcoin Cash transaction is determined by its
+    feerate. Feerates are measured in sat/B.
+  </p>
+  <p>
+    Using a higher sat/B feerate for a Bitcoin Cash transaction will generally
+    result in quicker confirmation than using a lower feerate. But feerates
+    change all the time, so it's important to check suggested feerates right
+    before making a transaction to
+    <a
+      [routerLink]="['/docs/faq' | relativeUrl]"
+      fragment="why-is-transaction-stuck-in-mempool"
+      >avoid it from getting stuck</a
+    >. That being said, in Bitcoin Cash the fees are low, so you can usually get
+    away with a lower feerate.
+  </p>
+  <p>
+    There are feerate estimates on the top of
+    <a [routerLink]="['/' | relativeUrl]">the main dashboard</a> you can use as
+    a guide. See
+    <a
+      [routerLink]="['/docs/faq' | relativeUrl]"
+      fragment="looking-up-fee-estimates"
+      >this FAQ</a
+    >
+    for more on picking the right feerate.
+  </p>
+</ng-template>
+
+<ng-template type="why-is-transaction-stuck-in-mempool">
+  <p>
+    If it's been a while and your transaction hasn't confirmed, your transaction
+    is probably using a lower feerate relative to other transactions currently
+    in the mempool. Depending on how you made your transaction, there may be
+    <a
+      [routerLink]="['/docs/faq' | relativeUrl]"
+      fragment="how-to-get-transaction-confirmed-quickly"
+      >ways to accelerate the process</a
+    >.
+  </p>
+  <p>
+    There's no need to panic—a Bitcoin Cash transaction will always either
+    confirm completely (or not at all) at some point. As long as you have your
+    transaction's ID, you can always see where your funds are.
+  </p>
+  <p>
+    This site only provides data about the Bitcoin Cash network. To get help
+    with a transaction, get in touch with the entity that helped make the
+    transaction (wallet software, exchange company, etc).
+  </p>
+</ng-template>
+
+<ng-template type="how-to-get-transaction-confirmed-quickly">
+  <p>
+    To get your transaction confirmed quicker, you can set a higher feerate.
+  </p>
+  <p>
+    Due to its increased block capacity, Bitcoin Cash maintains high throughput
+    during periods of peak demand. Meaning your transaction will most likely
+    end-up in the next block.
+  </p>
+
+  <p>
+    Furthermore, Bitcoin Cash has
+    <a
+      [routerLink]="['/docs/faq' | relativeUrl]"
+      fragment="what-is-zero-confirmation"
+      >zero confirmation (0-conf)</a
+    >. This means that transactions are immediately available for spending, even
+    before they are confirmed in a block. And allow for near-instant peer to
+    peer payments by merchants or for e-commerce. Small transactions are safe to
+    spend immediately without waiting for confirmation.
+  </p>
+</ng-template>
+
+<ng-template type="how-prevent-stuck-transaction">
+  <p>
+    Bitcoin Cash has big blocks with enough space to handle a lot of
+    transactions even during high traffic. So, your transaction will most likely
+    confirm within the next block and will never get stuck in the mempool.
+  </p>
+
+  <p>
+    You can look at the BCH Explorer's fee estimates on the
+    <a [routerLink]="['/' | relativeUrl]">front page</a>. If you want to have an
+    idea how high you need to set your sat/B.
+  </p>
+</ng-template>
+
+<ng-template type="looking-up-transactions">
+  Search for the transaction ID in the search box at the top-right of this
+  website. You can also use the search box for searching on CashToken
+  categories.
+</ng-template>
+
+<ng-template type="looking-up-addresses">
+  Search for the address in the search box at the top-right of this website.
+</ng-template>
+
+<ng-template type="looking-up-blocks">
+  Search for the block number (or block hash) in the search box at the top-right
+  of this website.
+</ng-template>
+
+<ng-template type="looking-up-fee-estimates">
+  <p>
+    See real-time fee estimates on
+    <a [routerLink]="['/' | relativeUrl]">the main dashboard</a>.
+  </p>
+  <p>Here is an overview of BCH Exploer's feerate suggestions:</p>
+  <ul>
+    <li>
+      <b>High Priority.</b> This figure is the median feerate of transactions in
+      the
+      <a [routerLink]="['/mempool-block/0' | relativeUrl]"
+        >first mempool block</a
+      >. Consider using this feerate if you want confirmation as soon as
+      possible.
+    </li>
+    <li>
+      <b>Medium Priority.</b> This figure is the average of the median feerate
+      of the
+      <a [routerLink]="['/mempool-block/0' | relativeUrl]"
+        >first mempool block</a
+      >
+      and the median feerate of the
+      <a [routerLink]="['/mempool-block/1' | relativeUrl]"
+        >second mempool block</a
+      >.
+    </li>
+    <li>
+      <b>Low Priority.</b> This figure is the average of the Medium Priority
+      feerate and the median feerate of the
+      <a [routerLink]="['/mempool-block/2' | relativeUrl]"
+        >third mempool block</a
+      >. Consider using this feerate if you want confirmation soon, and your
+      transaction will already very likely be mined in the next block. On small
+      amount transactions you can even trust on
+      <a
+        [routerLink]="['/docs/faq' | relativeUrl]"
+        fragment="what-is-zero-confirmation"
+        >0-conf</a
+      >.
+    </li>
+    <li>
+      <b>No Priority.</b> This figure is either 2x the minimum feerate, or the
+      Low Priority feerate (whichever is lower). You are still very likl to your
+      transaction confirmed in the next block.
+    </li>
+  </ul>
+  <p>
+    In all cases, the suggested feerate is adjusted lower if any of the mempool
+    blocks involved in the calculation are not full (example: if there is only 1
+    mempool block that's less than half-full, BCH Explorer will suggest a
+    feerate of 1 sat/B—not the median feerate of transactions in the block).
+  </p>
+  <p>
+    Mempool blocks use feerates, transaction sizes, and other metrics to
+    <b>forecast</b> which transactions will be in future blocks. Actual blocks
+    will turn out to be different: miners have their own views of the mempool,
+    their own algorithms for determining which transactions to include in a
+    block, etc.
+  </p>
+  <p>
+    Ultimately, the Bitcoin Cash network is not perfectly predictable, so fee
+    estimation cannot be perfectly precise.
+  </p>
+  <p>
+    Use BCH Explorer's feerate suggestions as a guide, and understand that they
+    do not guarantee transaction confirmation in any period of time. However, in
+    Bitcoin Cash the fees are low and the block sizes are big enough that most
+    transations are confirmed within the next block.
+  </p>
+</ng-template>
+
+<ng-template type="looking-up-historical-trends">
+  See the <a [routerLink]="['/graphs' | relativeUrl]">graphs page</a> for
+  aggregate trends over time: mempool size over time and incoming transaction
+  velocity over time.
+</ng-template>
+
+<ng-template type="what-is-full-mempool">
+  <p>
+    When a Bitcoin Cash transaction is made, it is stored in a Bitcoin Cash
+    node's mempool before it is confirmed into a block. When the rate of
+    incoming transactions exceeds the rate transactions are confirmed, the
+    mempool grows in size.
+  </p>
+  <p>
+    By default, Bitcoin Cash Node allocates 320MB of memory for its mempool, so
+    when a node's mempool grows big enough to use all 320MB of allocated memory,
+    we say it's "full".
+  </p>
+  <p>
+    Once a node's mempool is using all of its allocated memory, it will start
+    rejecting new transactions below a certain feerate threshold—so when this is
+    the case, be extra sure to set a feerate that (at a minimum) exceeds that
+    threshold. The current threshold feerate (and memory usage) are displayed
+    right on BCH Explorer's front page.
+  </p>
+</ng-template>
+
+<ng-template type="why-empty-blocks">
+  <p>
+    When a new block is found, mining pools often send miners new block
+    templates prior to fully validating the new block, often before they've even
+    received the new block. During this time, it is not possible to select
+    transactions for the next block as a pool isn't sure which transactions
+    conflict with transactions already mined.
+  </p>
+  <p>
+    While empty blocks do not add additional transactions to the blockchain,
+    they do contribute to the overall security of transactions already in the
+    chain.
+  </p>
+</ng-template>
+
+<ng-template type="what-are-cashtokens">
+  <p>
+    <strong>CashTokens</strong> are efficient, native
+    <strong>layer-1</strong> tokens built directly into the Bitcoin Cash
+    network. These are digital assets that can be created, owned, and utilized
+    by individuals, organizations, or decentralized applications on the
+    decentralized Bitcoin Cash network. CashTokens are optional to use in the
+    Bitcoin Cash network.
+  </p>
+  <p>
+    <strong>Types of CashTokens:</strong>
+  </p>
+  <ul>
+    <li>
+      <strong>Fungible Tokens:</strong> These are traditional tokens where each
+      unit is identical and interchangeable. They can be merged, divided, and
+      used for assets like stablecoins, loyalty points, voting shares, utility
+      tokens, and collateralized loans.
+    </li>
+    <li>
+      <strong>Non-Fungible Tokens (NFTs):</strong> Unique tokens that cannot be
+      merged or divided. In CashTokens, these are authenticated messages that
+      allow contracts to attest to commitments in an impersonation-proof way,
+      enabling advanced covenant functionality.
+    </li>
+  </ul>
+
+  <p>
+    <strong>Use Cases:</strong>
+  </p>
+  <p>
+    CashTokens enable developers to build on-chain decentralized applications
+    including crowdfunding systems, trading protocols, decentralized exchanges
+    (DEXs), cross-chain bridges, and more. They provide the building blocks for
+    complex coordination tasks like liquidity-pooling, auctions, voting, and
+    sidechain operations.
+  </p>
+  <p>
+    <strong>Learn More:</strong> Visit
+    <a href="https://cashtokens.org/" target="_blank">cashtokens.org</a> for
+    detailed documentation and technical specifications.
+  </p>
+</ng-template>
+
+<ng-template type="what-is-p2s">
+  <p>
+    <strong>P2S (Pay to Script)</strong> is a new output type introduced in
+    Bitcoin Cash's <strong>May 2026 network upgrade</strong>. It allows the full
+    locking script to be embedded directly in the output; without a hash
+    wrapper, up to 201 bytes in length.
+  </p>
+  <p>
+    <strong>How it differs from P2SH:</strong>
+  </p>
+  <ul>
+    <li>
+      <strong>No hash indirection.</strong> P2SH outputs lock funds to a hash of
+      a redeem script; the actual script is only revealed at spend time. P2S
+      outputs contain the locking script directly, making the spending
+      conditions immediately visible on-chain.
+    </li>
+    <li>
+      <strong>No payable CashAddress.</strong> Because P2S outputs don't follow
+      the standard address format, wallets won't generate a CashAddress for
+      them. This makes P2S safer for contract use. Users can't accidentally send
+      funds to a contract output that may be unrecoverable.
+    </li>
+    <li>
+      <strong>More byte-efficient.</strong> By skipping the hash/verify overhead
+      of P2SH, P2S reduces the size of many covenant and multi-party contract
+      outputs by around 34 bytes per output.
+    </li>
+  </ul>
+  <p>
+    <strong>Use cases:</strong> P2S is primarily aimed at developers building
+    vaults, multi-party covenants, decentralized exchanges, and other on-chain
+    applications where the locking conditions should be transparent and directly
+    inspectable by the contract itself.
+  </p>
+  <p>
+    <strong>Learn more:</strong> See the
+    <a href="https://github.com/bitjson/bch-p2s" target="_blank"
+      >CHIP-2024-12 P2S specification</a
+    >
+    for full technical details.
+  </p>
+</ng-template>
+
+<ng-template type="what-is-zero-confirmation">
+  <p>
+    Zero-confirmation (0-conf) transactions are Bitcoin Cash transactions that
+    are processed and confirmed almost instantly, without waiting for the block
+    confirmation process. This allows for near-instant payment processing like
+    in-store purchases or online transactions where speed is important.
+  </p>
+  <p>
+    Bitcoin Cash has <strong>no</strong> RBF, CPFP or accelerators, meaning zero
+    confirmations are safe enough for small amounts. While small BCH amounts are
+    safe for 0-conf, we advise on multiple confirmations for (very) large BCH
+    amounts.
+  </p>
+</ng-template>
+
+<ng-template type="what-is-abla">
+  <p>
+    <strong>ABLA</strong> stands for
+    <strong>Adaptive Blocksize Limit Algorithm</strong>, which is the mechanism
+    that Bitcoin Cash uses to automatically adjust the maximum block size limit
+    based on network demand.
+  </p>
+  <p>
+    Bitcoin Cash implemented ABLA to allow the block size to grow organically as
+    the network scales. The algorithm monitors block sizes over time and
+    gradually increases the limit when blocks are consistently full, ensuring
+    the network can handle increased transaction volume without requiring hard
+    forks for size adjustments.
+  </p>
+  <p>The algorithm works by:</p>
+  <ul>
+    <li>Tracking the average block size over a recent period</li>
+    <li>
+      Gradually increasing the limit when blocks are consistently near capacity
+    </li>
+    <li>Providing predictable growth patterns for developers and users</li>
+    <li>Ensuring the network can scale to meet growing demand</li>
+  </ul>
+  <p>
+    This approach allows Bitcoin Cash to maintain low fees and reliable
+    transaction confirmation times even as adoption grows, making it suitable
+    for global payment applications.
+  </p>
+</ng-template>
+
+<ng-template type="how-big-is-mempool-used-by-bch-explorer">
+  <p>
+    bchexplorer.cash uses multiple Bitcoin Cash nodes to obtain data: some with
+    the default 320MB mempool memory limit (call these Small Nodes) and others
+    with a much larger mempool memory limit (call these Big Nodes).
+  </p>
+  <p>
+    Many nodes on the Bitcoin Cash network are configured to run with the
+    default 320MB mempool memory setting. When all 320MB of memory are used up,
+    such nodes will reject transactions below a certain threshold feerate.
+    Running Small Nodes allows bchexplorer.cash to tell you what this threshold
+    feerate is—this is the "Purging" feerate that shows on the front page when
+    mempools are full, which you can use to be reasonably sure that your
+    transaction will be widely propagated.
+  </p>
+  <p>
+    Big Node mempools are so big that they don't need to reject (or purge)
+    transactions. Such nodes allow for bchexplorer.cash to provide you with
+    information on any pending transaction it has received—no matter how
+    congested the mempool is, and no matter how low-feerate or low-priority the
+    transaction is.
+  </p>
+</ng-template>
+
+<ng-template type="what-is-memory-usage">
+  <p>
+    Memory usage on the front page refers to the real-time amount of system
+    memory used by a Bitcoin Cash node's mempool. This memory usage number is
+    always higher than the total size of all pending transactions in the mempool
+    due to indexes, pointers, and other overhead used by Bitcoin Cash Node for
+    storage and processing.
+  </p>
+  <p>
+    bchexplorer.cash shows the memory usage of a Bitcoin Cash node that has a
+    very high mempool memory limit. As a result, when mempools fill up, you may
+    notice memory usage on bchexplorer.cash go beyond 320MB. This is not a
+    mistake—this memory usage figure is high because it's for a Bitcoin Cash
+    node that isn't rejecting (or evicting) transactions. Consider it to be
+    another data point to give you an idea of how congested the mempool is
+    relative to the default memory limit of 320MB.
+  </p>
+  <p>
+    A Bitcoin Cash node running the default 320MB mempool memory limit, like
+    most Raspberry Pi nodes, will never go past 320MB of memory usage.
+  </p>
+</ng-template>
+
+<ng-template type="why-block-timestamps-dont-always-increase">
+  <p>
+    Block validation rules do not strictly require that a block's timestamp be
+    more recent than the timestamp of the block preceding it. Without a central
+    authority, it's impossible to know what the exact correct time is. Instead,
+    the Bitcoin Cash protocol requires that a block's timestamp meet certain
+    requirements. One of those requirements is that a block's timestamp cannot
+    be older than the median timestamp of the 12 blocks that came before it. See
+    more details
+    <a href="https://en.Bitcoin Cash.it/wiki/Block_timestamp" target="_blank"
+      >here</a
+    >.
+  </p>
+  <p>
+    As a result, timestamps are only accurate to within an hour or so, which
+    sometimes results in blocks with timestamps that appear out of order.
+  </p>
+</ng-template>
+
+<ng-template type="why-dont-fee-ranges-match">
+  <p>
+    BCH Explorer aims to show you the <i>effective feerate</i> range for
+    blocks—how much would you actually need to pay to get a transaction included
+    in a block.
+  </p>
+  <p>
+    A transaction's effective feerate is not always the same as the feerate
+    explicitly set for it. For example, if you see a 1 s/b transaction in a
+    block with a displayed feerate range of 5 s/b to 72 s/b, chances are that 1
+    s/b transaction had a high-feerate child transaction that boosted its
+    effective feerate to 5 s/b or higher. In such a case, it would be misleading
+    to use 1 s/b as the lower bound of the block's feerate range since it
+    actually required more than 1 s/b to confirm that transaction in that block.
+  </p>
+  <p>You can find a transaction's feerate on its transaction details page.</p>
+</ng-template>
+
+<ng-template type="how-do-block-audits-work">
+  <p>
+    A block audit visually compares BCH Explorer's expected block to the actual
+    block for a particular block height.
+  </p>
+  <p>
+    How is the expected block determined? BCH Explorer monitors its view of the
+    mempool and runs a re-implementation of Bitcoin Cash Node's transaction
+    selection algorithm to determine the transactions it expects to see in
+    upcoming blocks (<a
+      href="https://gitlab.melroy.org/bitcoincash/bitcoin-cash-explorer/blob/main/backend/src/api/mempool-blocks.ts"
+      target="_blank"
+      >source code here</a
+    >). Since there is a continual flow of new transactions, this algorithm runs
+    every 2 seconds, and as a result, you will see the transactions
+    <a href="/mempool-block/0">projected to be in upcoming blocks</a> change in
+    near real-time.
+  </p>
+  <p>
+    At the moment a new block is mined, BCH Explorer saves a snapshot of its
+    projected block template for the next block. We call this snapshot the
+    <b>expected block</b> for the block height in question, and it serves as the
+    basis for the block audit.
+  </p>
+  <p>
+    When details for an expected block and actual block are available, we can
+    compare them.
+    <b
+      >The purpose of block audits is to deduce when miners intentionally
+      include or exclude transactions from blocks they mine.</b
+    >
+    Since this information cannot be precisely known, BCH Explorer uses a
+    handful of heuristics to accomplish this.
+  </p>
+  <p>
+    Block audits highlight transactions in different colors to convey these
+    heuristics:
+  </p>
+  <ul class="no-bull block-audit">
+    <li>
+      <span class="block-audit-highlight-color added">■</span><code>Added</code>
+      <p>
+        A transaction is highlighted blue if it is not present in the expected
+        block, present in the actual block, and also either:
+      </p>
+      <ul>
+        <li>
+          far out of the expected feerate range, meaning the miner may have
+          intentionally prioritized the transaction
+        </li>
+        <li>
+          not in the mempool at all, meaning the miner may have accepted the
+          transaction out-of-band
+        </li>
+      </ul>
+      <p>
+        Added transactions do not negatively affect
+        <a
+          [routerLink]="['/docs/faq' | relativeUrl]"
+          fragment="what-is-block-health"
+          >block health</a
+        >.
+      </p>
+    </li>
+    <li>
+      <span class="block-audit-highlight-color recent">■</span
+      ><code>Recently broadcasted</code>
+      <p>
+        A transaction is highlighted dark pink if it is present in the expected
+        block, not present in the actual block, and was first seen by BCH
+        Explorer's Bitcoin Cash node within 3 minutes of the block being mined.
+      </p>
+      <p>
+        Due to network latency and other factors, it can take time for a miner's
+        Bitcoin Cash nodes to receive a transaction, so we do not assume a miner
+        has intentionally excluded such a transaction from a block.
+      </p>
+      <p>
+        Recently-broadcasted transactions do not negatively affect
+        <a
+          [routerLink]="['/docs/faq' | relativeUrl]"
+          fragment="what-is-block-health"
+          >block health</a
+        >.
+      </p>
+    </li>
+    <li>
+      <span class="block-audit-highlight-color marginal">■</span
+      ><code>Marginal fee rate</code>
+      <p>
+        A transaction is darkened if it is at the low end of the expected
+        feerate range and missing in either the expected block or the actual
+        block. This covers two cases:
+      </p>
+      <ul>
+        <li>
+          <b>Marginal fee rate:</b> the transaction has a fee rate so close to
+          the block's cutoff that it may have been displaced by another
+          transaction competing for the last bytes of space.
+        </li>
+        <li>
+          <b>Selected (marginal):</b> the transaction was a borderline candidate
+          in the projected block template, sitting at the boundary of what would
+          be included.
+        </li>
+      </ul>
+      <p>
+        In either case the deviation is not considered notable, and these
+        transactions do not negatively affect
+        <a
+          [routerLink]="['/docs/faq' | relativeUrl]"
+          fragment="what-is-block-health"
+          >block health</a
+        >.
+      </p>
+    </li>
+    <li>
+      <span class="block-audit-highlight-color removed">■</span
+      ><code>Removed / No match</code>
+      <p>A transaction is highlighted bright pink under two circumstances:</p>
+      <ul>
+        <li>
+          <b>Removed (censored):</b> the transaction is present in the expected
+          block, not present in the actual block, and qualifies as neither
+          recently-broadcasted nor marginal-fee. It has been in the mempool long
+          enough to be widely propagated and has a feerate well within the range
+          expected for the block. There is a chance the miner intentionally
+          excluded it.
+        </li>
+        <li>
+          <b>No match:</b> a transaction in the projected block could not be
+          matched to any transaction in the actual block, and the projected data
+          is considered stale. This shares the same color but does
+          <i>not</i> affect block health.
+        </li>
+      </ul>
+      <p>
+        Only <b>Removed</b> transactions negatively affect
+        <a
+          [routerLink]="['/docs/faq' | relativeUrl]"
+          fragment="what-is-block-health"
+          >block health</a
+        >.
+      </p>
+      <p>
+        Block health is calculated as
+        <span class="math">matches / (matches + removed)</span>, where only
+        truly removed transactions count against it.
+      </p>
+    </li>
+  </ul>
+  <p>
+    See how results of the block audit are used to devise the block health score
+    <a
+      [routerLink]="['/docs/faq' | relativeUrl]"
+      fragment="what-is-block-health"
+      >below</a
+    >.
+  </p>
+  <p class="note">
+    Because of this feature's resource usage and availability requirements, it
+    is only supported on official bchexplorer.cash instance.
+  </p>
+</ng-template>
+
+<ng-template type="what-is-block-health">
+  <p>
+    Block health is a measure of how many transactions appear to be
+    intentionally excluded from a block—a block without any transactions that
+    appear intentionally excluded will have 100% health, while a block with 1 or
+    more transactions that appear intentionally excluded will have sub-100%
+    health.
+  </p>
+  <p>
+    How is it calculated? Let <span class="math">s<sub>expected</sub></span> be
+    the set of all transactions in BCH Explorer's expected block and let
+    <span class="math">s<sub>actual</sub></span> be the set of all transactions
+    in the actual block. Then let <span class="math">n</span> be the number of
+    all transactions in both <span class="math">s<sub>expected</sub></span> and
+    <span class="math">s<sub>actual</sub></span
+    >.
+  </p>
+  <p>
+    Furthermore, let <span class="math">r</span> be the number of transactions
+    BCH Explorer deduces were
+    <a
+      [routerLink]="['/docs/faq' | relativeUrl]"
+      fragment="how-do-block-audits-work"
+      >intentionally excluded</a
+    >
+    from <span class="math">s<sub>actual</sub></span
+    >.
+  </p>
+  <p>Block health is calculated as <span class="math">n / ( n + r</span> ).</p>
+  <p>
+    The number of transactions appearing in both
+    <span class="math">s<sub>expected</sub></span> and
+    <span class="math">s<sub>actual</sub></span> is used (instead of a block's
+    full transaction count) in order to minimize chances that block health is
+    inadvertently impacted by transactions that were most likely not
+    intentionally excluded:
+  </p>
+  <ul>
+    <li>
+      recently-broadcast transactions, since the miner may simply not have
+      received them
+    </li>
+    <li>
+      certain low-feerate transactions, since the miner may have opted to
+      replace them with more profitable out-of-band transactions
+    </li>
+  </ul>
+  <p>
+    As a result, block health is <i>not</i> intended to be a measure of how
+    closely an expected block resembles an actual block. The actual block can be
+    vastly different from the expected block, but if
+    <strong>no</strong> transactions appear to be intentionally excluded, it
+    will have a high health rating (<a
+      [routerLink]="[
+        '/block/000000000000000001090475de52b94dd6f49240817ddb4bb851586a2c1dda0e',
+      ]"
+      >for example</a
+    >).
+  </p>
+  <p>
+    See more context in our FAQ on
+    <a
+      [routerLink]="['/docs/faq' | relativeUrl]"
+      fragment="how-do-block-audits-work"
+      >block audits</a
+    >.
+  </p>
+  <p class="note">
+    Because of this feature's resource usage and availability requirements, it
+    is only supported on official bchexplorer.cash instance.
+  </p>
+</ng-template>
+
+<ng-template type="how-do-explorer-goggles-work">
+  <p>
+    Explorer Goggles are a set of filters that can be applied to the
+    <a [routerLink]="['/mempool-block/0' | relativeUrl]"
+      >mempool block visualizations</a
+    >
+    to highlight different types of transactions.
+  </p>
+  <p>
+    There are currently 18 different Explorer Goggles filters, grouped into five
+    categories:
+  </p>
+  <dl>
+    <dt>Features</dt>
+    <dd>
+      <dl>
+        <dt>Version 1</dt>
+        <dd>The default version for most transactions.</dd>
+        <dt>Version 2</dt>
+        <dd>
+          Required for transactions which use OP_CHECKSEQUENCEVERIFY relative
+          timelocks.
+        </dd>
+      </dl>
+    </dd>
+
+    <dt>Address Types</dt>
+    <dd>
+      <dl>
+        <dt>P2PK</dt>
+        <dd>
+          Pay-to-public-key. A legacy output format most commonly found in old
+          coinbase transactions.
+        </dd>
+        <dt>Bare multisig</dt>
+        <dd>
+          A legacy form of multisig, most commonly used for data embedding
+          schemes (see also "Fake pubkey").
+        </dd>
+        <dt>P2PKH</dt>
+        <dd>
+          Pay-to-public-key-hash. A address type that locks outputs to a public
+          key.
+        </dd>
+        <dt>P2SH</dt>
+        <dd>
+          Pay-to-script-hash. A address type that locks outputs to a
+          <em>redeem script</em>.
+        </dd>
+        <dt>P2S</dt>
+        <dd>
+          Pay-to-script. Introduced in the May 2026 upgrade, P2S outputs embed
+          the full locking script directly, without a hash wrapper, up to 201
+          bytes. Unlike P2SH, P2S outputs have no payable CashAddress, making
+          them safer for contract use.
+        </dd>
+      </dl>
+    </dd>
+
+    <!-- <dt>Behavior</dt>
+    <dd>
+      <dl>
+      </dl>
+    </dd> -->
+
+    <dt>Data</dt>
+    <dd>
+      Different methods of embedding arbitrary data in a Bitcoin Cash
+      transaction.
+      <dl>
+        <dt>OP_RETURN</dt>
+        <dd>
+          A standard way to embed data in a transaction using the OP_RETURN
+          opcode. Bitcoin Cash increased the maximum size of the data from 80
+          bytes to 220 bytes.
+        </dd>
+        <dt>Fake pubkey</dt>
+        <dd>
+          Data may be embedded in an invalid public key in a P2PK or Bare
+          multisig output. This is a heuristic filter and can be prone to false
+          positives and false negatives.
+        </dd>
+        <dt>Fake scripthash</dt>
+        <dd>
+          Data may be embedded in an invalid script hash in a P2SH output. This
+          is a heuristic filter and can be prone to false positives and false
+          negatives.
+        </dd>
+      </dl>
+    </dd>
+
+    <dt>Heuristics</dt>
+    <dd>
+      These filters match common types of transactions according to subjective
+      criteria.
+      <dl>
+        <dt>Coinjoin</dt>
+        <dd>A type of collaborative privacy-improving transaction.</dd>
+        <dt>Consolidation</dt>
+        <dd>The transaction condenses many inputs into a few outputs.</dd>
+        <dt>Batch payment</dt>
+        <dd>The transaction sends coins from a few inputs to many outputs.</dd>
+      </dl>
+    </dd>
+
+    <dt>Sighash Flags</dt>
+    <dd>
+      Different ways of signing inputs to Bitcoin Cash transactions. Note that
+      selecting multiple sighash filters will highlight transactions in which
+      each sighash flag is used, but not necessarily in the same input.
+      <dl>
+        <dt>sighash_all</dt>
+        <dt>sighash_none</dt>
+        <dt>sighash_single</dt>
+        <dt>sighash_utxos</dt>
+        <dt>sighash_anyonecanpay</dt>
+      </dl>
+    </dd>
+  </dl>
+</ng-template>
+
+<ng-template type="what-are-sigops">
+  <p>
+    A "sigop" is a way of accounting for the cost of "signature operations" in
+    Bitcoin Cash script, like <code>OP_CHECKSIG</code>,
+    <code>OP_CHECKSIGVERIFY</code>, <code>OP_CHECKMULTISIG</code> and
+    <code>OP_CHECKMULTISIGVERIFY</code>
+  </p>
+  <p>
+    These signature operations incur different costs depending on whether they
+    are single or multi-sig operations, and on where they appear in a Bitcoin
+    Cash transaction.
+  </p>
+  <p>
+    Since May 2020 Bitcoin Cash uses SigChecks that replaces the SigOps limit.
+    With a 32MB blocksize that would be 226,950 SigChecks per block. And the per
+    transation limit is 3000 SigChecks.
+  </p>
+</ng-template>
+
+<ng-template type="why-do-the-projected-block-fee-ranges-overlap">
+  <p>
+    The projected mempool blocks represent what we expect the next blocks would
+    look like if they were mined right now, and so each projected block follows
+    all of the same rules and constraints as real mined blocks.
+  </p>
+  <p>
+    Those constraints can sometimes cause transactions with lower feerates to be
+    included "ahead" of transactions with higher rates.
+  </p>
+  <p>
+    For example, if one projected block has a very small amount of space left,
+    it might be able to fit one more tiny low feerate transaction, while larger
+    higher feerate transactions have to wait for the following block.
+  </p>
+  <p>
+    A similar effect can occur when there are a large number of transactions
+    with very many sigops. In that scenario, each projected block can only
+    include up to 80,000 sigops worth of transactions, after which the remaining
+    space can only be filled by potentially much lower fee transactions with
+    zero sigops.
+  </p>
+  <p>
+    In extreme cases this can produce several projected blocks in a row with
+    overlapping fee ranges, as a result of each projected block containing both
+    high-feerate high-sigop transactions and lower feerate zero-sigop
+    transactions.
+  </p>
+</ng-template>
+
+<ng-template type="who-runs-this-website">
+  <p>
+    The official
+    <a href="https://bchexplorer.cash" target="_blank">bchexplorer.cash</a>
+    website is operated by
+    <a href="https://melroy.org/donate.html" target="_blank"
+      >Melroy van den Berg</a
+    >. See more information on our <a [routerLink]="['/about']">About page</a>.
+  </p>
+  <p>
+    There might be some unofficial instances of this website operated by
+    individual members of the Bitcoin Cash community, which are running their
+    own instances of the software. Please be aware that these independent
+    instances are not affiliated with the official bchexplorer.cash website and
+    I cannot provide assistance with issues on those instances.
+  </p>
+</ng-template>
+
+<ng-template type="host-my-own-instance-server">
+  <p>
+    You can manually install BCH Explorer on your own server, but this requires
+    advanced sysadmin skills since you will be manually configuring everything.
+    You could also use our
+    <a
+      href="https://gitlab.melroy.org/bitcoincash/bitcoin-cash-explorer/-/tree/main/docker"
+      target="_blank"
+      >Docker images</a
+    >.
+  </p>
+  <p>
+    BCH Explorer can also run on a Raspberry Pi or other single-board computers.
+  </p>
+</ng-template>
+
+<ng-template type="install-mempool-with-docker">
+  Yes, we publish Docker images (or you can build your own). Check out
+  <a
+    href="https://gitlab.melroy.org/bitcoincash/bitcoin-cash-explorer/-/tree/main/docker"
+    target="_blank"
+    >the documentation</a
+  >
+  for details.
+</ng-template>
+
+<ng-template type="address-lookup-issues">
+  <p>
+    If you're getting errors when doing address lookups, it's probably because
+    of your Electrum server backend.
+  </p>
+  <p>
+    BCH Explorer uses an Electrum server to do address lookups. Fulcrum is the
+    recommended backend for BCH Explorer and it handles heavy queries much more
+    efficiently.
+  </p>
+  <ol>
+    <li>
+      <a href="https://github.com/cculianu/Fulcrum" target="_blank">Fulcrum</a>.
+      Fulcrum is the recommended backend for BCH Exploer and it handles heavy
+      queries much more efficiently.
+    </li>
+  </ol>
+</ng-template>

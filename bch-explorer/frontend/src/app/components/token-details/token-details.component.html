@@ -1,0 +1,397 @@
+<div class="container-xl" *ngIf="!error; else errorTemplate">
+  <!-- Token overview -->
+  <div *ngIf="getTokenInfo(); else loadingMain">
+    @let tokenInfo = getTokenInfo();
+    <div class="token-block mb-3">
+      @if (tokenInfo.hasIcon) {
+        <img
+          width="50"
+          height="50"
+          [src]="resolveIconUrl(tokenInfo.uris['icon'])"
+          [alt]="tokenInfo.name + ' token icon'"
+          class="me-3"
+        />
+      } @else {
+        <div
+          class="skeleton-loader me-3"
+          style="width: 50px; height: 50px; border-radius: 50%"
+        ></div>
+      }
+      <h1 class="token-title pt-1">{{ tokenInfo.name }}</h1>
+      <span class="token-link">
+        <app-truncate
+          [text]="tokenInfo.category"
+          [lastChars]="12"
+          [maxWidth]="400"
+          [link]="['/token/' | relativeUrl, tokenInfo.category]"
+        >
+          <span
+            class="qrSpan"
+            (mouseover)="showQR = true"
+            (mouseout)="showQR = false"
+            (pointerdown)="showQR = true"
+          >
+            <fa-icon
+              [icon]="['fas', 'qrcode']"
+              [fixedWidth]="true"
+              [style.font-size]="isMobile ? '18px' : '12px'"
+            ></fa-icon>
+            <div class="qr-wrapper" [hidden]="!showQR">
+              <app-qrcode [size]="200" [data]="tokenInfo.category"></app-qrcode>
+            </div>
+          </span>
+          <app-clipboard
+            [text]="tokenInfo.category"
+            [size]="isMobile ? 'large' : 'normal'"
+          ></app-clipboard>
+        </app-truncate>
+      </span>
+    </div>
+
+    <div class="box token-details">
+      <div class="row">
+        <div class="col-lg-6">
+          <table
+            class="table table-borderless table-striped"
+            style="table-layout: fixed"
+          >
+            <tbody>
+              <!-- Repeat the name  -->
+              <tr>
+                <td class="label">Token name</td>
+                <td style="vertical-align: middle">
+                  {{ tokenInfo.name }}
+                  <a
+                    class="info-link"
+                    [routerLink]="['/docs/faq' | relativeUrl]"
+                    fragment="what-are-cashtokens"
+                    ><fa-icon
+                      [icon]="['fas', 'info-circle']"
+                      [fixedWidth]="true"
+                    ></fa-icon
+                  ></a>
+                </td>
+              </tr>
+
+              <!-- Symbol -->
+              @if (tokenInfo.symbol !== "N/A") {
+                <tr>
+                  <td class="label">Symbol</td>
+                  <td style="vertical-align: middle">
+                    <span class="badge bg-secondary token-symbol">{{
+                      tokenInfo.symbol
+                    }}</span>
+                  </td>
+                </tr>
+              }
+
+              <!-- Decimals -->
+              @if (tokenInfo.decimals !== 0) {
+                <tr>
+                  <td class="label">Decimals</td>
+                  <td style="vertical-align: middle">
+                    {{ tokenInfo.decimals }}
+                  </td>
+                </tr>
+              }
+
+              <!-- Type -->
+              @if (tokenInfo.isNft) {
+                <tr>
+                  <td class="label">Type</td>
+                  <td style="vertical-align: middle">
+                    <span class="badge bg-info">NFT</span>
+                  </td>
+                </tr>
+              }
+
+              <!-- Genesis -->
+              @if (tokenInfo.genesis) {
+                @if (tokenInfo.genesis.txid) {
+                  <tr>
+                    <td class="label">Genesis TX</td>
+                    <td style="vertical-align: middle">
+                      <a
+                        [routerLink]="[
+                          '/tx' | relativeUrl,
+                          tokenInfo.genesis.txid,
+                        ]"
+                        style="text-decoration: none"
+                      >
+                        <app-truncate
+                          [text]="tokenInfo.genesis.txid"
+                          [lastChars]="12"
+                          [maxWidth]="300"
+                        ></app-truncate>
+                      </a>
+                    </td>
+                  </tr>
+                }
+                @if (tokenInfo.genesis.ft_minted) {
+                  <tr>
+                    <td class="label">Genesis Supply</td>
+                    <td style="vertical-align: middle">
+                      {{
+                        formatTokenAmount(
+                          tokenInfo.genesis.ft_minted,
+                          tokenInfo.decimals
+                        )
+                      }}
+                      <span class="symbol" *ngIf="tokenInfo.symbol">
+                        {{ tokenInfo.symbol }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+                @if (tokenInfo.genesis.is_nft !== undefined) {
+                  <tr>
+                    <td class="label">Genesis NFT</td>
+                    <td style="vertical-align: middle">
+                      {{ tokenInfo.genesis.is_nft ? "Yes" : "No" }}
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="col-lg-6">
+          <table class="table table-borderless table-striped">
+            <tbody>
+              <!-- Status -->
+              @if (tokenInfo.status !== "unknown") {
+                <tr>
+                  <td class="label">Status</td>
+                  <td style="vertical-align: middle">
+                    <span
+                      class="badge"
+                      [class]="getStatusClass(tokenInfo.status)"
+                    >
+                      {{ tokenInfo.status }}
+                    </span>
+                  </td>
+                </tr>
+              }
+
+              <!-- Trust -->
+              @if (tokenInfo.trust) {
+                <tr>
+                  <td class="label">Trust</td>
+                  <td style="vertical-align: middle">
+                    <span
+                      class="badge"
+                      [class]="getTrustClass(tokenInfo.trust)"
+                      >{{ tokenInfo.trust | titlecase }}</span
+                    >
+                  </td>
+                </tr>
+              }
+
+              <!-- Website -->
+              @if (tokenInfo.hasWebsite) {
+                <tr>
+                  <td class="label">Website</td>
+                  <td style="vertical-align: middle">
+                    <a
+                      [href]="tokenInfo.uris['web']"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style="text-decoration: none"
+                    >
+                      {{ tokenInfo.uris["web"] | limitTo: 40 }}
+                      <span>&nbsp;</span>
+                      <fa-icon
+                        [icon]="['fas', 'external-link-alt']"
+                        [fixedWidth]="true"
+                        style="
+                          vertical-align: text-top;
+                          font-size: 13px;
+                          color: var(--title-fg);
+                        "
+                      ></fa-icon>
+                    </a>
+                  </td>
+                </tr>
+              }
+
+              <!-- Description -->
+              @if (tokenInfo.hasDescription) {
+                <tr style="white-space: normal">
+                  <td class="label">Description</td>
+                  <td style="vertical-align: middle">
+                    {{ tokenInfo.description }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Additional URIs Section -->
+  @if (getTokenInfo() && hasAdditionalUris(getTokenInfo().uris)) {
+    @let tokenInfo = getTokenInfo();
+    <br />
+    <h2>Additional Resources</h2>
+    <div class="box mb-3">
+      <div class="row">
+        <div class="col">
+          <table class="table table-borderless table-striped">
+            <tbody>
+              <tr>
+                <td>
+                  <div class="row">
+                    @for (
+                      uri of getAdditionalUris(tokenInfo.uris);
+                      track uri.key
+                    ) {
+                      <div class="col-md-6 mb-2">
+                        <strong
+                          >{{ improveKeyName(uri.key) | titlecase }}:</strong
+                        >
+                        <a
+                          [href]="improveUri(uri.value)"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style="text-decoration: none"
+                          class="ms-2"
+                        >
+                          {{ improveUri(uri.value) | limitTo: 40 }}
+                          <span>&nbsp;</span>
+                          <fa-icon
+                            [icon]="['fas', 'external-link-alt']"
+                            [fixedWidth]="true"
+                            style="
+                              vertical-align: text-top;
+                              font-size: 13px;
+                              color: var(--title-fg);
+                            "
+                          ></fa-icon>
+                        </a>
+                      </div>
+                    }
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Error template -->
+<ng-template #errorTemplate>
+  <br />
+  <div class="error" *ngIf="error.status; else checkFailedList">
+    <h2>CashToken Not Found</h2>
+    <p>CashToken does not exists.</p>
+    <p>Maybe there exists a transaction with this category TXID?</p>
+    <p>
+      <a [routerLink]="['/tx', this.category]">Go to transaction</a>
+    </p>
+  </div>
+  <ng-template #checkFailedList>
+    <div
+      class="error"
+      *ngIf="error.message === 'Category is in failed list'; else genericError"
+    >
+      <h2>Category is in failed list</h2>
+      <p>CashToken does not exists.</p>
+      <p>Maybe there exists a transaction with this category TXID?</p>
+      <p>
+        <a [routerLink]="['/tx', this.category]">Go to transaction</a>
+      </p>
+    </div>
+    <ng-template #genericError>
+      <div class="error">
+        <h2>Failed to load CashToken metadata</h2>
+        <p>Failed to load CashToken metadata.</p>
+        <p>Maybe there exists a transaction with this category TXID?</p>
+        <p>
+          <a [routerLink]="['/tx', this.category]">Go to transaction</a>
+        </p>
+        <app-http-error [error]="error"></app-http-error>
+      </div>
+    </ng-template>
+  </ng-template>
+</ng-template>
+
+<!-- Main loading template -->
+<ng-template #loadingMain>
+  <div>
+    <div class="mb-3" style="display: flex; position: relative">
+      <div
+        class="skeleton-loader me-3"
+        style="width: 50px; height: 50px; border-radius: 50%"
+      ></div>
+      <h1 class="m-0 pt-1 pt-md-0">
+        <div
+          class="skeleton-loader"
+          style="position: absolute; top: 32%; width: 150px; height: 20px"
+        ></div>
+      </h1>
+    </div>
+
+    <div class="box">
+      <div class="row">
+        <div class="col-lg-6">
+          <table
+            class="table table-borderless table-striped"
+            style="table-layout: fixed"
+          >
+            <tbody>
+              <tr>
+                <td class="label">Category</td>
+                <td style="vertical-align: middle">
+                  <div class="skeleton-loader"></div>
+                </td>
+              </tr>
+              <tr>
+                <td class="label">Symbol</td>
+                <td style="vertical-align: middle">
+                  <div class="skeleton-loader"></div>
+                </td>
+              </tr>
+              <tr>
+                <td class="label">Decimals</td>
+                <td style="vertical-align: middle">
+                  <div class="skeleton-loader"></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="col-lg-6">
+          <table class="table table-borderless table-striped">
+            <tbody>
+              <tr>
+                <td class="label">Status</td>
+                <td style="vertical-align: middle">
+                  <div class="skeleton-loader"></div>
+                </td>
+              </tr>
+              <tr>
+                <td class="label">Website</td>
+                <td style="vertical-align: middle">
+                  <div class="skeleton-loader"></div>
+                </td>
+              </tr>
+              <tr>
+                <td class="label">Description</td>
+                <td style="vertical-align: middle">
+                  <div class="skeleton-loader"></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-template>

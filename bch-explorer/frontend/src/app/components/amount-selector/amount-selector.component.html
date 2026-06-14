@@ -1,0 +1,13 @@
+<div [formGroup]="amountForm" class="text-small text-center">
+  <select
+    formControlName="amountMode"
+    class="form-select form-select-sm form-control-secondary form-control mx-auto"
+    style="width: 80px"
+    (change)="changeAmountMode()"
+    aria-label="Select amount display mode"
+  >
+    <option value="bch" i18n="shared.bch|BCH">BCH</option>
+    <option value="sats" i18n="shared.sats">sats</option>
+    <option value="fiat" i18n="shared.fiat|Fiat">Fiat</option>
+  </select>
+</div>

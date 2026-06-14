@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["**/*.ts", "../cypress.config.ts"],
+  "exclude": ["node_modules"],
+  "compilerOptions": {
+    "sourceMap": false,
+    "types": ["cypress", "node", "cypress-wait-until"],
+    "lib": ["es2015", "dom"],
+    "allowJs": true,
+    "noEmit": true
+  }
+}

@@ -1,0 +1,160 @@
+<app-indexing-progress></app-indexing-progress>
+
+<div class="full-container">
+  <div class="card-header mb-0 mb-md-4">
+    <div class="d-flex d-md-block align-items-baseline">
+      <span i18n="mining.pools-dominance">Pools Dominance</span>
+      <button
+        class="btn p-0 ps-2"
+        style="margin: 0 0 4px 0px"
+        (click)="onSaveChart()"
+        aria-label="Download chart"
+      >
+        <fa-icon [icon]="['fas', 'download']" [fixedWidth]="true"></fa-icon>
+      </button>
+    </div>
+
+    <form
+      [formGroup]="radioGroupForm"
+      class="formRadioGroup"
+      *ngIf="hashrateObservable$ | async as stats"
+    >
+      <div class="btn-group" role="group" name="radioBasic">
+        <ng-container *ngIf="stats.blockCount >= 200">
+          <input
+            type="radio"
+            class="btn-check"
+            id="poolsdominance-1m"
+            [value]="'1m'"
+            fragment="1m"
+            [routerLink]="['/graphs/mining/pools-dominance' | relativeUrl]"
+            [attr.data-cy]="'1m'"
+            formControlName="dateSpan"
+          />
+          <label class="btn btn-purple btn-sm" for="poolsdominance-1m"
+            >1M</label
+          >
+        </ng-container>
+        <ng-container *ngIf="stats.blockCount >= 1200">
+          <input
+            type="radio"
+            class="btn-check"
+            id="poolsdominance-3m"
+            [value]="'3m'"
+            fragment="3m"
+            [routerLink]="['/graphs/mining/pools-dominance' | relativeUrl]"
+            [attr.data-cy]="'3m'"
+            formControlName="dateSpan"
+          />
+          <label class="btn btn-purple btn-sm" for="poolsdominance-3m"
+            >3M</label
+          >
+        </ng-container>
+        <ng-container *ngIf="stats.blockCount >= 20000">
+          <input
+            type="radio"
+            class="btn-check"
+            id="poolsdominance-6m"
+            [value]="'6m'"
+            fragment="6m"
+            [routerLink]="['/graphs/mining/pools-dominance' | relativeUrl]"
+            [attr.data-cy]="'6m'"
+            formControlName="dateSpan"
+          />
+          <label class="btn btn-purple btn-sm" for="poolsdominance-6m"
+            >6M</label
+          >
+        </ng-container>
+        <ng-container *ngIf="stats.blockCount >= 52560">
+          <input
+            type="radio"
+            class="btn-check"
+            id="poolsdominance-1y"
+            [value]="'1y'"
+            fragment="1y"
+            [routerLink]="['/graphs/mining/pools-dominance' | relativeUrl]"
+            [attr.data-cy]="'1y'"
+            formControlName="dateSpan"
+          />
+          <label class="btn btn-purple btn-sm" for="poolsdominance-1y"
+            >1Y</label
+          >
+        </ng-container>
+        <ng-container *ngIf="stats.blockCount >= 105120">
+          <input
+            type="radio"
+            class="btn-check"
+            id="poolsdominance-2y"
+            [value]="'2y'"
+            fragment="2y"
+            [routerLink]="['/graphs/mining/pools-dominance' | relativeUrl]"
+            [attr.data-cy]="'2y'"
+            formControlName="dateSpan"
+          />
+          <label class="btn btn-purple btn-sm" for="poolsdominance-2y"
+            >2Y</label
+          >
+        </ng-container>
+        <ng-container *ngIf="stats.blockCount >= 157680">
+          <input
+            type="radio"
+            class="btn-check"
+            id="poolsdominance-3y"
+            [value]="'3y'"
+            fragment="3y"
+            [routerLink]="['/graphs/mining/pools-dominance' | relativeUrl]"
+            [attr.data-cy]="'3y'"
+            formControlName="dateSpan"
+          />
+          <label class="btn btn-purple btn-sm" for="poolsdominance-3y"
+            >3Y</label
+          >
+        </ng-container>
+        <ng-container *ngIf="stats.blockCount >= 210240">
+          <input
+            type="radio"
+            class="btn-check"
+            id="poolsdominance-4y"
+            [value]="'4y'"
+            fragment="4y"
+            [routerLink]="['/graphs/mining/pools-dominance' | relativeUrl]"
+            [attr.data-cy]="'4y'"
+            formControlName="dateSpan"
+          />
+          <label class="btn btn-purple btn-sm" for="poolsdominance-4y"
+            >4Y</label
+          >
+        </ng-container>
+        <input
+          type="radio"
+          class="btn-check"
+          id="poolsdominance-all"
+          [value]="'all'"
+          fragment="all"
+          [routerLink]="['/graphs/mining/pools-dominance' | relativeUrl]"
+          [attr.data-cy]="'all'"
+          formControlName="dateSpan"
+        />
+        <label class="btn btn-purple btn-sm" for="poolsdominance-all"
+          >ALL</label
+        >
+      </div>
+    </form>
+  </div>
+
+  <div
+    class="chart"
+    *browserOnly
+    echarts
+    [initOpts]="chartInitOptions"
+    [options]="chartOptions"
+    (chartInit)="onChartInit($event)"
+    [style]="{ opacity: isLoading ? 0.5 : 1 }"
+  ></div>
+  <div
+    class="text-center loadingGraphs"
+    *ngIf="!stateService.isBrowser || isLoading"
+  >
+    <div class="spinner-border text-light"></div>
+  </div>
+</div>

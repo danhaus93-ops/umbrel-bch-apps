@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/spec",
+    "types": ["node"],
+    "paths": {
+      "@app/*": ["src/app/*"],
+      "@components/*": ["src/app/components/*"],
+      "@environments/*": ["src/environments/*"],
+      "@interfaces/*": ["src/app/interfaces/*"]
+    }
+  },
+  "exclude": ["./cypress.config.ts", "node_modules", "dist", "cypress"],
+  "include": ["src/**/*.spec.ts", "src/**/*.d.ts"]
+}

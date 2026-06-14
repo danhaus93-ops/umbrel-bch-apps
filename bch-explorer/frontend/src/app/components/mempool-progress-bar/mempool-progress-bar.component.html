@@ -1,0 +1,35 @@
+<ng-template
+  [ngIf]="(isLoadingWebSocket$ | async) === false && mempoolInfoData"
+  [ngIfElse]="loadingTransactions"
+>
+  <span *ngIf="(mempoolLoadingStatus$ | async) !== 100; else inSync">
+    &nbsp;<span class="badge rounded-pill bg-warning"
+      ><ng-container i18n="dashboard.backend-is-synchronizing"
+        >Backend is synchronizing</ng-container
+      >
+      ({{ mempoolLoadingStatus$ | async }}%)</span
+    >
+  </span>
+  <ng-template #inSync>
+    <div class="progress inc-tx-progress-bar">
+      <div
+        class="progress-bar"
+        role="progressbar"
+        [ngStyle]="{
+          width: getProgressWidth(),
+          'background-color': getProgressColor(),
+        }"
+      >
+        &nbsp;
+      </div>
+      <div class="progress-text">
+        &lrm;{{ mempoolInfoData.bytesPerSecond | ceil | number }}
+        <ng-container i18n="shared.bytes-per-second|B/s">B/s</ng-container>
+      </div>
+    </div>
+  </ng-template>
+</ng-template>
+
+<ng-template #loadingTransactions>
+  <div class="skeleton-loader skeleton-loader-transactions"></div>
+</ng-template>

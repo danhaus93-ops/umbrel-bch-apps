@@ -1,0 +1,57 @@
+<div class="box preview-box" *ngIf="address && !error">
+  <app-preview-title>
+    <span i18n="shared.address">Address</span>
+  </app-preview-title>
+  <div class="row">
+    <div class="col-md table-col">
+      <div class="row d-flex justify-content-between">
+        <div class="title-wrapper">
+          <h1 class="title">
+            <app-truncate [text]="addressString"></app-truncate>
+          </h1>
+        </div>
+      </div>
+      <table class="table table-borderless table-striped">
+        <tbody>
+          <ng-template [ngIf]="!address.electrum">
+            <tr>
+              <td i18n="address.total-received">Total received</td>
+              <td *ngIf="address.chain_stats.funded_txo_sum !== undefined">
+                <app-amount [satoshis]="received" [noFiat]="true"></app-amount>
+              </td>
+            </tr>
+            <tr>
+              <td i18n="address.total-sent">Total sent</td>
+              <td *ngIf="address.chain_stats.spent_txo_sum !== undefined">
+                <app-amount [satoshis]="sent" [noFiat]="true"></app-amount>
+              </td>
+            </tr>
+          </ng-template>
+          <tr>
+            <td i18n="address.balance">Balance</td>
+            <td *ngIf="address.chain_stats.funded_txo_sum !== undefined">
+              <app-amount
+                [satoshis]="received - sent"
+                [noFiat]="true"
+              ></app-amount>
+            </td>
+          </tr>
+          <tr>
+            <td i18n="address.transactions">Transactions</td>
+            <td>{{ txCount | number }}</td>
+          </tr>
+          <tr>
+            <td i18n="address.unspent_txos">Unspent TXOs</td>
+            <td>{{ totalUnspent | number }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="w-100 d-block d-md-none"></div>
+    <div class="col-md qrcode-col">
+      <div class="qr-wrapper">
+        <app-qrcode [data]="address.address" [size]="448"></app-qrcode>
+      </div>
+    </div>
+  </div>
+</div>

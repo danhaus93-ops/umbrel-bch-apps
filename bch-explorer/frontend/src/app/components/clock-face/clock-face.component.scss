@@ -1,0 +1,70 @@
+.clock-face {
+  position: relative;
+  height: 84.375%;
+  margin: auto;
+  overflow: hidden;
+
+  .cut-out,
+  .demo-dial {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+
+    .face {
+      fill: var(--active-bg);
+    }
+  }
+
+  .gnomon {
+    transform-origin: center;
+    stroke-linejoin: round;
+
+    &.minute {
+      fill: #5fb188;
+      stroke: #5fb188;
+      stroke-width: 2px;
+    }
+
+    &.hour {
+      fill: var(--primary);
+      stroke: var(--primary);
+      stroke-width: 6px;
+    }
+  }
+
+  .tick {
+    transform-origin: center;
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 2px;
+    stroke-linecap: butt;
+
+    &.minor {
+      stroke-opacity: 0.5;
+    }
+
+    &.very.major {
+      stroke-width: 4px;
+    }
+  }
+
+  .block-segment {
+    fill: none;
+    stroke: url(#dial-gradient);
+    stroke-width: 18px;
+  }
+
+  .dial-segment {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 2px;
+  }
+
+  .dial-gradient-img {
+    transform-origin: center;
+  }
+}

@@ -1,0 +1,2465 @@
+<?xml version="1.0" encoding="UTF-8"?><xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+    <file datatype="plaintext" original="ng2.template" source-language="en-US" target-language="hr">
+        <body>
+            <trans-unit id="004b222ff9ef9dd4771b777950ca1d0e4cd4348a">
+                <source xml:space="preserve">About</source>
+                <target xml:space="preserve">O projektu</target>
+            </trans-unit>
+            <trans-unit id="1007967761117390992">
+                <source xml:space="preserve"><x ctype="x-i" equiv-text="&lt;i             &gt;" id="START_ITALIC_TEXT"/>There are too many transactions on this address, more than your backend can handle. See more on <x ctype="x-a" equiv-text="&lt;a href=&quot;/docs/faq#address-lookup-issues&quot;               &gt;" id="START_LINK"/>setting up a stronger backend<x ctype="x-a" equiv-text="&lt;/a           &gt;" id="CLOSE_LINK"/>.<x ctype="x-i" equiv-text="&lt;/i           &gt;" id="CLOSE_ITALIC_TEXT"/><x ctype="lb" equiv-text="&lt;br /&gt;" id="LINE_BREAK"/><x ctype="lb" equiv-text="&lt;br /&gt;" id="LINE_BREAK"/> Consider viewing this address on the official BCH Explorer website instead: <x ctype="lb" equiv-text="&lt;br /&gt;" id="LINE_BREAK"/><x equiv-text="&lt;a             href=&quot;https://bchexplorer.cash/address/{{ addressString }}&quot;             target=&quot;_blank&quot;             &gt;" id="START_LINK_1"/>https://bchexplorer.cash/address/<x equiv-text="{{ addressString }}" id="INTERPOLATION"/><x ctype="x-a" equiv-text="&lt;/a           &gt;" id="CLOSE_LINK"/></source>
+                <target xml:space="preserve"><x ctype="x-i" equiv-text="&lt;i             &gt;" id="START_ITALIC_TEXT"/>There are too many transactions on this address, more than your backend can handle. See more on <x ctype="x-a" equiv-text="&lt;a href=&quot;/docs/faq#address-lookup-issues&quot;               &gt;" id="START_LINK"/>setting up a stronger backend<x ctype="x-a" equiv-text="&lt;/a           &gt;" id="CLOSE_LINK"/>.<x ctype="x-i" equiv-text="&lt;/i           &gt;" id="CLOSE_ITALIC_TEXT"/><x ctype="lb" equiv-text="&lt;br /&gt;" id="LINE_BREAK"/><x ctype="lb" equiv-text="&lt;br /&gt;" id="LINE_BREAK"/> Consider viewing this address on the official BCH Explorer website instead: <x ctype="lb" equiv-text="&lt;br /&gt;" id="LINE_BREAK"/><x equiv-text="&lt;a             href=&quot;https://bchexplorer.cash/address/{{ addressString }}&quot;             target=&quot;_blank&quot;             &gt;" id="START_LINK_1"/>https://bchexplorer.cash/address/<x equiv-text="{{ addressString }}" id="INTERPOLATION"/><x ctype="x-a" equiv-text="&lt;/a           &gt;" id="CLOSE_LINK"/></target>
+            </trans-unit>
+            <trans-unit id="1014548743221553652">
+                <source xml:space="preserve"> Next Halving </source>
+                <target xml:space="preserve"> Slj prepolovljenje </target>
+            </trans-unit>
+            <trans-unit id="1026404270740126690">
+                <source xml:space="preserve">See mempool transactions, confirmed transactions, balance, and more for Bitcoin Cash<x equiv-text="seoDescriptionNetwork(this.stateService.network)" id="PH"/> address <x equiv-text="this.addressString" id="PH_1"/>.</source>
+                <target xml:space="preserve">See mempool transactions, confirmed transactions, balance, and more for Bitcoin Cash<x equiv-text="seoDescriptionNetwork(this.stateService.network)" id="PH"/> address <x equiv-text="this.addressString" id="PH_1"/>.</target>
+            </trans-unit>
+            <trans-unit id="1033261550402895380">
+                <source xml:space="preserve">Sum</source>
+                <target xml:space="preserve">Zbroj</target>
+            </trans-unit>
+            <trans-unit id="1063462873103909661">
+                <source xml:space="preserve">Difficulty</source>
+                <target xml:space="preserve">Difficulty</target>
+            </trans-unit>
+            <trans-unit id="1130652265542107236">
+                <source xml:space="preserve">Age</source>
+                <target xml:space="preserve">Dob</target>
+            </trans-unit>
+            <trans-unit id="1141848625932683011">
+                <source xml:space="preserve">Tint</source>
+                <target xml:space="preserve">Nijansa</target>
+            </trans-unit>
+            <trans-unit id="116895469304130365">
+                <source xml:space="preserve"> Other Network Address </source>
+                <target xml:space="preserve"> Druga mrežna adresa </target>
+            </trans-unit>
+            <trans-unit id="1178696012353613358">
+                <source xml:space="preserve">Headers Only</source>
+                <target xml:space="preserve">Samo zaglavlja</target>
+            </trans-unit>
+            <trans-unit id="1187919775034823182">
+                <source xml:space="preserve"> X Timeline </source>
+                <target xml:space="preserve"> X Timeline </target>
+            </trans-unit>
+            <trans-unit id="1207153099804569270">
+                <source xml:space="preserve"> Previous output script </source>
+                <target xml:space="preserve"> Skripta prethodnog outputa </target>
+            </trans-unit>
+            <trans-unit id="1230154438678955604">
+                <source xml:space="preserve">Change</source>
+                <target xml:space="preserve">Promijeniti</target>
+            </trans-unit>
+            <trans-unit id="123726871136586876">
+                <source xml:space="preserve"> Audit </source>
+                <target xml:space="preserve"> Audit </target>
+            </trans-unit>
+            <trans-unit id="1250839334786630849">
+                <source xml:space="preserve"> Preview Transaction </source>
+                <target xml:space="preserve"> Preview Transaction </target>
+            </trans-unit>
+            <trans-unit id="1257024413147889019">
+                <source xml:space="preserve">Balance (USD)</source>
+                <target xml:space="preserve">Stanje (USD)</target>
+            </trans-unit>
+            <trans-unit id="1358478559966633776">
+                <source xml:space="preserve">See mempool transactions, confirmed transactions, balance, and more for Bitcoin Cash<x equiv-text="seoDescriptionNetwork(             this.stateService.network           )" id="PH"/> wallet <x equiv-text="walletName" id="INTERPOLATION"/>.</source>
+                <target xml:space="preserve">See mempool transactions, confirmed transactions, balance, and more for Bitcoin Cash<x equiv-text="seoDescriptionNetwork(             this.stateService.network           )" id="PH"/> wallet <x equiv-text="walletName" id="INTERPOLATION"/>.</target>
+            </trans-unit>
+            <trans-unit id="1358842767534290899">
+                <source xml:space="preserve"><x equiv-text="{{ (transactions?.length | number) || &quot;?&quot; }}" id="INTERPOLATION"/> of <x equiv-text="{{ mempoolStats.tx_count + chainStats.tx_count | number }}" id="INTERPOLATION_1"/> transactions</source>
+                <target xml:space="preserve"><x equiv-text="{{ (transactions?.length | number) || &quot;?&quot; }}" id="INTERPOLATION"/> of <x equiv-text="{{ mempoolStats.tx_count + chainStats.tx_count | number }}" id="INTERPOLATION_1"/> transactions</target>
+            </trans-unit>
+            <trans-unit id="1374757757883387136">
+                <source xml:space="preserve">Your browser does not support this feature.</source>
+                <target xml:space="preserve">Vaš preglednik ne podržava ovu značajku.</target>
+            </trans-unit>
+            <trans-unit id="1375913333051334272">
+                <source xml:space="preserve"> Timestamp </source>
+                <target xml:space="preserve"> Timestamp </target>
+            </trans-unit>
+            <trans-unit id="1386306711019304612">
+                <source xml:space="preserve">Input</source>
+                <target xml:space="preserve">Input</target>
+            </trans-unit>
+            <trans-unit id="140014747543856969">
+                <source xml:space="preserve">Go to &quot;<x equiv-text="{{ x }}" id="INTERPOLATION"/>&quot;</source>
+                <target xml:space="preserve">Idi na &amp;quot;<x equiv-text="{{ x }}" id="INTERPOLATION"/>&amp;quot;</target>
+            </trans-unit>
+            <trans-unit id="1412642353264167000">
+                <source xml:space="preserve"> Mining </source>
+                <target xml:space="preserve"> Rudarenje </target>
+            </trans-unit>
+            <trans-unit id="146442697456175258">
+                <source xml:space="preserve">Data</source>
+                <target xml:space="preserve">Podaci</target>
+            </trans-unit>
+            <trans-unit id="1482935196707293820">
+                <source xml:space="preserve"> Treasury Transactions </source>
+                <target xml:space="preserve"> Rizničke transakcije </target>
+            </trans-unit>
+            <trans-unit id="1514895844575489984">
+                <source xml:space="preserve"> NFT Capability </source>
+                <target xml:space="preserve"> NFT Capability </target>
+            </trans-unit>
+            <trans-unit id="1525857326426458760">
+                <source xml:space="preserve"> Height </source>
+                <target xml:space="preserve"> Visina </target>
+            </trans-unit>
+            <trans-unit id="152935433957334260">
+                <source xml:space="preserve"> Test Transactions </source>
+                <target xml:space="preserve"> Test Transactions </target>
+            </trans-unit>
+            <trans-unit id="1550516794318064232">
+                <source xml:space="preserve"> Filename </source>
+                <target xml:space="preserve"> Naziv datoteke </target>
+            </trans-unit>
+            <trans-unit id="1569879075312974450">
+                <source xml:space="preserve"> Minimum fee </source>
+                <target xml:space="preserve"> Minimalna naknada </target>
+            </trans-unit>
+            <trans-unit id="1576412637250081491">
+                <source xml:space="preserve"> Submit Package </source>
+                <target xml:space="preserve"> Pošalji paket </target>
+            </trans-unit>
+            <trans-unit id="1588217954867055834">
+                <source xml:space="preserve">Recently broadcasted</source>
+                <target xml:space="preserve">Nedavno emitirano</target>
+            </trans-unit>
+            <trans-unit id="1600222688675819631">
+                <source xml:space="preserve">Become a Community Sponsor</source>
+                <target xml:space="preserve">Postani Community Sponsor</target>
+            </trans-unit>
+            <trans-unit id="1604005258956249607">
+                <source xml:space="preserve">Expected in Block</source>
+                <target xml:space="preserve">Očekuje se u bloku</target>
+            </trans-unit>
+            <trans-unit id="1616102757855967475">
+                <source xml:space="preserve">All</source>
+                <target xml:space="preserve">All</target>
+            </trans-unit>
+            <trans-unit id="1620385434838836828">
+                <source xml:space="preserve">Audit status</source>
+                <target xml:space="preserve">Status audita</target>
+            </trans-unit>
+            <trans-unit id="1652579116694662723">
+                <source xml:space="preserve"> Purging </source>
+                <target xml:space="preserve"> Purging </target>
+            </trans-unit>
+            <trans-unit id="1684734235599362204">
+                <source xml:space="preserve">Tools</source>
+                <target xml:space="preserve">Alati</target>
+            </trans-unit>
+            <trans-unit id="1701986874933494691">
+                <source xml:space="preserve"> Significant Bitcoin Cash blocks, including halvings, hard forks, protocol upgrades, and other milestones — past and future. </source>
+                <target xml:space="preserve"> Significant Bitcoin Cash blocks, including halvings, hard forks, protocol upgrades, and other milestones — past and future. </target>
+            </trans-unit>
+            <trans-unit id="173323320530059738">
+                <source xml:space="preserve">Miners Reward</source>
+                <target xml:space="preserve">Nagrada za rudare</target>
+            </trans-unit>
+            <trans-unit id="1780726536610449318">
+                <source xml:space="preserve"> Treasury Leaderboard </source>
+                <target xml:space="preserve"> Rang lista riznica </target>
+            </trans-unit>
+            <trans-unit id="1792702609723944983">
+                <source xml:space="preserve">Not seen in Mempool</source>
+                <target xml:space="preserve">Nije viđeno u Mempoolu</target>
+            </trans-unit>
+            <trans-unit id="179958430736909593">
+                <source xml:space="preserve">beta</source>
+                <target xml:space="preserve">beta</target>
+            </trans-unit>
+            <trans-unit id="1802871584001127867">
+                <source xml:space="preserve"> in treasuries </source>
+                <target xml:space="preserve"> u riznicama </target>
+            </trans-unit>
+            <trans-unit id="1863028041776311445">
+                <source xml:space="preserve">Preview Transaction</source>
+                <target xml:space="preserve">Preview Transaction</target>
+            </trans-unit>
+            <trans-unit id="1877523490807676946">
+                <source xml:space="preserve">Testnet4 Faucet</source>
+                <target xml:space="preserve">Testnet4 Faucet</target>
+            </trans-unit>
+            <trans-unit id="1893008407058525771">
+                <source xml:space="preserve"><x ctype="x-span" equiv-text="&lt;span class=&quot;badge bg-success&quot;&gt;" id="START_TAG_SPAN"/>Winning<x ctype="x-span" equiv-text="&lt;/span&gt;" id="CLOSE_TAG_SPAN"/></source>
+                <target xml:space="preserve"><x ctype="x-span" equiv-text="&lt;span class=&quot;badge bg-success&quot;&gt;" id="START_TAG_SPAN"/>Winning<x ctype="x-span" equiv-text="&lt;/span&gt;" id="CLOSE_TAG_SPAN"/></target>
+            </trans-unit>
+            <trans-unit id="1913155003848417351">
+                <source xml:space="preserve">Block remaining</source>
+                <target xml:space="preserve">Preostali blok</target>
+            </trans-unit>
+            <trans-unit id="1925218593942075988">
+                <source xml:space="preserve">Networks</source>
+                <target xml:space="preserve">Mreže</target>
+            </trans-unit>
+            <trans-unit id="1945058038615471142">
+                <source xml:space="preserve">Total sent</source>
+                <target xml:space="preserve">Ukupno poslano</target>
+            </trans-unit>
+            <trans-unit id="1955634148203463265">
+                <source xml:space="preserve"> Broadcast </source>
+                <target xml:space="preserve"> Emitiraj </target>
+            </trans-unit>
+            <trans-unit id="1986319458172810942">
+                <source xml:space="preserve"> CashToken Amount </source>
+                <target xml:space="preserve"> CashToken Amount </target>
+            </trans-unit>
+            <trans-unit id="1989794001571603400">
+                <source xml:space="preserve">High sigop count</source>
+                <target xml:space="preserve">Veliki broj sigopa</target>
+            </trans-unit>
+            <trans-unit id="2002714733978232737">
+                <source xml:space="preserve"> Hide diagram </source>
+                <target xml:space="preserve"> Sakrij dijagram </target>
+            </trans-unit>
+            <trans-unit id="2014501481765374056">
+                <source xml:space="preserve">See the total number of unspent transaction outputs (UTXOs) on the Bitcoin Cash network over time.</source>
+                <target xml:space="preserve">See the total number of unspent transaction outputs (UTXOs) on the Bitcoin Cash network over time.</target>
+            </trans-unit>
+            <trans-unit id="2041675390931385838">
+                <source xml:space="preserve">Health</source>
+                <target xml:space="preserve">Health</target>
+            </trans-unit>
+            <trans-unit id="2046433062734007708">
+                <source xml:space="preserve">Added</source>
+                <target xml:space="preserve">Dodano</target>
+            </trans-unit>
+            <trans-unit id="2048443747962352098">
+                <source xml:space="preserve">Terms of Service</source>
+                <target xml:space="preserve">Uvjeti usluge</target>
+            </trans-unit>
+            <trans-unit id="2078867154932510579">
+                <source xml:space="preserve"><x ctype="x-p" equiv-text="&lt;p&gt;" id="START_PARAGRAPH"/><x ctype="x-b" equiv-text="&lt;b                 &gt;" id="START_BOLD_TEXT"/>bchexplorer.cash merely provides data about the Bitcoin Cash network.<x ctype="x-b" equiv-text="&lt;/b               &gt;" id="CLOSE_BOLD_TEXT"/> It cannot help you with retrieving funds, wallet issues, etc. <x ctype="x-p" equiv-text="&lt;/p&gt;" id="CLOSE_PARAGRAPH"/><x ctype="x-p" equiv-text="&lt;p&gt;" id="START_PARAGRAPH"/> For any such requests, you need to get in touch with the entity that helped make the transaction (wallet software, exchange company, etc). <x ctype="x-p" equiv-text="&lt;/p&gt;" id="CLOSE_PARAGRAPH"/></source>
+                <target xml:space="preserve"><x ctype="x-p" equiv-text="For any such requ" id="START_PARAGRAPH"/><x ctype="x-b" equiv-text="mempool.space mer" id="START_BOLD_TEXT"/>mempool.space samo pruža podatke o Bitcoin mreži.<x ctype="x-b" equiv-text="&lt;/b&gt;" id="CLOSE_BOLD_TEXT"/> Ne može vam pomoći s vraćanjem sredstava, problemima s novčanikom itd.<x ctype="x-p" equiv-text="&lt;/p&gt;" id="CLOSE_PARAGRAPH"/><x ctype="x-p" equiv-text="For any such requ" id="START_PARAGRAPH"/>Za sve takve zahtjeve morate se obratiti entitetu koji je pomogao u transakciji (softver za novčanik, mjenjačnica itd.).<x ctype="x-p" equiv-text="&lt;/p&gt;" id="CLOSE_PARAGRAPH"/></target>
+            </trans-unit>
+            <trans-unit id="2091542449422385206">
+                <source xml:space="preserve">Broadcast Transaction</source>
+                <target xml:space="preserve">Broadcast Transaction</target>
+            </trans-unit>
+            <trans-unit id="2098028765268782950">
+                <source xml:space="preserve">Difficulty Adjustment Deviation</source>
+                <target xml:space="preserve">Difficulty Adjustment Deviation</target>
+            </trans-unit>
+            <trans-unit id="2137482833477653579">
+                <source xml:space="preserve">Indexing network hashrate</source>
+                <target xml:space="preserve">Indeksiranje hashrate-a mreže</target>
+            </trans-unit>
+            <trans-unit id="2146875259140187057">
+                <source xml:space="preserve">Block Volume</source>
+                <target xml:space="preserve">Block Volume</target>
+            </trans-unit>
+            <trans-unit id="2157556037790858775">
+                <source xml:space="preserve"> TXs </source>
+                <target xml:space="preserve"> TXs </target>
+            </trans-unit>
+            <trans-unit id="2159027050798400355">
+                <source xml:space="preserve"> <x equiv-text="{{ networkName }}" id="INTERPOLATION"/> Transaction </source>
+                <target xml:space="preserve"> <x equiv-text="{{ networkName }}" id="INTERPOLATION"/> Transakcija </target>
+            </trans-unit>
+            <trans-unit id="2161283797768746270">
+                <source xml:space="preserve">halving</source>
+                <target xml:space="preserve">prepolovljenje</target>
+            </trans-unit>
+            <trans-unit id="2173964791553126730">
+                <source xml:space="preserve">View more »</source>
+                <target xml:space="preserve">Vidi više »</target>
+            </trans-unit>
+            <trans-unit id="2186095762694867802">
+                <source xml:space="preserve">Hashrate (1w)</source>
+                <target xml:space="preserve">Hashrate (1t)</target>
+            </trans-unit>
+            <trans-unit id="2207130182560822950">
+                <source xml:space="preserve">Winning</source>
+                <target xml:space="preserve">Pobjednički</target>
+            </trans-unit>
+            <trans-unit id="2216215688309811676">
+                <source xml:space="preserve"> Size </source>
+                <target xml:space="preserve"> Size </target>
+            </trans-unit>
+            <trans-unit id="2220751863806291374">
+                <source xml:space="preserve">Backend is synchronizing</source>
+                <target xml:space="preserve">Pozadina se sinkronizira</target>
+            </trans-unit>
+            <trans-unit id="2238078017374559466">
+                <source xml:space="preserve">Pools Luck</source>
+                <target xml:space="preserve">Pools Luck</target>
+            </trans-unit>
+            <trans-unit id="2238469337972459496">
+                <source xml:space="preserve">Block Time</source>
+                <target xml:space="preserve">Block Time</target>
+            </trans-unit>
+            <trans-unit id="2256671562401574389">
+                <source xml:space="preserve">blocks earlier</source>
+                <target xml:space="preserve">blokova ranije</target>
+            </trans-unit>
+            <trans-unit id="2256769237354226511">
+                <source xml:space="preserve"> First seen </source>
+                <target xml:space="preserve"> Prvo viđeno </target>
+            </trans-unit>
+            <trans-unit id="2257679984526539584">
+                <source xml:space="preserve">Chain Stats</source>
+                <target xml:space="preserve">Chain Stats</target>
+            </trans-unit>
+            <trans-unit id="2259944601214794924">
+                <source xml:space="preserve">Sighash Flags</source>
+                <target xml:space="preserve">Sighash Flags</target>
+            </trans-unit>
+            <trans-unit id="2293275317959787265">
+                <source xml:space="preserve">Blocks (1w)</source>
+                <target xml:space="preserve">Blokova (1 tj)</target>
+            </trans-unit>
+            <trans-unit id="2297185534862218321">
+                <source xml:space="preserve">bare multisig</source>
+                <target xml:space="preserve">goli multisig</target>
+            </trans-unit>
+            <trans-unit id="2303359202781425764">
+                <source xml:space="preserve">Genesis</source>
+                <target xml:space="preserve">Genesis</target>
+            </trans-unit>
+            <trans-unit id="2305093273547008942">
+                <source xml:space="preserve">Change (7d)</source>
+                <target xml:space="preserve">Promjeni (7d)</target>
+            </trans-unit>
+            <trans-unit id="2348971518300945764">
+                <source xml:space="preserve">Range</source>
+                <target xml:space="preserve">Raspon</target>
+            </trans-unit>
+            <trans-unit id="23555386d8af1ff73f297e89dd4af3f4689fb9dd">
+                <source xml:space="preserve">Indexing blocks</source>
+                <target xml:space="preserve">Indeksiranje blokova</target>
+            </trans-unit>
+            <trans-unit id="2365612610415331480">
+                <source xml:space="preserve"><x ctype="x-span" equiv-text="&lt;span class=&quot;badge bg-secondary&quot;&gt;" id="START_TAG_SPAN"/>Stale<x ctype="x-span" equiv-text="&lt;/span&gt;" id="CLOSE_TAG_SPAN"/></source>
+                <target xml:space="preserve"><x ctype="x-span" equiv-text="&lt;span class=&quot;badge bg-secondary&quot;&gt;" id="START_TAG_SPAN"/>Stale<x ctype="x-span" equiv-text="&lt;/span&gt;" id="CLOSE_TAG_SPAN"/></target>
+            </trans-unit>
+            <trans-unit id="2372330987466821730">
+                <source xml:space="preserve"> Offline </source>
+                <target xml:space="preserve"> Offline </target>
+            </trans-unit>
+            <trans-unit id="2390412373676968256">
+                <source xml:space="preserve"> Size </source>
+                <target xml:space="preserve"> Size </target>
+            </trans-unit>
+            <trans-unit id="2436785490931696482">
+                <source xml:space="preserve"> Previous output type </source>
+                <target xml:space="preserve"> Prethodna vrsta outputa </target>
+            </trans-unit>
+            <trans-unit id="2451851156281438935">
+                <source xml:space="preserve"> Reward </source>
+                <target xml:space="preserve"> Reward </target>
+            </trans-unit>
+            <trans-unit id="2461929428984657289">
+                <source xml:space="preserve">Recent Blocks</source>
+                <target xml:space="preserve">Recent Blocks</target>
+            </trans-unit>
+            <trans-unit id="2471195790491528944">
+                <source xml:space="preserve"> Broadcasted </source>
+                <target xml:space="preserve"> Emitirano </target>
+            </trans-unit>
+            <trans-unit id="2471517882589815398">
+                <source xml:space="preserve"> verified addresses </source>
+                <target xml:space="preserve"> provjerene adrese </target>
+            </trans-unit>
+            <trans-unit id="2499150228957542782">
+                <source xml:space="preserve">Unspent TXOs</source>
+                <target xml:space="preserve">Nepotrošeni TXO-i</target>
+            </trans-unit>
+            <trans-unit id="25148835d92465353fc5fe8897c27d5369978e5a">
+                <source xml:space="preserve">Difficulty</source>
+                <target xml:space="preserve">Težina</target>
+            </trans-unit>
+            <trans-unit id="2549503191466527026">
+                <source xml:space="preserve"> Fees </source>
+                <target xml:space="preserve"> Naknade </target>
+            </trans-unit>
+            <trans-unit id="2574688541305190509">
+                <source xml:space="preserve">High Priority</source>
+                <target xml:space="preserve">Visoki prioritet</target>
+            </trans-unit>
+            <trans-unit id="2575486924758487590">
+                <source xml:space="preserve">Wallet</source>
+                <target xml:space="preserve">Novčanik</target>
+            </trans-unit>
+            <trans-unit id="2611475427610660053">
+                <source xml:space="preserve">Transactions</source>
+                <target xml:space="preserve">Transakcije</target>
+            </trans-unit>
+            <trans-unit id="2612543646528354459">
+                <source xml:space="preserve">Error loading data.</source>
+                <target xml:space="preserve">Pogreška pri učitavanju podataka.</target>
+            </trans-unit>
+            <trans-unit id="2614255064143783465">
+                <source xml:space="preserve"> over <x equiv-text="{{ asert.diffChangeBlocks }}" id="INTERPOLATION"/> blocks</source>
+                <target xml:space="preserve"> over <x equiv-text="{{ asert.diffChangeBlocks }}" id="INTERPOLATION"/> blocks</target>
+            </trans-unit>
+            <trans-unit id="2620731225742999598">
+                <source xml:space="preserve">Verify Ownership (PSBT)</source>
+                <target xml:space="preserve">Verify Ownership (PSBT)</target>
+            </trans-unit>
+            <trans-unit id="2628961601867476622">
+                <source xml:space="preserve">Actual</source>
+                <target xml:space="preserve">Stvarno</target>
+            </trans-unit>
+            <trans-unit id="2652050456833268583">
+                <source xml:space="preserve"> Recent Transactions </source>
+                <target xml:space="preserve"> Nedavne transakcije </target>
+            </trans-unit>
+            <trans-unit id="2658168326869003675">
+                <source xml:space="preserve">Scalenet Explorer</source>
+                <target xml:space="preserve">Scalenet Explorer</target>
+            </trans-unit>
+            <trans-unit id="2666638972429865742">
+                <source xml:space="preserve"> Verify Address Ownership </source>
+                <target xml:space="preserve"> Verify Address Ownership </target>
+            </trans-unit>
+            <trans-unit id="2687200647259832044">
+                <source xml:space="preserve"> Avg Block Fee (1m) </source>
+                <target xml:space="preserve"> Prosječna blok naknada (1m) </target>
+            </trans-unit>
+            <trans-unit id="2697417327357066096">
+                <source xml:space="preserve">Recent Transactions</source>
+                <target xml:space="preserve">Recent Transactions</target>
+            </trans-unit>
+            <trans-unit id="2713682146203031534">
+                <source xml:space="preserve">Amount being paid to miners in the past 144 blocks</source>
+                <target xml:space="preserve">Iznos isplaćen rudarima u protekla 144 bloka</target>
+            </trans-unit>
+            <trans-unit id="2718328393398356790">
+                <source xml:space="preserve"><x equiv-text="{{ i }}" id="INTERPOLATION"/> confirmation</source>
+                <target xml:space="preserve"><x equiv-text="{{ i }}" id="INTERPOLATION"/> potvrda</target>
+            </trans-unit>
+            <trans-unit id="2724055831234181057">
+                <source xml:space="preserve">Version</source>
+                <target xml:space="preserve">Verzija</target>
+            </trans-unit>
+            <trans-unit id="273835844989646128">
+                <source xml:space="preserve">empty</source>
+                <target xml:space="preserve">prazno</target>
+            </trans-unit>
+            <trans-unit id="2799825781368047816">
+                <source xml:space="preserve">Transaction fee</source>
+                <target xml:space="preserve">Transakcijska naknada</target>
+            </trans-unit>
+            <trans-unit id="2800260241472448717">
+                <source xml:space="preserve">Block time (SMA 144)</source>
+                <target xml:space="preserve">Block time (SMA 144)</target>
+            </trans-unit>
+            <trans-unit id="2808581435762418449">
+                <source xml:space="preserve">This transaction was seen in the mempool prior to mining</source>
+                <target xml:space="preserve">Ova transakcija je viđena u mempoolu prije rudarenja</target>
+            </trans-unit>
+            <trans-unit id="281888753485074012">
+                <source xml:space="preserve">Total received</source>
+                <target xml:space="preserve">Ukupno primljeno</target>
+            </trans-unit>
+            <trans-unit id="2822320429885114692">
+                <source xml:space="preserve">Indexing blocks</source>
+                <target xml:space="preserve">Indexing blocks</target>
+            </trans-unit>
+            <trans-unit id="283587625204414083">
+                <source xml:space="preserve">Details</source>
+                <target xml:space="preserve">Details</target>
+            </trans-unit>
+            <trans-unit id="2837744407694109201">
+                <source xml:space="preserve">Depth <x equiv-text="{{ chainTip.branchlen + 1 }}" id="INTERPOLATION"/></source>
+                <target xml:space="preserve">Dubina <x equiv-text="{{ chainTip.branchlen + 1 }}" id="INTERPOLATION"/></target>
+            </trans-unit>
+            <trans-unit id="2844826968907578486">
+                <source xml:space="preserve"> Pools Luck </source>
+                <target xml:space="preserve"> Uspjeh pool-ova </target>
+            </trans-unit>
+            <trans-unit id="2848969221500885609">
+                <source xml:space="preserve">1 block later</source>
+                <target xml:space="preserve">1 blok kasnije</target>
+            </trans-unit>
+            <trans-unit id="2861306361489095884">
+                <source xml:space="preserve">Slug</source>
+                <target xml:space="preserve">Slug</target>
+            </trans-unit>
+            <trans-unit id="2863431896244142849">
+                <source xml:space="preserve">Research</source>
+                <target xml:space="preserve">Istraživanje</target>
+            </trans-unit>
+            <trans-unit id="2870197155512312836">
+                <source xml:space="preserve"> Transactions </source>
+                <target xml:space="preserve"> Transactions </target>
+            </trans-unit>
+            <trans-unit id="2876711679148961149">
+                <source xml:space="preserve">Removed</source>
+                <target xml:space="preserve">Uklonjeno</target>
+            </trans-unit>
+            <trans-unit id="288170943872765696">
+                <source xml:space="preserve">Input Sequence</source>
+                <target xml:space="preserve">Input Sequence</target>
+            </trans-unit>
+            <trans-unit id="2892144964426283371">
+                <source xml:space="preserve">Optimal</source>
+                <target xml:space="preserve">Optimalno</target>
+            </trans-unit>
+            <trans-unit id="2912999844598716434">
+                <source xml:space="preserve"> Balance History </source>
+                <target xml:space="preserve"> Povijest stanja </target>
+            </trans-unit>
+            <trans-unit id="2935684390377275172">
+                <source xml:space="preserve">Significant Bitcoin Cash blocks, including halvings, hard forks, protocol upgrades, and other milestones — past and future.</source>
+                <target xml:space="preserve">Significant Bitcoin Cash blocks, including halvings, hard forks, protocol upgrades, and other milestones — past and future.</target>
+            </trans-unit>
+            <trans-unit id="2946624699882754313">
+                <source xml:space="preserve">Show all</source>
+                <target xml:space="preserve">Prikaži sve</target>
+            </trans-unit>
+            <trans-unit id="296013377896859721">
+                <source xml:space="preserve">Become an Enterprise Sponsor</source>
+                <target xml:space="preserve">Postani Enterprise Sponsor</target>
+            </trans-unit>
+            <trans-unit id="2981219928115418649">
+                <source xml:space="preserve">Link</source>
+                <target xml:space="preserve">Link</target>
+            </trans-unit>
+            <trans-unit id="2986811974545371137">
+                <source xml:space="preserve">See mempool size (in MB) and transactions per second (in B/s) visualized over time.</source>
+                <target xml:space="preserve">Pogledajte veličinu mempoola (u MB) i transakcije po sekundi (u B/s) vizualizirane tijekom vremena.</target>
+            </trans-unit>
+            <trans-unit id="2991117117362614880">
+                <source xml:space="preserve"> Proof </source>
+                <target xml:space="preserve"> Dokaz </target>
+            </trans-unit>
+            <trans-unit id="2995325202955798324">
+                <source xml:space="preserve">Chipnet Explorer</source>
+                <target xml:space="preserve">Chipnet Explorer</target>
+            </trans-unit>
+            <trans-unit id="302660251728612874">
+                <source xml:space="preserve"> Avg Health </source>
+                <target xml:space="preserve"> Avg Health </target>
+            </trans-unit>
+            <trans-unit id="3033623772164647792">
+                <source xml:space="preserve">Height</source>
+                <target xml:space="preserve">Težina</target>
+            </trans-unit>
+            <trans-unit id="3056323879940472778">
+                <source xml:space="preserve">Pools Count</source>
+                <target xml:space="preserve">Pools Count</target>
+            </trans-unit>
+            <trans-unit id="3079792765469479718">
+                <source xml:space="preserve">Expected Block</source>
+                <target xml:space="preserve">Očekivani blok</target>
+            </trans-unit>
+            <trans-unit id="3084367762111593354">
+                <source xml:space="preserve">Merkle root</source>
+                <target xml:space="preserve">Merkle root</target>
+            </trans-unit>
+            <trans-unit id="3088064334969042235">
+                <source xml:space="preserve">Special Blocks</source>
+                <target xml:space="preserve">Special Blocks</target>
+            </trans-unit>
+            <trans-unit id="3090889139796775910">
+                <source xml:space="preserve">See the average number of transactions per Bitcoin Cash block over time.</source>
+                <target xml:space="preserve">See the average number of transactions per Bitcoin Cash block over time.</target>
+            </trans-unit>
+            <trans-unit id="3112239269637020392">
+                <source xml:space="preserve">sats/tx</source>
+                <target xml:space="preserve">sat/tx</target>
+            </trans-unit>
+            <trans-unit id="312539377512157124">
+                <source xml:space="preserve"><x equiv-text="i" id="INTERPOLATION"/> blocks</source>
+                <target xml:space="preserve"><x equiv-text="i" id="INTERPOLATION"/> blokova</target>
+            </trans-unit>
+            <trans-unit id="313854265968026491">
+                <source xml:space="preserve">Transaction</source>
+                <target xml:space="preserve">Transakcija</target>
+            </trans-unit>
+            <trans-unit id="3156305053014230404">
+                <source xml:space="preserve">other outputs</source>
+                <target xml:space="preserve">drugi outputi</target>
+            </trans-unit>
+            <trans-unit id="3161675600359363856">
+                <source xml:space="preserve">UTXO Outputs</source>
+                <target xml:space="preserve">UTXO Outputs</target>
+            </trans-unit>
+            <trans-unit id="3170961539582792521">
+                <source xml:space="preserve">(144 blocks)</source>
+                <target xml:space="preserve">(144 bloka)</target>
+            </trans-unit>
+            <trans-unit id="3184700926171002527">
+                <source xml:space="preserve">Any</source>
+                <target xml:space="preserve">Bilo koji</target>
+            </trans-unit>
+            <trans-unit id="3261973261379224721">
+                <source xml:space="preserve">Fee paid on average for each transaction in the past 144 blocks</source>
+                <target xml:space="preserve">Naknada plaćena u prosjeku za svaku transakciju u posljednja 144 bloka</target>
+            </trans-unit>
+            <trans-unit id="3304972143698843178">
+                <source xml:space="preserve">Event</source>
+                <target xml:space="preserve">Event</target>
+            </trans-unit>
+            <trans-unit id="3316413479857864182">
+                <source xml:space="preserve">Block Fees</source>
+                <target xml:space="preserve">Block Fees</target>
+            </trans-unit>
+            <trans-unit id="3320061433231160997">
+                <source xml:space="preserve">Actual Block</source>
+                <target xml:space="preserve">Stvarni blok</target>
+            </trans-unit>
+            <trans-unit id="3338707587131638636">
+                <source xml:space="preserve">This block does not belong to the main chain, it has been replaced by:</source>
+                <target xml:space="preserve">Ovaj blok ne pripada glavnom lancu, zamijenjen je s:</target>
+            </trans-unit>
+            <trans-unit id="3340571720517721398">
+                <source xml:space="preserve">This transaction may have been added out-of-band</source>
+                <target xml:space="preserve">Ova je transakcija možda dodana izvanpojasno</target>
+            </trans-unit>
+            <trans-unit id="3348816905677831844">
+                <source xml:space="preserve"> USD Value </source>
+                <target xml:space="preserve"> USD vrijednost </target>
+            </trans-unit>
+            <trans-unit id="3380799392226022892">
+                <source xml:space="preserve">Based on average native transaction of 140 Bytes</source>
+                <target xml:space="preserve">Na temelju prosječne native segwit transakcije od 140 Byte</target>
+            </trans-unit>
+            <trans-unit id="3381079415067175393">
+                <source xml:space="preserve">Get real-time status, addresses, fees, script info, and more for Bitcoin Cash<x equiv-text="seoDescription" id="PH"/> transaction with txid <x equiv-text="this.txId" id="PH_1"/>.</source>
+                <target xml:space="preserve">Dobijte status u stvarnom vremenu, adrese, naknade, informacije o skripti i više za <x equiv-text="network" id="PH"/> transakciju s txid <x equiv-text="this.txId" id="PH_1"/>.</target>
+            </trans-unit>
+            <trans-unit id="3388418238806768867">
+                <source xml:space="preserve"> CashToken Category </source>
+                <target xml:space="preserve"> CashToken Category </target>
+            </trans-unit>
+            <trans-unit id="3399131819685362332">
+                <source xml:space="preserve">Address Types</source>
+                <target xml:space="preserve">Vrste adresa</target>
+            </trans-unit>
+            <trans-unit id="3402667419139520163">
+                <source xml:space="preserve"> <x equiv-text="{{ networkName }}" id="INTERPOLATION"/> CashToken </source>
+                <target xml:space="preserve"> <x equiv-text="{{ networkName }}" id="INTERPOLATION"/> CashToken </target>
+            </trans-unit>
+            <trans-unit id="3430678834682292642">
+                <source xml:space="preserve">Reward</source>
+                <target xml:space="preserve">Nagrada</target>
+            </trans-unit>
+            <trans-unit id="3438841430617080790">
+                <source xml:space="preserve"> <x equiv-text="{{ networkName }}" id="INTERPOLATION"/> Address </source>
+                <target xml:space="preserve"> <x equiv-text="{{ networkName }}" id="INTERPOLATION"/> Adresa </target>
+            </trans-unit>
+            <trans-unit id="3448462145758383019">
+                <source xml:space="preserve">Total</source>
+                <target xml:space="preserve">Ukupno</target>
+            </trans-unit>
+            <trans-unit id="34509554836008126">
+                <source xml:space="preserve">This is a test network. Coins have no value.</source>
+                <target xml:space="preserve">Ovo je testna mreža. Coini nemaju vrijednost.</target>
+            </trans-unit>
+            <trans-unit id="3509728203755510244">
+                <source xml:space="preserve">% Change</source>
+                <target xml:space="preserve">% promjena</target>
+            </trans-unit>
+            <trans-unit id="3510fc6daa1d975f331e3a717bdf1a34efa06dff">
+                <source xml:space="preserve">Hashrate &amp; Difficulty</source>
+                <target xml:space="preserve">Hashrate i težina</target>
+            </trans-unit>
+            <trans-unit id="3517550046701184661">
+                <source xml:space="preserve">Show less</source>
+                <target xml:space="preserve">Prikaži manje</target>
+            </trans-unit>
+            <trans-unit id="3533694482361206673">
+                <source xml:space="preserve"> 1w </source>
+                <target xml:space="preserve"> 1w </target>
+            </trans-unit>
+            <trans-unit id="3563823504206575540">
+                <source xml:space="preserve"> Description </source>
+                <target xml:space="preserve"> Opis </target>
+            </trans-unit>
+            <trans-unit id="3602441324260631848">
+                <source xml:space="preserve">Hash</source>
+                <target xml:space="preserve">Haš</target>
+            </trans-unit>
+            <trans-unit id="3609315297931950072">
+                <source xml:space="preserve"> <x equiv-text="{{ networkName }}" id="INTERPOLATION"/> Block </source>
+                <target xml:space="preserve"> <x equiv-text="{{ networkName }}" id="INTERPOLATION"/> Blok </target>
+            </trans-unit>
+            <trans-unit id="3618113914737563350">
+                <source xml:space="preserve"><x equiv-text="{{ x }}" id="INTERPOLATION"/> remaining</source>
+                <target xml:space="preserve"><x equiv-text="{{ x }}" id="INTERPOLATION"/> preostalo</target>
+            </trans-unit>
+            <trans-unit id="3619092918520740354">
+                <source xml:space="preserve"> Mined </source>
+                <target xml:space="preserve"> Izrudaredo </target>
+            </trans-unit>
+            <trans-unit id="3622187938140330066">
+                <source xml:space="preserve">Mainnet Explorer</source>
+                <target xml:space="preserve">Mainnet Explorer</target>
+            </trans-unit>
+            <trans-unit id="365703926135033322">
+                <source xml:space="preserve"> Subsidy + fees </source>
+                <target xml:space="preserve"> Subsidy + naknade </target>
+            </trans-unit>
+            <trans-unit id="3657175293620047090">
+                <source xml:space="preserve"> Reconnecting... </source>
+                <target xml:space="preserve"> Ponovno povezivanje... </target>
+            </trans-unit>
+            <trans-unit id="3666195172774554282">
+                <source xml:space="preserve">Other (<x equiv-text="percentage" id="PH"/>)</source>
+                <target xml:space="preserve">Ostali (<x equiv-text="percentage" id="PH"/>)</target>
+            </trans-unit>
+            <trans-unit id="3671013045755037186">
+                <source xml:space="preserve">Seen in Mempool</source>
+                <target xml:space="preserve">Viđeno u Mempoolu</target>
+            </trans-unit>
+            <trans-unit id="3687375115991989307">
+                <source xml:space="preserve">Avg Block Fees</source>
+                <target xml:space="preserve">Avg Block Fees</target>
+            </trans-unit>
+            <trans-unit id="3694137827245006433">
+                <source xml:space="preserve"> Unsupported or invalid address </source>
+                <target xml:space="preserve"> Unsupported or invalid address </target>
+            </trans-unit>
+            <trans-unit id="3727261967700441034">
+                <source xml:space="preserve"><x equiv-text="{{ i }}" id="INTERPOLATION"/> <x ctype="x-span" equiv-text="&lt;span class=&quot;shared-block&quot;&gt;" id="START_TAG_SPAN"/>block<x ctype="x-span" equiv-text="&lt;/span&gt;" id="CLOSE_TAG_SPAN"/></source>
+                <target xml:space="preserve"><x equiv-text="{{ i }}" id="INTERPOLATION"/> <x ctype="x-span" equiv-text="&lt;span class=&quot;shared-block&quot;&gt;" id="START_TAG_SPAN"/>block<x ctype="x-span" equiv-text="&lt;/span&gt;" id="CLOSE_TAG_SPAN"/></target>
+            </trans-unit>
+            <trans-unit id="3740782280725617165">
+                <source xml:space="preserve">Mining Dashboard</source>
+                <target xml:space="preserve">Mining Dashboard</target>
+            </trans-unit>
+            <trans-unit id="3750067297809998641">
+                <source xml:space="preserve">This transaction was missing from our mempool prior to mining</source>
+                <target xml:space="preserve">Ova transakcija je nedostajala u našem mempoolu prije rudarenja</target>
+            </trans-unit>
+            <trans-unit id="3778096356145390312">
+                <source xml:space="preserve">Unspent Transaction Outputs</source>
+                <target xml:space="preserve">Unspent Transaction Outputs</target>
+            </trans-unit>
+            <trans-unit id="3781457392965972953">
+                <source xml:space="preserve">Hashrate</source>
+                <target xml:space="preserve">Hashrate</target>
+            </trans-unit>
+            <trans-unit id="3788220819986174087">
+                <source xml:space="preserve"> Transaction not found. </source>
+                <target xml:space="preserve"> Transakcija nije pronađena. </target>
+            </trans-unit>
+            <trans-unit id="3804204581529582717">
+                <source xml:space="preserve">Endpoint</source>
+                <target xml:space="preserve">Krajnja točka</target>
+            </trans-unit>
+            <trans-unit id="3862813234971584804">
+                <source xml:space="preserve">What is a block explorer?</source>
+                <target xml:space="preserve">Što je blok explorer?</target>
+            </trans-unit>
+            <trans-unit id="3878977242883867917">
+                <source xml:space="preserve">Balance (BCH)</source>
+                <target xml:space="preserve">Stanje (BTC)</target>
+            </trans-unit>
+            <trans-unit id="3882045404946016537">
+                <source xml:space="preserve">Hashrate &amp; Difficulty</source>
+                <target xml:space="preserve">Hashrate &amp; Difficulty</target>
+            </trans-unit>
+            <trans-unit id="3900456641470356995">
+                <source xml:space="preserve"> <x equiv-text="{{ networkName }}" id="INTERPOLATION"/> Addresses </source>
+                <target xml:space="preserve"> <x equiv-text="{{ networkName }}" id="INTERPOLATION"/> Adrese </target>
+            </trans-unit>
+            <trans-unit id="3935190348395891735">
+                <source xml:space="preserve">Block Health</source>
+                <target xml:space="preserve">Block Health</target>
+            </trans-unit>
+            <trans-unit id="3935295557063521643">
+                <source xml:space="preserve"> Difficulty Adjustment
+</source>
+                <target xml:space="preserve"> Prilagodba težine </target>
+            </trans-unit>
+            <trans-unit id="3945263760582448384">
+                <source xml:space="preserve"> of total supply </source>
+                <target xml:space="preserve"> od ukupne ponude </target>
+            </trans-unit>
+            <trans-unit id="3973931101896534797">
+                <source xml:space="preserve">Date</source>
+                <target xml:space="preserve">Datum</target>
+            </trans-unit>
+            <trans-unit id="40010431887056610">
+                <source xml:space="preserve">Pools count (1w)</source>
+                <target xml:space="preserve">Broj pool-ova (1w)</target>
+            </trans-unit>
+            <trans-unit id="4012359471246826308">
+                <source xml:space="preserve">Fee span</source>
+                <target xml:space="preserve">Raspon naknada</target>
+            </trans-unit>
+            <trans-unit id="4045684136967540279">
+                <source xml:space="preserve">See Bitcoin Cash block rewards in BCH and USD visualized over time. Block rewards are the total funds miners earn from the block subsidy and fees.</source>
+                <target xml:space="preserve">See Bitcoin Cash block rewards in BCH and USD visualized over time. Block rewards are the total funds miners earn from the block subsidy and fees.</target>
+            </trans-unit>
+            <trans-unit id="4061977068003854265">
+                <source xml:space="preserve"> Treasury </source>
+                <target xml:space="preserve"> Treasury </target>
+            </trans-unit>
+            <trans-unit id="4071362499864583859">
+                <source xml:space="preserve">Low Priority</source>
+                <target xml:space="preserve">Nizak prioritet</target>
+            </trans-unit>
+            <trans-unit id="4073285970817086172">
+                <source xml:space="preserve">Pause/Resume</source>
+                <target xml:space="preserve">Pause/Resume</target>
+            </trans-unit>
+            <trans-unit id="4134775753251919633">
+                <source xml:space="preserve">Flow</source>
+                <target xml:space="preserve">Protok</target>
+            </trans-unit>
+            <trans-unit id="4136129438009397007">
+                <source xml:space="preserve">Invalid</source>
+                <target xml:space="preserve">Nevažeći</target>
+            </trans-unit>
+            <trans-unit id="4136162380400286378">
+                <source xml:space="preserve">Consolidation</source>
+                <target xml:space="preserve">Konsolidacija</target>
+            </trans-unit>
+            <trans-unit id="4150117346908548600">
+                <source xml:space="preserve"> Difficulty drift (since anchor) </source>
+                <target xml:space="preserve"> Difficulty drift (since anchor) </target>
+            </trans-unit>
+            <trans-unit id="41545303ec98792b738d6237adbd1f3b54a22196">
+                <source xml:space="preserve">Block Fees Vs Subsidy</source>
+                <target xml:space="preserve">Blok naknade vs subsidy</target>
+            </trans-unit>
+            <trans-unit id="4199596567553695595">
+                <source xml:space="preserve">fee</source>
+                <target xml:space="preserve">naknada</target>
+            </trans-unit>
+            <trans-unit id="420763834450076269">
+                <source xml:space="preserve">Block</source>
+                <target xml:space="preserve">Blok</target>
+            </trans-unit>
+            <trans-unit id="4216043949498872457">
+                <source xml:space="preserve"><x ctype="x-a" equiv-text="&lt;a         href=&quot;https://bchexplorer.cash&quot;         target=&quot;_blank&quot;         aria-label=&quot;Visit official BCH explorer website&quot;         &gt;" id="START_LINK"/>BCH Explorer<x ctype="x-a" equiv-text="&lt;/a       &gt;" id="CLOSE_LINK"/> is a blockchain and mempool explorer for the Bitcoin Cash community, created by Melroy van den Berg. It is a completely self-hosted without any trusted third-parties. </source>
+                <target xml:space="preserve"><x ctype="x-a" equiv-text="&lt;a         href=&quot;https://bchexplorer.cash&quot;         target=&quot;_blank&quot;         aria-label=&quot;Visit official BCH explorer website&quot;         &gt;" id="START_LINK"/>BCH Explorer<x ctype="x-a" equiv-text="&lt;/a       &gt;" id="CLOSE_LINK"/> is a blockchain and mempool explorer for the Bitcoin Cash community, created by Melroy van den Berg. It is a completely self-hosted without any trusted third-parties. </target>
+            </trans-unit>
+            <trans-unit id="4233811188017847729">
+                <source xml:space="preserve">All miners</source>
+                <target xml:space="preserve">Svi rudari</target>
+            </trans-unit>
+            <trans-unit id="424868973735369535">
+                <source xml:space="preserve"><x equiv-text="{{ i }}" id="INTERPOLATION"/> transactions</source>
+                <target xml:space="preserve"><x equiv-text="{{ i }}" id="INTERPOLATION"/> kanala</target>
+            </trans-unit>
+            <trans-unit id="4265513957728018247">
+                <source xml:space="preserve"> Clean </source>
+                <target xml:space="preserve"> Čisto </target>
+            </trans-unit>
+            <trans-unit id="431123319361631379">
+                <source xml:space="preserve"><x equiv-text="{{ i }}" id="INTERPOLATION"/> confirmations</source>
+                <target xml:space="preserve"><x equiv-text="{{ i }}" id="INTERPOLATION"/> potvrde</target>
+            </trans-unit>
+            <trans-unit id="4316256994048337845">
+                <source xml:space="preserve"><x equiv-text="{{ bufferedCount$ | async }}" id="INTERPOLATION"/> new transactions</source>
+                <target xml:space="preserve"><x equiv-text="{{ bufferedCount$ | async }}" id="INTERPOLATION"/> new transactions</target>
+            </trans-unit>
+            <trans-unit id="4333425760770516639">
+                <source xml:space="preserve">What is a mempool explorer?</source>
+                <target xml:space="preserve">Što je mempool explorer?</target>
+            </trans-unit>
+            <trans-unit id="435092113360011346">
+                <source xml:space="preserve">Stale Blocks</source>
+                <target xml:space="preserve">Stale Blocks</target>
+            </trans-unit>
+            <trans-unit id="4355036166068125139">
+                <source xml:space="preserve">BCH</source>
+                <target xml:space="preserve">BCH</target>
+            </trans-unit>
+            <trans-unit id="4355353297929558170">
+                <source xml:space="preserve"> Adjustments </source>
+                <target xml:space="preserve"> Prilagodbe </target>
+            </trans-unit>
+            <trans-unit id="4355593968886772097">
+                <source xml:space="preserve"> Total fees </source>
+                <target xml:space="preserve"> Total fees </target>
+            </trans-unit>
+            <trans-unit id="4364489225661554534">
+                <source xml:space="preserve">Usually places your transaction in between the second and third mempool blocks</source>
+                <target xml:space="preserve">Obično smješta vašu transakciju između drugog i trećeg bloka mempoola</target>
+            </trans-unit>
+            <trans-unit id="4370227308575957082">
+                <source xml:space="preserve">Mined</source>
+                <target xml:space="preserve">Mined</target>
+            </trans-unit>
+            <trans-unit id="4379563009807160796">
+                <source xml:space="preserve">There are <x equiv-text="{{ block.extras.orphans.length }}" id="INTERPOLATION"/> stale blocks at this height</source>
+                <target xml:space="preserve">Na ovoj visini ima <x equiv-text="{{ block.extras.orphans.length }}" id="INTERPOLATION"/> ustajalih blokova</target>
+            </trans-unit>
+            <trans-unit id="4391915915719593516">
+                <source xml:space="preserve">sat/B</source>
+                <target xml:space="preserve">sat/B</target>
+            </trans-unit>
+            <trans-unit id="4396162952269470945">
+                <source xml:space="preserve"> Waiting for it to appear in the mempool... </source>
+                <target xml:space="preserve"> Čeka se da se pojavi u mempoolu... </target>
+            </trans-unit>
+            <trans-unit id="4414442487981069880">
+                <source xml:space="preserve">other inputs</source>
+                <target xml:space="preserve">drugi inputi</target>
+            </trans-unit>
+            <trans-unit id="4416413576346763682">
+                <source xml:space="preserve">Pending</source>
+                <target xml:space="preserve">U tijeku</target>
+            </trans-unit>
+            <trans-unit id="4417228290563175049">
+                <source xml:space="preserve"> Redirecting to transaction page... </source>
+                <target xml:space="preserve"> Preusmjeravanje na stranicu transakcije... </target>
+            </trans-unit>
+            <trans-unit id="4467323362722952678">
+                <source xml:space="preserve">Unknown</source>
+                <target xml:space="preserve">Unknown</target>
+            </trans-unit>
+            <trans-unit id="4475609005110549817">
+                <source xml:space="preserve"> NFT Commitment </source>
+                <target xml:space="preserve"> NFT Commitment </target>
+            </trans-unit>
+            <trans-unit id="4482088243387794106">
+                <source xml:space="preserve">See Bitcoin Cash block sizes (MB) visualized over time.</source>
+                <target xml:space="preserve">See Bitcoin Cash block sizes (MB) visualized over time.</target>
+            </trans-unit>
+            <trans-unit id="4498273128887208867">
+                <source xml:space="preserve">New subsidy</source>
+                <target xml:space="preserve">Nova subvencija</target>
+            </trans-unit>
+            <trans-unit id="4499536517167963505">
+                <source xml:space="preserve"> Pool </source>
+                <target xml:space="preserve"> Pool </target>
+            </trans-unit>
+            <trans-unit id="4508678235062595231">
+                <source xml:space="preserve">Privacy Policy</source>
+                <target xml:space="preserve">Politika privatnosti</target>
+            </trans-unit>
+            <trans-unit id="4513869814948231749">
+                <source xml:space="preserve">Nonce</source>
+                <target xml:space="preserve">Nonce</target>
+            </trans-unit>
+            <trans-unit id="4537743732468270530">
+                <source xml:space="preserve">Error loading transaction data.</source>
+                <target xml:space="preserve">Pogreška pri učitavanju podataka o transakciji.</target>
+            </trans-unit>
+            <trans-unit id="4545179046181914410">
+                <source xml:space="preserve"> Incoming Transactions </source>
+                <target xml:space="preserve"> Dolazne transakcije </target>
+            </trans-unit>
+            <trans-unit id="4552955603518842605">
+                <source xml:space="preserve">See the Bitcoin Cash price in USD visualized over time.</source>
+                <target xml:space="preserve">Pogledajte cijenu Bitcoina u USD-u vizualiziranu kroz vrijeme.</target>
+            </trans-unit>
+            <trans-unit id="45739481977493163">
+                <source xml:space="preserve">Size</source>
+                <target xml:space="preserve">Size</target>
+            </trans-unit>
+            <trans-unit id="4580786032076405950">
+                <source xml:space="preserve">Classic</source>
+                <target xml:space="preserve">klasična</target>
+            </trans-unit>
+            <trans-unit id="4580988005648117665">
+                <source xml:space="preserve">Search</source>
+                <target xml:space="preserve">Pretraživanje</target>
+            </trans-unit>
+            <trans-unit id="4588071046583048388">
+                <source xml:space="preserve"> Fee </source>
+                <target xml:space="preserve"> Fee </target>
+            </trans-unit>
+            <trans-unit id="4603219930058518974">
+                <source xml:space="preserve"> Halving Countdown
+</source>
+                <target xml:space="preserve"> Odbrojavanje do prepolovljenja </target>
+            </trans-unit>
+            <trans-unit id="4610163795914092608">
+                <source xml:space="preserve">Locktime</source>
+                <target xml:space="preserve">Vrijeme zaključavanja</target>
+            </trans-unit>
+            <trans-unit id="4662281448215873743">
+                <source xml:space="preserve">How to host my own instance?</source>
+                <target xml:space="preserve">How to host my own instance?</target>
+            </trans-unit>
+            <trans-unit id="4686430954741576816">
+                <source xml:space="preserve">UTXO Inputs</source>
+                <target xml:space="preserve">UTXO Inputs</target>
+            </trans-unit>
+            <trans-unit id="4701769218404429807">
+                <source xml:space="preserve"> TXID </source>
+                <target xml:space="preserve"> TXID </target>
+            </trans-unit>
+            <trans-unit id="472107412483985516">
+                <source xml:space="preserve"> Confirmed </source>
+                <target xml:space="preserve"> Potvrđena </target>
+            </trans-unit>
+            <trans-unit id="4735089676613655651">
+                <source xml:space="preserve">B/s</source>
+                <target xml:space="preserve">B/s</target>
+            </trans-unit>
+            <trans-unit id="476870518410763600">
+                <source xml:space="preserve">(Newly Generated Coins)</source>
+                <target xml:space="preserve">(Novogenerirani coin-ovi)</target>
+            </trans-unit>
+            <trans-unit id="4793828002882320882">
+                <source xml:space="preserve">At block: <x equiv-text="data[0].data[2]" id="PH"/></source>
+                <target xml:space="preserve">U bloku: <x equiv-text="data[0].data[2]" id="PH"/></target>
+            </trans-unit>
+            <trans-unit id="4805372994221502598">
+                <source xml:space="preserve"> Prevhash </source>
+                <target xml:space="preserve"> Prevhash </target>
+            </trans-unit>
+            <trans-unit id="4808047846196007749">
+                <source xml:space="preserve"><x equiv-text="{{ i }}" id="INTERPOLATION"/> <x ctype="x-span" equiv-text="&lt;span class=&quot;shared-block&quot;&gt;" id="START_TAG_SPAN"/>blocks<x ctype="x-span" equiv-text="&lt;/span&gt;" id="CLOSE_TAG_SPAN"/></source>
+                <target xml:space="preserve"><x equiv-text="{{ i }}" id="INTERPOLATION"/> <x ctype="x-span" equiv-text="&lt;span class=&quot;shared-block&quot;&gt;" id="START_TAG_SPAN"/>blocks<x ctype="x-span" equiv-text="&lt;/span&gt;" id="CLOSE_TAG_SPAN"/></target>
+            </trans-unit>
+            <trans-unit id="4818852650817502025">
+                <source xml:space="preserve">My Account</source>
+                <target xml:space="preserve">Moj račun</target>
+            </trans-unit>
+            <trans-unit id="4839842223418106812">
+                <source xml:space="preserve"> Recent Blocks </source>
+                <target xml:space="preserve"> Nedavni blokovi </target>
+            </trans-unit>
+            <trans-unit id="4848881501986788184">
+                <source xml:space="preserve">Limited data available</source>
+                <target xml:space="preserve">Limited data available</target>
+            </trans-unit>
+            <trans-unit id="4853978141059297311">
+                <source xml:space="preserve">Error loading wallet data.</source>
+                <target xml:space="preserve">Pogreška pri učitavanju podataka novčanika.</target>
+            </trans-unit>
+            <trans-unit id="4854223288615253584">
+                <source xml:space="preserve"> Verified </source>
+                <target xml:space="preserve"> Provjereno </target>
+            </trans-unit>
+            <trans-unit id="4865960060175644381">
+                <source xml:space="preserve">Transaction Bytes per second (B/s)</source>
+                <target xml:space="preserve">Transakcija Bytes u sekundi (B/s)</target>
+            </trans-unit>
+            <trans-unit id="4895326106573044490">
+                <source xml:space="preserve">Documentation</source>
+                <target xml:space="preserve">Dokumentacija</target>
+            </trans-unit>
+            <trans-unit id="4901852854586869243">
+                <source xml:space="preserve">Transaction hex</source>
+                <target xml:space="preserve">Hex transakcije</target>
+            </trans-unit>
+            <trans-unit id="4902817035128594900">
+                <source xml:space="preserve">Description</source>
+                <target xml:space="preserve">Inskripcija</target>
+            </trans-unit>
+            <trans-unit id="4939001214826529053">
+                <source xml:space="preserve">Calculator</source>
+                <target xml:space="preserve">Kalkulator</target>
+            </trans-unit>
+            <trans-unit id="4948789143508999262">
+                <source xml:space="preserve">Transaction cannot be broadcasted because it&apos;s missing or has an invalid signature</source>
+                <target xml:space="preserve">Transaction cannot be broadcasted because it&apos;s missing or has an invalid signature</target>
+            </trans-unit>
+            <trans-unit id="4966581410303731134">
+                <source xml:space="preserve">See Bitcoin Cash block time variation over time.</source>
+                <target xml:space="preserve">See Bitcoin Cash block time variation over time.</target>
+            </trans-unit>
+            <trans-unit id="4980628658981044012">
+                <source xml:space="preserve">nSequence</source>
+                <target xml:space="preserve">nSequence</target>
+            </trans-unit>
+            <trans-unit id="4994168675317106570">
+                <source xml:space="preserve">This transaction conflicted with another version in our mempool</source>
+                <target xml:space="preserve">Ova transakcija bila je u sukobu s drugom verzijom u našem mempoolu</target>
+            </trans-unit>
+            <trans-unit id="5012084291992448490">
+                <source xml:space="preserve">Fees</source>
+                <target xml:space="preserve">Fees</target>
+            </trans-unit>
+            <trans-unit id="5012271161932121824">
+                <source xml:space="preserve">Overview of the mining pools on Bitcoin Cash.</source>
+                <target xml:space="preserve">Overview of the mining pools on Bitcoin Cash.</target>
+            </trans-unit>
+            <trans-unit id="5033494112821505715">
+                <source xml:space="preserve">Only ~<x equiv-text="{{     medianFeeNeeded | feeRounding   }}" id="INTERPOLATION"/> sat/B was needed to get into this block</source>
+                <target xml:space="preserve">Za ulazak u ovaj blok bio je potreban samo ~<x equiv-text="{{ medianFeeNeeded | feeRounding }}" id="INTERPOLATION"/> sat/B</target>
+            </trans-unit>
+            <trans-unit id="5063990330610553816">
+                <source xml:space="preserve">Marginal fee rate</source>
+                <target xml:space="preserve">Granična stopa naknade</target>
+            </trans-unit>
+            <trans-unit id="5085468009677264088">
+                <source xml:space="preserve"> Pending Transactions </source>
+                <target xml:space="preserve"> Pending Transactions </target>
+            </trans-unit>
+            <trans-unit id="5104161527928815399">
+                <source xml:space="preserve"> ETA </source>
+                <target xml:space="preserve"> ETA </target>
+            </trans-unit>
+            <trans-unit id="5112312000726139538">
+                <source xml:space="preserve">Change (30d)</source>
+                <target xml:space="preserve">Promjeni (30d)</target>
+            </trans-unit>
+            <trans-unit id="5143204595795749226">
+                <source xml:space="preserve">Block Time Variation</source>
+                <target xml:space="preserve">Block Time Variation</target>
+            </trans-unit>
+            <trans-unit id="5151697515296180479">
+                <source xml:space="preserve">Either 2x the minimum, or the Low Priority rate (whichever is lower)</source>
+                <target xml:space="preserve">Ili 2x minimalna ili stopa niskog prioriteta (što god je niže)</target>
+            </trans-unit>
+            <trans-unit id="5159814115056353668">
+                <source xml:space="preserve">Addresses</source>
+                <target xml:space="preserve">adrese</target>
+            </trans-unit>
+            <trans-unit id="5162799172921290449">
+                <source xml:space="preserve">Fiat</source>
+                <target xml:space="preserve">Fiat</target>
+            </trans-unit>
+            <trans-unit id="5166531163188856419">
+                <source xml:space="preserve"> <x equiv-text="{{ networkName }}" id="INTERPOLATION"/> Block Height </source>
+                <target xml:space="preserve"> <x equiv-text="{{ networkName }}" id="INTERPOLATION"/> Visina bloka </target>
+            </trans-unit>
+            <trans-unit id="5182043391401885822">
+                <source xml:space="preserve">mining pool</source>
+                <target xml:space="preserve">rudarski pool</target>
+            </trans-unit>
+            <trans-unit id="5183104988417550665">
+                <source xml:space="preserve"> Hash </source>
+                <target xml:space="preserve"> Hash </target>
+            </trans-unit>
+            <trans-unit id="5190281097971514213">
+                <source xml:space="preserve">Transactions Per Block</source>
+                <target xml:space="preserve">Transactions Per Block</target>
+            </trans-unit>
+            <trans-unit id="5246516893505114366">
+                <source xml:space="preserve">BCH Holdings</source>
+                <target xml:space="preserve">BTC sredstva</target>
+            </trans-unit>
+            <trans-unit id="5271331539737839370">
+                <source xml:space="preserve"> Hashrate </source>
+                <target xml:space="preserve"> Hashrate </target>
+            </trans-unit>
+            <trans-unit id="5282397014936928869">
+                <source xml:space="preserve"> Health </source>
+                <target xml:space="preserve"> Health </target>
+            </trans-unit>
+            <trans-unit id="5310841849641828650">
+                <source xml:space="preserve">Allowed?</source>
+                <target xml:space="preserve">Dopušteno?</target>
+            </trans-unit>
+            <trans-unit id="5369657738305549962">
+                <source xml:space="preserve"> Show diagram </source>
+                <target xml:space="preserve"> Prikaži dijagram </target>
+            </trans-unit>
+            <trans-unit id="5373005510433915917">
+                <source xml:space="preserve">Bitcoin Cash Price</source>
+                <target xml:space="preserve">Bitcoin Cash Price</target>
+            </trans-unit>
+            <trans-unit id="5385698011723379548">
+                <source xml:space="preserve">Mempool size</source>
+                <target xml:space="preserve">Veličina Mempoola</target>
+            </trans-unit>
+            <trans-unit id="5417840158792309126">
+                <source xml:space="preserve"> If you like this project and use the explorer on a regular basis, please consider <x ctype="x-a" equiv-text="&lt;a         href=&quot;https://melroy.org/donate.html&quot;         target=&quot;_blank&quot;         aria-label=&quot;Donate to support BCH Explorer&quot;         &gt;" id="START_LINK"/>donating<x ctype="x-a" equiv-text="&lt;/a       &gt;" id="CLOSE_LINK"/>. </source>
+                <target xml:space="preserve"> If you like this project and use the explorer on a regular basis, please consider <x ctype="x-a" equiv-text="&lt;a         href=&quot;https://melroy.org/donate.html&quot;         target=&quot;_blank&quot;         aria-label=&quot;Donate to support BCH Explorer&quot;         &gt;" id="START_LINK"/>donating<x ctype="x-a" equiv-text="&lt;/a       &gt;" id="CLOSE_LINK"/>. </target>
+            </trans-unit>
+            <trans-unit id="5458697026988984634">
+                <source xml:space="preserve">Cheap</source>
+                <target xml:space="preserve">Cheap</target>
+            </trans-unit>
+            <trans-unit id="5478121364779850827">
+                <source xml:space="preserve"> Reset </source>
+                <target xml:space="preserve"> Reset </target>
+            </trans-unit>
+            <trans-unit id="5481284030283031915">
+                <source xml:space="preserve">Website</source>
+                <target xml:space="preserve">Website</target>
+            </trans-unit>
+            <trans-unit id="5501309952572778737">
+                <source xml:space="preserve">Overpaid <x equiv-text="{{ overpaidTimes }}" id="INTERPOLATION"/>x</source>
+                <target xml:space="preserve">Preplaćeno <x equiv-text="{{ overpaidTimes }}" id="INTERPOLATION"/>x</target>
+            </trans-unit>
+            <trans-unit id="5514856318489056549">
+                <source xml:space="preserve"> Amount </source>
+                <target xml:space="preserve"> Iznos </target>
+            </trans-unit>
+            <trans-unit id="5523115287719193824">
+                <source xml:space="preserve">This is a special block</source>
+                <target xml:space="preserve">This is a special block</target>
+            </trans-unit>
+            <trans-unit id="5530507757130071978">
+                <source xml:space="preserve"> ScriptPubKey (ASM) </source>
+                <target xml:space="preserve"> ScriptPubKey (ASM) </target>
+            </trans-unit>
+            <trans-unit id="5534751684004969564">
+                <source xml:space="preserve"> Average block time </source>
+                <target xml:space="preserve"> Prosječno vrijeme bloka </target>
+            </trans-unit>
+            <trans-unit id="5545107500213121470">
+                <source xml:space="preserve">Confirmed Transactions</source>
+                <target xml:space="preserve">Confirmed Transactions</target>
+            </trans-unit>
+            <trans-unit id="5550185768674078941">
+                <source xml:space="preserve">sats</source>
+                <target xml:space="preserve">sat</target>
+            </trans-unit>
+            <trans-unit id="5589142532291220451">
+                <source xml:space="preserve"> Treasury Distribution </source>
+                <target xml:space="preserve"> Raspodjela riznica </target>
+            </trans-unit>
+            <trans-unit id="5593559015323293592">
+                <source xml:space="preserve"> Addresses </source>
+                <target xml:space="preserve"> Adrese </target>
+            </trans-unit>
+            <trans-unit id="5628360087464548838">
+                <source xml:space="preserve">Error loading address data.</source>
+                <target xml:space="preserve">Pogreška pri učitavanju podataka o adresi.</target>
+            </trans-unit>
+            <trans-unit id="5656496863503540632">
+                <source xml:space="preserve">Usually places your transaction in between the first and second mempool blocks</source>
+                <target xml:space="preserve">Obično smješta vašu transakciju između prvog i drugog bloka mempoola</target>
+            </trans-unit>
+            <trans-unit id="5667900632592970266">
+                <source xml:space="preserve">Timestamp</source>
+                <target xml:space="preserve">Timestamp</target>
+            </trans-unit>
+            <trans-unit id="5682558575236654240">
+                <source xml:space="preserve"> By <x ctype="x-a" equiv-text="&lt;a         href=&quot;https://melroy.org/donate.html&quot;         target=&quot;_blank&quot;         aria-label=&quot;Sponsor BCH Explorer development&quot;         &gt;" id="START_LINK"/>sponsoring me<x ctype="x-a" equiv-text="&lt;/a       &gt;" id="CLOSE_LINK"/> you are supporting my work and ensuring that the BCH Explorer project remains up-to-date, stable and available to the whole Bitcoin Cash community. As well as extending this BCH Explorer for specific BCH features. Are you interested in becoming an <x ctype="x-b" equiv-text="&lt;b&gt;" id="START_BOLD_TEXT"/>enterprise sponsor<x ctype="x-b" equiv-text="&lt;/b&gt;" id="CLOSE_BOLD_TEXT"/> and getting your company listed on this site? Feel free to <x equiv-text="&lt;a         href=&quot;https://t.me/melroyvandenberg&quot;         target=&quot;_blank&quot;         aria-label=&quot;Contact Melroy on Telegram&quot;         &gt;" id="START_LINK_1"/>reach out via Telegram<x ctype="x-a" equiv-text="&lt;/a       &gt;" id="CLOSE_LINK"/>. </source>
+                <target xml:space="preserve"> By <x ctype="x-a" equiv-text="&lt;a         href=&quot;https://melroy.org/donate.html&quot;         target=&quot;_blank&quot;         aria-label=&quot;Sponsor BCH Explorer development&quot;         &gt;" id="START_LINK"/>sponsoring me<x ctype="x-a" equiv-text="&lt;/a       &gt;" id="CLOSE_LINK"/> you are supporting my work and ensuring that the BCH Explorer project remains up-to-date, stable and available to the whole Bitcoin Cash community. As well as extending this BCH Explorer for specific BCH features. Are you interested in becoming an <x ctype="x-b" equiv-text="&lt;b&gt;" id="START_BOLD_TEXT"/>enterprise sponsor<x ctype="x-b" equiv-text="&lt;/b&gt;" id="CLOSE_BOLD_TEXT"/> and getting your company listed on this site? Feel free to <x equiv-text="&lt;a         href=&quot;https://t.me/melroyvandenberg&quot;         target=&quot;_blank&quot;         aria-label=&quot;Contact Melroy on Telegram&quot;         &gt;" id="START_LINK_1"/>reach out via Telegram<x ctype="x-a" equiv-text="&lt;/a       &gt;" id="CLOSE_LINK"/>. </target>
+            </trans-unit>
+            <trans-unit id="5740206434555920246">
+                <source xml:space="preserve"> Preview </source>
+                <target xml:space="preserve"> Preview </target>
+            </trans-unit>
+            <trans-unit id="5741604595133607980">
+                <source xml:space="preserve"> Features </source>
+                <target xml:space="preserve">Istaknuto</target>
+            </trans-unit>
+            <trans-unit id="5766764880916231123">
+                <source xml:space="preserve"> Fee rate </source>
+                <target xml:space="preserve"> Stopa naknade </target>
+            </trans-unit>
+            <trans-unit id="5780374230204480701">
+                <source xml:space="preserve">Stale Block</source>
+                <target xml:space="preserve">Ustajali blok</target>
+            </trans-unit>
+            <trans-unit id="5809992200043965490">
+                <source xml:space="preserve">Generate PSBT</source>
+                <target xml:space="preserve">Generate PSBT</target>
+            </trans-unit>
+            <trans-unit id="5829059035985468594">
+                <source xml:space="preserve">Miner</source>
+                <target xml:space="preserve">Rudar</target>
+            </trans-unit>
+            <trans-unit id="5829572156532134311">
+                <source xml:space="preserve">Avg Health</source>
+                <target xml:space="preserve">Prosj. zdravlje</target>
+            </trans-unit>
+            <trans-unit id="5861843152219434948">
+                <source xml:space="preserve">Medium Priority</source>
+                <target xml:space="preserve">Srednji prioritet</target>
+            </trans-unit>
+            <trans-unit id="590117958379793860">
+                <source xml:space="preserve"> Maintaining, improving and creating this BCH explorer costs <x ctype="x-i" equiv-text="&lt;i&gt;" id="START_ITALIC_TEXT"/>a lot of time and effort<x ctype="x-i" equiv-text="&lt;/i&gt;" id="CLOSE_ITALIC_TEXT"/>. As a one-man operation, I spend a lot of personal time working on this project. </source>
+                <target xml:space="preserve"> Maintaining, improving and creating this BCH explorer costs <x ctype="x-i" equiv-text="&lt;i&gt;" id="START_ITALIC_TEXT"/>a lot of time and effort<x ctype="x-i" equiv-text="&lt;/i&gt;" id="CLOSE_ITALIC_TEXT"/>. As a one-man operation, I spend a lot of personal time working on this project. </target>
+            </trans-unit>
+            <trans-unit id="5952169083806719170">
+                <source xml:space="preserve">1 block earlier</source>
+                <target xml:space="preserve">1 blok ranije</target>
+            </trans-unit>
+            <trans-unit id="596391936932596858">
+                <source xml:space="preserve">blocks later</source>
+                <target xml:space="preserve">blokova kasnije</target>
+            </trans-unit>
+            <trans-unit id="5d4f792f048fcaa6df5948575d7cb325c9393383">
+                <source xml:space="preserve">Graphs</source>
+                <target xml:space="preserve">Grafikoni</target>
+            </trans-unit>
+            <trans-unit id="6008972034653357277">
+                <source xml:space="preserve">Valid Headers</source>
+                <target xml:space="preserve">Valjana zaglavlja</target>
+            </trans-unit>
+            <trans-unit id="6036711482450364616">
+                <source xml:space="preserve"> Show more inputs to reveal fee data </source>
+                <target xml:space="preserve"> Prikaži više unosa za otkrivanje podataka o naknadama </target>
+            </trans-unit>
+            <trans-unit id="6052527816314853503">
+                <source xml:space="preserve">Enterprise Sponsors &#128640;</source>
+                <target xml:space="preserve">Enterprise sponzori &#128640;</target>
+            </trans-unit>
+            <trans-unit id="6052761358428332094">
+                <source xml:space="preserve">Batch payment</source>
+                <target xml:space="preserve">Skupno plaćanje</target>
+            </trans-unit>
+            <trans-unit id="6056001875264593206">
+                <source xml:space="preserve">provably unspendable</source>
+                <target xml:space="preserve">dokazivo nepotrošivo</target>
+            </trans-unit>
+            <trans-unit id="6080998935194218567">
+                <source xml:space="preserve">See size, fee range, included transactions, audit (expected vs actual), and more for Bitcoin Cash<x equiv-text="seoDescriptionNetwork(             this.stateService.network           )" id="PH"/> block <x equiv-text="block.height" id="BLOCK_HEIGHT"/> (<x equiv-text="block.id" id="BLOCK_ID"/>).</source>
+                <target xml:space="preserve">Pogledaj veličinu, težinu, raspon naknada, uključene transakcije i više za Liquid<x equiv-text="seoDescriptionNetwork(this.stateService.network)" id="PH"/> blok <x equiv-text="block.height" id="BLOCK_HEIGHT"/> (<x equiv-text="block.id" id="BLOCK_ID"/>).</target>
+            </trans-unit>
+            <trans-unit id="6121516646370385817">
+                <source xml:space="preserve"> Avg Block Fees </source>
+                <target xml:space="preserve"> Prosječne naknade bloka </target>
+            </trans-unit>
+            <trans-unit id="6132290775367866066">
+                <source xml:space="preserve">Block Fee Rates</source>
+                <target xml:space="preserve">Block Fee Rates</target>
+            </trans-unit>
+            <trans-unit id="6153857867441956659">
+                <source xml:space="preserve">What is a mempool?</source>
+                <target xml:space="preserve">Što je mempool?</target>
+            </trans-unit>
+            <trans-unit id="6163892966087492877">
+                <source xml:space="preserve"> verified holdings </source>
+                <target xml:space="preserve"> verificirani udjeli </target>
+            </trans-unit>
+            <trans-unit id="619430775984437143">
+                <source xml:space="preserve">Pools Dominance</source>
+                <target xml:space="preserve">Dominacija pool-ova</target>
+            </trans-unit>
+            <trans-unit id="6206405941943118648">
+                <source xml:space="preserve">CashToken <x ctype="x-a" equiv-text="&lt;a     class=&quot;info-link&quot;     [routerLink]=&quot;[&apos;/docs/faq&apos; | relativeUrl]&quot;     fragment=&quot;what-are-cashtokens&quot;     &gt;" id="START_LINK"/><x ctype="x-fa_icon" equiv-text="&lt;fa-icon [icon]=&quot;[&apos;fas&apos;, &apos;info-circle&apos;]&quot; [fixedWidth]=&quot;true&quot;&gt;" id="START_TAG_FA_ICON"/><x ctype="x-fa_icon" equiv-text="&lt;/fa-icon   &gt;" id="CLOSE_TAG_FA_ICON"/><x ctype="x-a" equiv-text="&lt;/a&gt;" id="CLOSE_LINK"/></source>
+                <target xml:space="preserve">CashToken <x ctype="x-a" equiv-text="&lt;a     class=&quot;info-link&quot;     [routerLink]=&quot;[&apos;/docs/faq&apos; | relativeUrl]&quot;     fragment=&quot;what-are-cashtokens&quot;     &gt;" id="START_LINK"/><x ctype="x-fa_icon" equiv-text="&lt;fa-icon [icon]=&quot;[&apos;fas&apos;, &apos;info-circle&apos;]&quot; [fixedWidth]=&quot;true&quot;&gt;" id="START_TAG_FA_ICON"/><x ctype="x-fa_icon" equiv-text="&lt;/fa-icon   &gt;" id="CLOSE_TAG_FA_ICON"/><x ctype="x-a" equiv-text="&lt;/a&gt;" id="CLOSE_LINK"/></target>
+            </trans-unit>
+            <trans-unit id="6252070156626006029">
+                <source xml:space="preserve">None</source>
+                <target xml:space="preserve">Nijedan</target>
+            </trans-unit>
+            <trans-unit id="6275418453915189813">
+                <source xml:space="preserve">Cap outliers</source>
+                <target xml:space="preserve">Cap odstupanja</target>
+            </trans-unit>
+            <trans-unit id="6284969874542942529">
+                <source xml:space="preserve">ScriptPubKey (Hex)</source>
+                <target xml:space="preserve">ScriptPubKey (Hex)</target>
+            </trans-unit>
+            <trans-unit id="6290595884142884507">
+                <source xml:space="preserve">Heuristics</source>
+                <target xml:space="preserve">Heuristika</target>
+            </trans-unit>
+            <trans-unit id="6304432362546770951">
+                <source xml:space="preserve">Address</source>
+                <target xml:space="preserve">Adresa</target>
+            </trans-unit>
+            <trans-unit id="6334425734122839763">
+                <source xml:space="preserve"> Coinbase tag </source>
+                <target xml:space="preserve"> Coinbase tag </target>
+            </trans-unit>
+            <trans-unit id="633976444972378637">
+                <source xml:space="preserve"> Inputs &amp; Outputs </source>
+                <target xml:space="preserve"> Inputi i outputi </target>
+            </trans-unit>
+            <trans-unit id="6361947660157581901">
+                <source xml:space="preserve">See the average mining fees earned per Bitcoin Cash block visualized in BCH and USD over time.</source>
+                <target xml:space="preserve">Pogledajte prosječne rudarske naknade zarađene po Bitcoin bloku vizualizirane u BTC-u i USD-u tijekom vremena.</target>
+            </trans-unit>
+            <trans-unit id="6370387287356971303">
+                <source xml:space="preserve">Read more</source>
+                <target xml:space="preserve">Pročitaj više</target>
+            </trans-unit>
+            <trans-unit id="638227467745318910">
+                <source xml:space="preserve">Recent Stale Chain Tips</source>
+                <target xml:space="preserve">Nedavni zastarjeli vrhovi lanca</target>
+            </trans-unit>
+            <trans-unit id="6391724349488018234">
+                <source xml:space="preserve">Indexing in progress</source>
+                <target xml:space="preserve">Indeksiranje u tijeku</target>
+            </trans-unit>
+            <trans-unit id="6408975971582883304">
+                <source xml:space="preserve">Message</source>
+                <target xml:space="preserve">Message</target>
+            </trans-unit>
+            <trans-unit id="6429024204850914240">
+                <source xml:space="preserve">Not any time soon</source>
+                <target xml:space="preserve">Ne u skorije vrijeme</target>
+            </trans-unit>
+            <trans-unit id="6486180801996392368">
+                <source xml:space="preserve">Error loading pool data.</source>
+                <target xml:space="preserve">Pogreška pri učitavanju podataka pool-a.</target>
+            </trans-unit>
+            <trans-unit id="6506119173152703241">
+                <source xml:space="preserve">Conflict</source>
+                <target xml:space="preserve">Konflikt</target>
+            </trans-unit>
+            <trans-unit id="6506148807267655400">
+                <source xml:space="preserve"> Unconfirmed </source>
+                <target xml:space="preserve"> Nepotvrđeno </target>
+            </trans-unit>
+            <trans-unit id="6523988616846331064">
+                <source xml:space="preserve">Block Size Limit (ABLA)</source>
+                <target xml:space="preserve">Block Size Limit (ABLA)</target>
+            </trans-unit>
+            <trans-unit id="6544807137197034459">
+                <source xml:space="preserve"> Preview </source>
+                <target xml:space="preserve"> Pregled </target>
+            </trans-unit>
+            <trans-unit id="6552449600024516046">
+                <source xml:space="preserve">Response</source>
+                <target xml:space="preserve">Odgovor</target>
+            </trans-unit>
+            <trans-unit id="6558868518949093648">
+                <source xml:space="preserve">Block Header Hex</source>
+                <target xml:space="preserve">Hex zaglavlja bloka</target>
+            </trans-unit>
+            <trans-unit id="6564105000154565963">
+                <source xml:space="preserve"> P2SH redeem script </source>
+                <target xml:space="preserve"> P2SH otkupna skripta </target>
+            </trans-unit>
+            <trans-unit id="6578665864950966471">
+                <source xml:space="preserve">Clock (Mined)</source>
+                <target xml:space="preserve">Sat (izrudaren)</target>
+            </trans-unit>
+            <trans-unit id="6589209693884801196">
+                <source xml:space="preserve">Places your transaction in the first mempool block</source>
+                <target xml:space="preserve">Smješta vašu transakciju u prvi mempool blok</target>
+            </trans-unit>
+            <trans-unit id="6599163504112505785">
+                <source xml:space="preserve">Comma-separated list of raw transactions</source>
+                <target xml:space="preserve">Popis neobrađenih transakcija odvojenih zarezima</target>
+            </trans-unit>
+            <trans-unit id="6619869754055745168">
+                <source xml:space="preserve">Match</source>
+                <target xml:space="preserve">Podudaranje</target>
+            </trans-unit>
+            <trans-unit id="6625797147115900929">
+                <source xml:space="preserve">TXs</source>
+                <target xml:space="preserve">TX</target>
+            </trans-unit>
+            <trans-unit id="6629060512027460576">
+                <source xml:space="preserve">See the most recent Bitcoin Cash<x equiv-text="seoDescriptionNetwork(           this.stateService.network         )" id="PH"/> blocks along with basic stats such as block height, block reward, block size, and more.</source>
+                <target xml:space="preserve">Pogledajte najnovije Bitcoin<x equiv-text="seoDescriptionNetwork(this.stateService.network)" id="PH"/> blokove zajedno s osnovnim statistikama kao što su visina bloka, nagrada za blok, veličina bloka i više.</target>
+            </trans-unit>
+            <trans-unit id="6641135694653212933">
+                <source xml:space="preserve">Mempool by Bytes (sat/Byte)</source>
+                <target xml:space="preserve">Mempool po Bytes (sat/Byte)</target>
+            </trans-unit>
+            <trans-unit id="6643831251715779218">
+                <source xml:space="preserve">Median fee</source>
+                <target xml:space="preserve">Srednja naknada</target>
+            </trans-unit>
+            <trans-unit id="665219418211496660">
+                <source xml:space="preserve">Rank</source>
+                <target xml:space="preserve">Rang</target>
+            </trans-unit>
+            <trans-unit id="6665645515949928612">
+                <source xml:space="preserve"> ScriptPubKey (HEX) </source>
+                <target xml:space="preserve"> ScriptPubKey (HEX) </target>
+            </trans-unit>
+            <trans-unit id="6673915014332700227">
+                <source xml:space="preserve">Amount (sats)</source>
+                <target xml:space="preserve">Iznos (sat)</target>
+            </trans-unit>
+            <trans-unit id="6685040638257748438">
+                <source xml:space="preserve">UTXO Count</source>
+                <target xml:space="preserve">UTXO Count</target>
+            </trans-unit>
+            <trans-unit id="6698602804540558682">
+                <source xml:space="preserve">Empty Blocks</source>
+                <target xml:space="preserve">Empty Blocks</target>
+            </trans-unit>
+            <trans-unit id="6699474967382202471">
+                <source xml:space="preserve">The overall luck of all mining pools over the past week. A luck bigger than 100% means the average block time for the current epoch is less than 10 minutes.</source>
+                <target xml:space="preserve">Ukupan uspjeh svih rudarskih pool-ova tijekom prošlog tjedna. Uspjeh veći od 100% znači da je prosječno vrijeme bloka za trenutnu epohu manje od 10 minuta.</target>
+            </trans-unit>
+            <trans-unit id="6721450802285322732">
+                <source xml:space="preserve"> Included in block </source>
+                <target xml:space="preserve"> Included in block </target>
+            </trans-unit>
+            <trans-unit id="6750241941765637299">
+                <source xml:space="preserve">Size</source>
+                <target xml:space="preserve">Size</target>
+            </trans-unit>
+            <trans-unit id="6756993559483962422">
+                <source xml:space="preserve">Blocks remaining</source>
+                <target xml:space="preserve">Blokova preostalo</target>
+            </trans-unit>
+            <trans-unit id="6774874851879246306">
+                <source xml:space="preserve">UTXOs</source>
+                <target xml:space="preserve">UTXO-ovi</target>
+            </trans-unit>
+            <trans-unit id="6796943801291207194">
+                <source xml:space="preserve"> ScriptSig (HEX) </source>
+                <target xml:space="preserve"> ScriptSig (HEX) </target>
+            </trans-unit>
+            <trans-unit id="6818302414131149444">
+                <source xml:space="preserve">Install Package</source>
+                <target xml:space="preserve">Instaliraj paket</target>
+            </trans-unit>
+            <trans-unit id="6853950829033664225">
+                <source xml:space="preserve">Invert</source>
+                <target xml:space="preserve">Preokrenuti</target>
+            </trans-unit>
+            <trans-unit id="685875304303479823">
+                <source xml:space="preserve">The number of blocks found over the past week.</source>
+                <target xml:space="preserve">Broj blokova pronađenih tijekom prošlog tjedna.</target>
+            </trans-unit>
+            <trans-unit id="6867140695271970529">
+                <source xml:space="preserve">Mining Pools</source>
+                <target xml:space="preserve">Mining Pools</target>
+            </trans-unit>
+            <trans-unit id="6871549308937900431">
+                <source xml:space="preserve">Input Volume (BCH)</source>
+                <target xml:space="preserve">Input Volume (BCH)</target>
+            </trans-unit>
+            <trans-unit id="6888797559367695264">
+                <source xml:space="preserve">Balance</source>
+                <target xml:space="preserve">Balance</target>
+            </trans-unit>
+            <trans-unit id="6899134966533859260">
+                <source xml:space="preserve">Learn</source>
+                <target xml:space="preserve">Nauči</target>
+            </trans-unit>
+            <trans-unit id="6899446145460225927">
+                <source xml:space="preserve"> Job Received </source>
+                <target xml:space="preserve"> Posao primljen </target>
+            </trans-unit>
+            <trans-unit id="6901614037118888421">
+                <source xml:space="preserve">First seen</source>
+                <target xml:space="preserve">First seen</target>
+            </trans-unit>
+            <trans-unit id="6903541721714103747">
+                <source xml:space="preserve">Special Block</source>
+                <target xml:space="preserve">Special Block</target>
+            </trans-unit>
+            <trans-unit id="6903945166576780156">
+                <source xml:space="preserve"> Bitcoin Cash Supply
+</source>
+                <target xml:space="preserve"> Bitcoin Cash Supply
+</target>
+            </trans-unit>
+            <trans-unit id="6911512236126604837">
+                <source xml:space="preserve">Average fees per block in the past 144 blocks</source>
+                <target xml:space="preserve">Prosječne naknade po bloku u posljednja 144 bloka</target>
+            </trans-unit>
+            <trans-unit id="6925252478846398233">
+                <source xml:space="preserve">View Bitcoin Cash ASERT difficulty adjustment deviation over time.</source>
+                <target xml:space="preserve">View Bitcoin Cash ASERT difficulty adjustment deviation over time.</target>
+            </trans-unit>
+            <trans-unit id="6948786787037977434">
+                <source xml:space="preserve">Blocks</source>
+                <target xml:space="preserve">blokova</target>
+            </trans-unit>
+            <trans-unit id="6949454993667784101">
+                <source xml:space="preserve">Your balance is too low.<x ctype="lb" equiv-text="&lt;br /&gt;" id="LINE_BREAK"/>Please <x ctype="x-a" equiv-text="&lt;a class=&quot;top-up-link&quot; href=&quot;/services/accelerator&quot;&gt;" id="START_LINK"/>top up your account<x ctype="x-a" equiv-text="&lt;/a   &gt;" id="CLOSE_LINK"/>.</source>
+                <target xml:space="preserve">Vaše stanje je prenisko.<x ctype="lb" equiv-text="&lt;br/&gt;" id="LINE_BREAK"/>Molimo <x ctype="x-a" equiv-text="&lt;a class=&quot;top-up-link&quot; href=&quot;/services/accelerator&quot;&gt;" id="START_LINK"/>nadopunite svoj račun<x ctype="x-a" equiv-text="&lt;/a&gt;" id="CLOSE_LINK"/>.</target>
+            </trans-unit>
+            <trans-unit id="6c453b11fd7bd159ae30bc381f367bc736d86909">
+                <source xml:space="preserve">Block Fees</source>
+                <target xml:space="preserve">Naknade bloka</target>
+            </trans-unit>
+            <trans-unit id="7010418150749748430">
+                <source xml:space="preserve">Incoming Transactions</source>
+                <target xml:space="preserve">Incoming Transactions</target>
+            </trans-unit>
+            <trans-unit id="704614116893718009">
+                <source xml:space="preserve"> Request Testnet4 Coins </source>
+                <target xml:space="preserve"> Zatraži Testnet4 coinove </target>
+            </trans-unit>
+            <trans-unit id="7067128377657180850">
+                <source xml:space="preserve">select filter categories to highlight matching transactions</source>
+                <target xml:space="preserve">odaberite kategorije filtera za označavanje odgovarajućih transakcija</target>
+            </trans-unit>
+            <trans-unit id="7101197021456818771">
+                <source xml:space="preserve">Pool</source>
+                <target xml:space="preserve">Pool</target>
+            </trans-unit>
+            <trans-unit id="7146000240905514695">
+                <source xml:space="preserve">Student Name</source>
+                <target xml:space="preserve">Ime studenta</target>
+            </trans-unit>
+            <trans-unit id="7170419784695970065">
+                <source xml:space="preserve">Allow high fees?</source>
+                <target xml:space="preserve">Allow high fees?</target>
+            </trans-unit>
+            <trans-unit id="7215101881367554791">
+                <source xml:space="preserve">Show more</source>
+                <target xml:space="preserve">Prikaži više</target>
+            </trans-unit>
+            <trans-unit id="7322388690608271951">
+                <source xml:space="preserve"> Average block time (8 blocks) </source>
+                <target xml:space="preserve"> Average block time (8 blocks) </target>
+            </trans-unit>
+            <trans-unit id="7324336018364764874">
+                <source xml:space="preserve"> Difficulty drift </source>
+                <target xml:space="preserve"> Difficulty drift </target>
+            </trans-unit>
+            <trans-unit id="7346516107220024843">
+                <source xml:space="preserve"> Broadcast Transaction </source>
+                <target xml:space="preserve"> Broadcast Transaction </target>
+            </trans-unit>
+            <trans-unit id="7370363797434182113">
+                <source xml:space="preserve">This transaction has a low transaction fee on L1, because of BCH</source>
+                <target xml:space="preserve">This transaction has a low transaction fee on L1, because of BCH</target>
+            </trans-unit>
+            <trans-unit id="740444365933492829">
+                <source xml:space="preserve">Avg Tx Fee</source>
+                <target xml:space="preserve">Prosječna naknada za transakciju</target>
+            </trans-unit>
+            <trans-unit id="7413402651194809686">
+                <source xml:space="preserve"> Miners Reward </source>
+                <target xml:space="preserve"> Miners Reward </target>
+            </trans-unit>
+            <trans-unit id="7453887203136814323">
+                <source xml:space="preserve">Previous Block</source>
+                <target xml:space="preserve">Prethodni blok</target>
+            </trans-unit>
+            <trans-unit id="7464498988717654958">
+                <source xml:space="preserve"> verified of total </source>
+                <target xml:space="preserve"> verificirano od ukupno </target>
+            </trans-unit>
+            <trans-unit id="7472346433321371233">
+                <source xml:space="preserve">difficulty</source>
+                <target xml:space="preserve">težina</target>
+            </trans-unit>
+            <trans-unit id="7544553937505690917">
+                <source xml:space="preserve"> Error decoding transaction, reason: <x equiv-text="{{ error }}" id="INTERPOLATION"/> </source>
+                <target xml:space="preserve"> Pogreška pri dekodiranju transakcije, razlog: <x equiv-text="{{ error }}" id="INTERPOLATION"/> </target>
+            </trans-unit>
+            <trans-unit id="7554398254218840704">
+                <source xml:space="preserve"> Hashrate (24h) </source>
+                <target xml:space="preserve"> Hashrate (24h) </target>
+            </trans-unit>
+            <trans-unit id="7555637800149874155">
+                <source xml:space="preserve"> Empty Blocks </source>
+                <target xml:space="preserve"> Prazni blokovi </target>
+            </trans-unit>
+            <trans-unit id="7556131343926524430">
+                <source xml:space="preserve">No Match</source>
+                <target xml:space="preserve">Nema podudaranja</target>
+            </trans-unit>
+            <trans-unit id="7587252691654342708">
+                <source xml:space="preserve">Block Fees Vs Subsidy</source>
+                <target xml:space="preserve">Block Fees Vs Subsidy</target>
+            </trans-unit>
+            <trans-unit id="7621097312029689276">
+                <source xml:space="preserve">Block Sizes</source>
+                <target xml:space="preserve">Block Sizes</target>
+            </trans-unit>
+            <trans-unit id="7628391199372264619">
+                <source xml:space="preserve">See the total UTXO throughput and BCH transaction volume per Bitcoin Cash block over time.</source>
+                <target xml:space="preserve">See the total UTXO throughput and BCH transaction volume per Bitcoin Cash block over time.</target>
+            </trans-unit>
+            <trans-unit id="7633487631846436880">
+                <source xml:space="preserve"> Preview Coinbase </source>
+                <target xml:space="preserve"> Pregled Coinbase-a </target>
+            </trans-unit>
+            <trans-unit id="7648985858732859082">
+                <source xml:space="preserve">Fallback fee (sats)</source>
+                <target xml:space="preserve">Fallback fee (sats)</target>
+            </trans-unit>
+            <trans-unit id="7649633720179128094">
+                <source xml:space="preserve">This transaction contains CashToken(s)</source>
+                <target xml:space="preserve">This transaction contains CashToken(s)</target>
+            </trans-unit>
+            <trans-unit id="7678089998784409314">
+                <source xml:space="preserve">Address</source>
+                <target xml:space="preserve">Address</target>
+            </trans-unit>
+            <trans-unit id="7699647190475586034">
+                <source xml:space="preserve">Next Block</source>
+                <target xml:space="preserve">Next Block</target>
+            </trans-unit>
+            <trans-unit id="7700206456457090990">
+                <source xml:space="preserve">How many unique pools found at least one block over the past week.</source>
+                <target xml:space="preserve">Koliko je pojedinih pool-ova pronašlo barem jedan blok tijekom prošlog tjedna.</target>
+            </trans-unit>
+            <trans-unit id="7745628778646339380">
+                <source xml:space="preserve"> Stale </source>
+                <target xml:space="preserve"> Ustajao </target>
+            </trans-unit>
+            <trans-unit id="7800492512361030674">
+                <source xml:space="preserve">Block time (Median)</source>
+                <target xml:space="preserve">Block time (Median)</target>
+            </trans-unit>
+            <trans-unit id="7802842621993648216">
+                <source xml:space="preserve">Fetch missing prevouts</source>
+                <target xml:space="preserve">Dohvati nedostajuće prevoutove</target>
+            </trans-unit>
+            <trans-unit id="7807685431509530550">
+                <source xml:space="preserve">API Documentation</source>
+                <target xml:space="preserve">API dokumentacija</target>
+            </trans-unit>
+            <trans-unit id="7814069298939347422">
+                <source xml:space="preserve">Legal</source>
+                <target xml:space="preserve">Legalno</target>
+            </trans-unit>
+            <trans-unit id="7816493330657272952">
+                <source xml:space="preserve">Coinjoin</source>
+                <target xml:space="preserve">Coinjoin</target>
+            </trans-unit>
+            <trans-unit id="7840301863034787689">
+                <source xml:space="preserve"> Type </source>
+                <target xml:space="preserve"> Type </target>
+            </trans-unit>
+            <trans-unit id="7846680274942493960">
+                <source xml:space="preserve">Why is this block empty?</source>
+                <target xml:space="preserve">Zašto je ovaj blok prazan?</target>
+            </trans-unit>
+            <trans-unit id="7846744985109881055">
+                <source xml:space="preserve">Next Block Size Limit (ABLA)</source>
+                <target xml:space="preserve">Next Block Size Limit (ABLA)</target>
+            </trans-unit>
+            <trans-unit id="7886570921510760899">
+                <source xml:space="preserve">Tags</source>
+                <target xml:space="preserve">Oznake</target>
+            </trans-unit>
+            <trans-unit id="7890823441105218329">
+                <source xml:space="preserve">Pause/Resume</source>
+                <target xml:space="preserve">Pause/Resume</target>
+            </trans-unit>
+            <trans-unit id="7909125979002999098">
+                <source xml:space="preserve"> Pools Count </source>
+                <target xml:space="preserve"> Broj pool-ova </target>
+            </trans-unit>
+            <trans-unit id="7931206222360985340">
+                <source xml:space="preserve">Coinbase tag</source>
+                <target xml:space="preserve">Coinbase oznaka</target>
+            </trans-unit>
+            <trans-unit id="7941620384374510360">
+                <source xml:space="preserve">Transaction hex or base64 encoded PSBT</source>
+                <target xml:space="preserve">Hex transakcije ili PSBT kodiran u base64</target>
+            </trans-unit>
+            <trans-unit id="7944704425911956229">
+                <source xml:space="preserve"> Avg Block Fee (24h) </source>
+                <target xml:space="preserve"> Prosječna blok naknada (24 h) </target>
+            </trans-unit>
+            <trans-unit id="7981454540995527470">
+                <source xml:space="preserve">1 new transaction</source>
+                <target xml:space="preserve">1 new transaction</target>
+            </trans-unit>
+            <trans-unit id="7989584202803202902">
+                <source xml:space="preserve">Expected</source>
+                <target xml:space="preserve">Očekivano</target>
+            </trans-unit>
+            <trans-unit id="7989855514418840406">
+                <source xml:space="preserve">Not enough data yet</source>
+                <target xml:space="preserve">Još nema dovoljno podataka</target>
+            </trans-unit>
+            <trans-unit id="79a9dc5b1caca3cbeb1733a19515edacc5fc7920">
+                <source xml:space="preserve">Hashrate</source>
+                <target xml:space="preserve">Hashrate</target>
+            </trans-unit>
+            <trans-unit id="7e69426bd97a606d8ae6026762858e6e7c86a1fd">
+                <source xml:space="preserve">Balance</source>
+                <target xml:space="preserve">Stanje</target>
+            </trans-unit>
+            <trans-unit id="7faaaa08f56427999f3be41df1093ce4089bbd75">
+                <source xml:space="preserve">Size</source>
+                <target xml:space="preserve">Veličina</target>
+            </trans-unit>
+            <trans-unit id="80065834848189518">
+                <source xml:space="preserve">No data to display yet. Try again later.</source>
+                <target xml:space="preserve">Još nema podataka za prikaz. Pokušajte ponovno kasnije.</target>
+            </trans-unit>
+            <trans-unit id="8040881171107393560">
+                <source xml:space="preserve">ID</source>
+                <target xml:space="preserve">ID</target>
+            </trans-unit>
+            <trans-unit id="8041636593944092813">
+                <source xml:space="preserve">More FAQs »</source>
+                <target xml:space="preserve">Više često postavljanih pitanja »</target>
+            </trans-unit>
+            <trans-unit id="8052456228079338924">
+                <source xml:space="preserve">Stale</source>
+                <target xml:space="preserve">Ustajao</target>
+            </trans-unit>
+            <trans-unit id="8057974459774940476">
+                <source xml:space="preserve">What are CashTokens?</source>
+                <target xml:space="preserve">What are CashTokens?</target>
+            </trans-unit>
+            <trans-unit id="8064189463907167884">
+                <source xml:space="preserve"> Rejection reason </source>
+                <target xml:space="preserve"> Razlog odbijanja </target>
+            </trans-unit>
+            <trans-unit id="8067204363800324397">
+                <source xml:space="preserve">Provide a fallback fee if the finalized transaction size can&apos;t be estimated reliably (hidden scripts in P2SH).</source>
+                <target xml:space="preserve">Provide a fallback fee if the finalized transaction size can&apos;t be estimated reliably (hidden scripts in P2SH).</target>
+            </trans-unit>
+            <trans-unit id="808338231320400904">
+                <source xml:space="preserve">This transaction was projected to be included in the block</source>
+                <target xml:space="preserve">Predviđeno je da će ova transakcija biti uključena u blok</target>
+            </trans-unit>
+            <trans-unit id="8097247056335527144">
+                <source xml:space="preserve">Median Time</source>
+                <target xml:space="preserve">Median Time</target>
+            </trans-unit>
+            <trans-unit id="8105367655277227191">
+                <source xml:space="preserve"> Expected </source>
+                <target xml:space="preserve"> Expected </target>
+            </trans-unit>
+            <trans-unit id="8105839921891777281">
+                <source xml:space="preserve">Hashrate (MA)</source>
+                <target xml:space="preserve">Hashrate (MA)</target>
+            </trans-unit>
+            <trans-unit id="8108093314946246971">
+                <source xml:space="preserve">TXID</source>
+                <target xml:space="preserve">TXID</target>
+            </trans-unit>
+            <trans-unit id="8132128899357611687">
+                <source xml:space="preserve"> Transaction Fees </source>
+                <target xml:space="preserve"> Transakcijske naknade </target>
+            </trans-unit>
+            <trans-unit id="8158183612118976882">
+                <source xml:space="preserve">Timelock</source>
+                <target xml:space="preserve">Timelock</target>
+            </trans-unit>
+            <trans-unit id="8176036021087578640">
+                <source xml:space="preserve">Fee</source>
+                <target xml:space="preserve">Naknada</target>
+            </trans-unit>
+            <trans-unit id="8177873832400820695">
+                <source xml:space="preserve">Count</source>
+                <target xml:space="preserve">Račun</target>
+            </trans-unit>
+            <trans-unit id="8197600042878175654">
+                <source xml:space="preserve">Total fees</source>
+                <target xml:space="preserve">Ukupne naknade</target>
+            </trans-unit>
+            <trans-unit id="822985557126132388">
+                <source xml:space="preserve"> Blocks (1w) </source>
+                <target xml:space="preserve"> Blocks (1w) </target>
+            </trans-unit>
+            <trans-unit id="8244978122807060043">
+                <source xml:space="preserve"> ScriptSig (ASM) </source>
+                <target xml:space="preserve"> ScriptSig (ASM) </target>
+            </trans-unit>
+            <trans-unit id="8278803452573309499">
+                <source xml:space="preserve"> This node hasn&apos;t seen any stale blocks yet! </source>
+                <target xml:space="preserve"> Ovaj nod još nije vidio nijedan ustajali blok! </target>
+            </trans-unit>
+            <trans-unit id="8280265388760151631">
+                <source xml:space="preserve">Third-party Licenses</source>
+                <target xml:space="preserve">Licence trećih strana</target>
+            </trans-unit>
+            <trans-unit id="8290151608825555274">
+                <source xml:space="preserve">Warning! This transaction involves deceptively similar addresses. It may be an address poisoning attack.</source>
+                <target xml:space="preserve">Upozorenje! Ova transakcija uključuje varljivo slične adrese. Može biti napad trovanja adrese.</target>
+            </trans-unit>
+            <trans-unit id="8295912551154091254">
+                <source xml:space="preserve"> Details </source>
+                <target xml:space="preserve"> Detalji </target>
+            </trans-unit>
+            <trans-unit id="8301052529793444407">
+                <source xml:space="preserve">Test Transaction</source>
+                <target xml:space="preserve">Testna transakcija</target>
+            </trans-unit>
+            <trans-unit id="8306976710311886820">
+                <source xml:space="preserve">There is a stale block at this height</source>
+                <target xml:space="preserve">Na ovoj visini postoji ustajali blok</target>
+            </trans-unit>
+            <trans-unit id="8349631027640736583">
+                <source xml:space="preserve">in the same block</source>
+                <target xml:space="preserve">u istom bloku</target>
+            </trans-unit>
+            <trans-unit id="8371399036834958761">
+                <source xml:space="preserve"><x equiv-text="{{ (transactions?.length | number) || &quot;?&quot; }}" id="INTERPOLATION"/> of <x equiv-text="{{ mempoolStats.tx_count + chainStats.tx_count | number }}" id="INTERPOLATION_1"/> transaction</source>
+                <target xml:space="preserve"><x equiv-text="{{ (transactions?.length | number) || &quot;?&quot; }}" id="INTERPOLATION"/> of <x equiv-text="{{ mempoolStats.tx_count + chainStats.tx_count | number }}" id="INTERPOLATION_1"/> transaction</target>
+            </trans-unit>
+            <trans-unit id="838299984212365663">
+                <source xml:space="preserve">Stratum Jobs</source>
+                <target xml:space="preserve">Stratum poslovi</target>
+            </trans-unit>
+            <trans-unit id="8386976308507652568">
+                <source xml:space="preserve"> All </source>
+                <target xml:space="preserve"> All </target>
+            </trans-unit>
+            <trans-unit id="8392623811286459630">
+                <source xml:space="preserve"> Flow </source>
+                <target xml:space="preserve"> Flow </target>
+            </trans-unit>
+            <trans-unit id="8396979359626564289">
+                <source xml:space="preserve">Adjusted</source>
+                <target xml:space="preserve">Prilagođeno</target>
+            </trans-unit>
+            <trans-unit id="840121400973431948">
+                <source xml:space="preserve">Address Converter</source>
+                <target xml:space="preserve">Address Converter</target>
+            </trans-unit>
+            <trans-unit id="8401436958953545077">
+                <source xml:space="preserve">This address is deceptively similar to another output. It may be part of an address poisoning attack.</source>
+                <target xml:space="preserve">Ova adresa je varljivo slična drugom outputu. Može biti dio napada trovanjem adresa.</target>
+            </trans-unit>
+            <trans-unit id="840692109692540367">
+                <source xml:space="preserve">Sign In</source>
+                <target xml:space="preserve">Prijavi se</target>
+            </trans-unit>
+            <trans-unit id="841897176602849537">
+                <source xml:space="preserve"> This transaction ID appears twice in the blockchain as the coinbase of blocks <x ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[&apos;/block/&apos; | relativeUrl, duplicateTxBlocks[0]]&quot;&gt;" id="START_LINK"/><x equiv-text="{{             duplicateTxBlocks[0]           }}" id="INTERPOLATION"/><x ctype="x-a" equiv-text="&lt;/a           &gt;" id="CLOSE_LINK"/> and <x equiv-text="&lt;a [routerLink]=&quot;[&apos;/block/&apos; | relativeUrl, duplicateTxBlocks[1]]&quot;&gt;" id="START_LINK_1"/><x equiv-text="{{             duplicateTxBlocks[1]           }}" id="INTERPOLATION_1"/><x ctype="x-a" equiv-text="&lt;/a           &gt;" id="CLOSE_LINK"/>, due to a bug later mitigated by <x equiv-text="&lt;a             href=&quot;https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki&quot;             target=&quot;_blank&quot;             rel=&quot;noopener&quot;             &gt;" id="START_LINK_2"/>BIP-30<x ctype="x-a" equiv-text="&lt;/a           &gt;" id="CLOSE_LINK"/>. </source>
+                <target xml:space="preserve"> Ovaj ID transakcije pojavljuje se dvaput u blockchainu kao coinbase blokova <x ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[&apos;/block/&apos; | relativeUrl, duplicateTxBlocks[0]]&quot;&gt;" id="START_LINK"/><x equiv-text="locks[0] }}" id="INTERPOLATION"/><x ctype="x-a" equiv-text="&lt;/a&gt;" id="CLOSE_LINK"/> i <x equiv-text="&lt;a [routerLink]=&quot;[&apos;/block/&apos; | relativeUrl, duplicateTxBlocks[1]]&quot;&gt;" id="START_LINK_1"/><x equiv-text="cks[1] }}" id="INTERPOLATION_1"/><x ctype="x-a" equiv-text="&lt;/a&gt;" id="CLOSE_LINK"/>, zbog greške koja je kasnije ublažena s <x equiv-text="&lt;a href=&quot;https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;" id="START_LINK_2"/>BIP-30<x ctype="x-a" equiv-text="&lt;/a&gt;" id="CLOSE_LINK"/>. </target>
+            </trans-unit>
+            <trans-unit id="8454028079923559383">
+                <source xml:space="preserve">Winning Block</source>
+                <target xml:space="preserve">Pobjednički blok</target>
+            </trans-unit>
+            <trans-unit id="8461609631969932886">
+                <source xml:space="preserve">Hide</source>
+                <target xml:space="preserve">Sakrij</target>
+            </trans-unit>
+            <trans-unit id="8466712742126182910">
+                <source xml:space="preserve">BCH/block</source>
+                <target xml:space="preserve">BCH/block</target>
+            </trans-unit>
+            <trans-unit id="8491011120834785215">
+                <source xml:space="preserve">Bitcoin Price</source>
+                <target xml:space="preserve">Cijena Bitcoina</target>
+            </trans-unit>
+            <trans-unit id="8495536121007053185">
+                <source xml:space="preserve">No Priority</source>
+                <target xml:space="preserve">Bez prioriteta</target>
+            </trans-unit>
+            <trans-unit id="8506168272622458998">
+                <source xml:space="preserve">Raw hex</source>
+                <target xml:space="preserve">Sirovi hex</target>
+            </trans-unit>
+            <trans-unit id="851325806168609906">
+                <source xml:space="preserve">Indexing pools hashrate</source>
+                <target xml:space="preserve">Indeksiranje hashrate-a pool-ova</target>
+            </trans-unit>
+            <trans-unit id="8538305450922736186">
+                <source xml:space="preserve">At block <x equiv-text="&apos;&lt;b style=&quot;color: var(--fg); margin-left: 2px&quot;&gt;&apos; +                 data[0].axisValue" id="PH"/></source>
+                <target xml:space="preserve">U bloku <x equiv-text="&apos;&lt;b style=&quot;color: white; margin-left: 2px&quot;&gt;&apos; + data[0].axisValue" id="PH"/></target>
+            </trans-unit>
+            <trans-unit id="8546007275666227290">
+                <source xml:space="preserve">Code Example</source>
+                <target xml:space="preserve">Primjer koda</target>
+            </trans-unit>
+            <trans-unit id="8556593667250477164">
+                <source xml:space="preserve">Unconfirmed</source>
+                <target xml:space="preserve">Unconfirmed</target>
+            </trans-unit>
+            <trans-unit id="8610476630152321637">
+                <source xml:space="preserve">Fee rate</source>
+                <target xml:space="preserve">Fee rate</target>
+            </trans-unit>
+            <trans-unit id="8611201246499042017">
+                <source xml:space="preserve">See the mining fees earned per Bitcoin Cash block compared to the Bitcoin Cash block subsidy, visualized in BCH and USD over time.</source>
+                <target xml:space="preserve">See the mining fees earned per Bitcoin Cash block compared to the Bitcoin Cash block subsidy, visualized in BCH and USD over time.</target>
+            </trans-unit>
+            <trans-unit id="8631617549415105973">
+                <source xml:space="preserve">Broadcast a transaction to the Bitcoin Cash<x equiv-text="seoDescriptionNetwork(         this.stateService.network       )" id="PH"/> network using the transaction&apos;s hash.</source>
+                <target xml:space="preserve">Broadcast a transaction to the Bitcoin Cash<x equiv-text="seoDescriptionNetwork(         this.stateService.network       )" id="PH"/> network using the transaction&apos;s hash.</target>
+            </trans-unit>
+            <trans-unit id="8638358096787290282">
+                <source xml:space="preserve"> This transaction is stored locally in your browser. Broadcast it to add it to the mempool. </source>
+                <target xml:space="preserve"> Ova transakcija je pohranjena lokalno u vašem pregledniku. Emitirajte je da biste je dodali u mempool. </target>
+            </trans-unit>
+            <trans-unit id="8644336101711653968">
+                <source xml:space="preserve"> BCH Balance </source>
+                <target xml:space="preserve">BTC stanje</target>
+            </trans-unit>
+            <trans-unit id="8650499415827640724">
+                <source xml:space="preserve">Type</source>
+                <target xml:space="preserve">Tip</target>
+            </trans-unit>
+            <trans-unit id="8672318679025859345">
+                <source xml:space="preserve">Valid Fork</source>
+                <target xml:space="preserve">Valjani fork</target>
+            </trans-unit>
+            <trans-unit id="8687630448632946420">
+                <source xml:space="preserve">Output Volume (BCH)</source>
+                <target xml:space="preserve">Output Volume (BCH)</target>
+            </trans-unit>
+            <trans-unit id="8688298623006329710">
+                <source xml:space="preserve">Treasury</source>
+                <target xml:space="preserve">Riznica</target>
+            </trans-unit>
+            <trans-unit id="8705001614078671854">
+                <source xml:space="preserve">Double check that this transaction sends the funds back to the provided address before signing</source>
+                <target xml:space="preserve">Double check that this transaction sends the funds back to the provided address before signing</target>
+            </trans-unit>
+            <trans-unit id="8727174280080676113">
+                <source xml:space="preserve">REST API service</source>
+                <target xml:space="preserve">REST API usluga</target>
+            </trans-unit>
+            <trans-unit id="8746454997762682010">
+                <source xml:space="preserve">Block Rewards</source>
+                <target xml:space="preserve">Block Rewards</target>
+            </trans-unit>
+            <trans-unit id="8758765586683372781">
+                <source xml:space="preserve"> Memory Usage </source>
+                <target xml:space="preserve"> Upotreba memorije </target>
+            </trans-unit>
+            <trans-unit id="8771087581491765263">
+                <source xml:space="preserve">Confirmed balance</source>
+                <target xml:space="preserve">Potvrđeno stanje</target>
+            </trans-unit>
+            <trans-unit id="8807945662832318286">
+                <source xml:space="preserve">Around block <x equiv-text="&apos;&lt;b style=&quot;color: var(--fg); margin-left: 2px&quot;&gt;&apos; +                 data[0].axisValue" id="PH"/></source>
+                <target xml:space="preserve">Oko bloka <x equiv-text="&apos;&lt;b style=&quot;color: white; margin-left: 2px&quot;&gt;&apos; + data[0].axisValue" id="PH"/></target>
+            </trans-unit>
+            <trans-unit id="8829497237648100098">
+                <source xml:space="preserve">Filter</source>
+                <target xml:space="preserve">Filter</target>
+            </trans-unit>
+            <trans-unit id="8831611540421575858">
+                <source xml:space="preserve">Pool Dominance</source>
+                <target xml:space="preserve">Pool dominacija</target>
+            </trans-unit>
+            <trans-unit id="8856591276184789424">
+                <source xml:space="preserve">Audit</source>
+                <target xml:space="preserve">Audit</target>
+            </trans-unit>
+            <trans-unit id="885666551418fd59011ceb09d5c481095940193b">
+                <source xml:space="preserve">Features</source>
+                <target xml:space="preserve">Značajke</target>
+            </trans-unit>
+            <trans-unit id="8875021007006086451">
+                <source xml:space="preserve">Testnet4 Explorer</source>
+                <target xml:space="preserve">Testnet4 Explorer</target>
+            </trans-unit>
+            <trans-unit id="88825654282419901">
+                <source xml:space="preserve"><x equiv-text="{{ i }}" id="INTERPOLATION"/> transaction</source>
+                <target xml:space="preserve"><x equiv-text="{{ i }}" id="INTERPOLATION"/> transaction</target>
+            </trans-unit>
+            <trans-unit id="8890090607446421296">
+                <source xml:space="preserve">Clock (Mempool)</source>
+                <target xml:space="preserve">Sat (Mempool)</target>
+            </trans-unit>
+            <trans-unit id="8894377483833272091">
+                <source xml:space="preserve">Price</source>
+                <target xml:space="preserve">Cijena</target>
+            </trans-unit>
+            <trans-unit id="8913794084097958305">
+                <source xml:space="preserve">Verify</source>
+                <target xml:space="preserve">Provjeri</target>
+            </trans-unit>
+            <trans-unit id="8914778499301929289">
+                <source xml:space="preserve">Powered By</source>
+                <target xml:space="preserve">Pokreće</target>
+            </trans-unit>
+            <trans-unit id="8918254921747459635">
+                <source xml:space="preserve">Around block: <x equiv-text="data[0].data[2]" id="PH"/></source>
+                <target xml:space="preserve">Oko bloka: <x equiv-text="ticks[0].data[2]" id="PH"/></target>
+            </trans-unit>
+            <trans-unit id="8922056105159182968">
+                <source xml:space="preserve">Balances</source>
+                <target xml:space="preserve">Stanja</target>
+            </trans-unit>
+            <trans-unit id="8968030053137661433">
+                <source xml:space="preserve">Output</source>
+                <target xml:space="preserve">Output</target>
+            </trans-unit>
+            <trans-unit id="8a7b4bd44c0ac71b2e72de0398b303257f7d2f54">
+                <source xml:space="preserve">Blocks</source>
+                <target xml:space="preserve">Blokova</target>
+            </trans-unit>
+            <trans-unit id="8ba8fe810458280a83df7fdf4c614dfc1a826445">
+                <source xml:space="preserve">Block Rewards</source>
+                <target xml:space="preserve">Nagrade bloka</target>
+            </trans-unit>
+            <trans-unit id="9001022941132811405">
+                <source xml:space="preserve">Fee rate (sat/B)</source>
+                <target xml:space="preserve">Fee rate (sat/B)</target>
+            </trans-unit>
+            <trans-unit id="9008891323838339468">
+                <source xml:space="preserve"> Blocks (24h) </source>
+                <target xml:space="preserve"> Blokova (24h) </target>
+            </trans-unit>
+            <trans-unit id="9022605153905997309">
+                <source xml:space="preserve"> Chain Stats
+</source>
+                <target xml:space="preserve"> Chain Stats
+</target>
+            </trans-unit>
+            <trans-unit id="9038326515381177012">
+                <source xml:space="preserve">Sigops</source>
+                <target xml:space="preserve">Sigops</target>
+            </trans-unit>
+            <trans-unit id="9052625006561799134">
+                <source xml:space="preserve"> Difficulty Δ (<x equiv-text="{{ asert.diffChangeBlocks }}" id="INTERPOLATION"/> blocks) </source>
+                <target xml:space="preserve"> Difficulty Δ (<x equiv-text="{{ asert.diffChangeBlocks }}" id="INTERPOLATION"/> blocks) </target>
+            </trans-unit>
+            <trans-unit id="9071183321070217369">
+                <source xml:space="preserve">Pools Ranking</source>
+                <target xml:space="preserve">Poredak pool-ova</target>
+            </trans-unit>
+            <trans-unit id="907780240721638283">
+                <source xml:space="preserve"> Verified Treasuries
+</source>
+                <target xml:space="preserve"> Verificirane riznice </target>
+            </trans-unit>
+            <trans-unit id="9079964163800849922">
+                <source xml:space="preserve"> Avg Tx Fee </source>
+                <target xml:space="preserve"> Avg Tx Fee </target>
+            </trans-unit>
+            <trans-unit id="9086644539236239452">
+                <source xml:space="preserve">Error loading block data.</source>
+                <target xml:space="preserve">Pogreška pri učitavanju podataka bloka.</target>
+            </trans-unit>
+            <trans-unit id="9112931942640498482">
+                <source xml:space="preserve">Pools luck (1 week)</source>
+                <target xml:space="preserve">Uspjeh pool-ova (1 tjedan)</target>
+            </trans-unit>
+            <trans-unit id="919233352655625255">
+                <source xml:space="preserve"> not available </source>
+                <target xml:space="preserve"> nije dostupno </target>
+            </trans-unit>
+            <trans-unit id="9212705249340904752">
+                <source xml:space="preserve">Explore</source>
+                <target xml:space="preserve">Istraži</target>
+            </trans-unit>
+            <trans-unit id="9219712723630129965">
+                <source xml:space="preserve">Coinbase</source>
+                <target xml:space="preserve">Coinbase</target>
+            </trans-unit>
+            <trans-unit id="945376464060430485">
+                <source xml:space="preserve">Bits</source>
+                <target xml:space="preserve">Bitovi</target>
+            </trans-unit>
+            <trans-unit id="951262081868205118">
+                <source xml:space="preserve"> yet to be mined </source>
+                <target xml:space="preserve"> preostalo za rudarenje </target>
+            </trans-unit>
+            <trans-unit id="956069346153233991">
+                <source xml:space="preserve"> Bitcoin Cash Price </source>
+                <target xml:space="preserve"> Bitcoin Cash Price </target>
+            </trans-unit>
+            <trans-unit id="959315954123800933">
+                <source xml:space="preserve">Search by student name or ID...</source>
+                <target xml:space="preserve">Pretraži po imenu studenta ili ID-u...</target>
+            </trans-unit>
+            <trans-unit id="963664380975841348">
+                <source xml:space="preserve">Explore the full Bitcoin Cash ecosystem</source>
+                <target xml:space="preserve">Istražite cijeli Bitcoin ekosustav</target>
+            </trans-unit>
+            <trans-unit id="964309715677902826">
+                <source xml:space="preserve">See stats for Bitcoin Cash<x equiv-text="seoDescriptionNetwork(                 this.stateService.network               )" id="PH"/> transactions in the mempool: fee range, aggregate size, and more. Mempool blocks are updated in real-time as the network receives new transactions.</source>
+                <target xml:space="preserve">See stats for Bitcoin Cash<x equiv-text="seoDescriptionNetwork(                 this.stateService.network               )" id="PH"/> transactions in the mempool: fee range, aggregate size, and more. Mempool blocks are updated in real-time as the network receives new transactions.</target>
+            </trans-unit>
+            <trans-unit id="973124238841406947">
+                <source xml:space="preserve">Reward stats</source>
+                <target xml:space="preserve">Statistika nagrada</target>
+            </trans-unit>
+            <trans-unit id="974815456941800688">
+                <source xml:space="preserve">Confirmed UTXOs</source>
+                <target xml:space="preserve">Potvrđeni UTXO-ovi</target>
+            </trans-unit>
+            <trans-unit id="990281140585424266">
+                <source xml:space="preserve">spent </source>
+                <target xml:space="preserve">potrošeno </target>
+            </trans-unit>
+            <trans-unit id="a681a4e2011bb28157689dbaa387de0dd0aa0c11">
+                <source xml:space="preserve">Mining Dashboard</source>
+                <target xml:space="preserve">Nadzor rudarenja</target>
+            </trans-unit>
+            <trans-unit id="address-label.multisig">
+                <source xml:space="preserve">Multisig <x equiv-text="m" id="multisigM"/> of <x equiv-text="n" id="multisigN"/></source>
+                <target xml:space="preserve">Multisig <x equiv-text="m" id="multisigM"/> od <x equiv-text="n" id="multisigN"/></target>
+            </trans-unit>
+            <trans-unit id="address.component.browser-title">
+                <source xml:space="preserve">Address: <x equiv-text="this.addressString" id="INTERPOLATION"/></source>
+                <target xml:space="preserve">Adresa: <x equiv-text="this.addressString" id="INTERPOLATION"/></target>
+            </trans-unit>
+            <trans-unit id="b1fa5b210c9670d49a6506f046d4a0c2797fd402">
+                <source xml:space="preserve">Block Health</source>
+                <target xml:space="preserve">Zdravlje bloka</target>
+            </trans-unit>
+            <trans-unit id="bdf0e930eb22431140a2eaeacd809cc5f8ebd38c">
+                <source xml:space="preserve">Next Block</source>
+                <target xml:space="preserve">Sljedeći blok</target>
+            </trans-unit>
+            <trans-unit id="bisq.transaction.browser-title">
+                <source xml:space="preserve">Transaction: <x equiv-text="this.txId" id="INTERPOLATION"/></source>
+                <target xml:space="preserve">Transakcija: <x equiv-text="this.txId" id="INTERPOLATION"/></target>
+            </trans-unit>
+            <trans-unit id="block-sizes.block-size-label">
+                <source xml:space="preserve">Block Size</source>
+                <target xml:space="preserve">Block Size</target>
+            </trans-unit>
+            <trans-unit id="block-sizes.linear">
+                <source xml:space="preserve">Linear</source>
+                <target xml:space="preserve">Linear</target>
+            </trans-unit>
+            <trans-unit id="block-sizes.logarithmic">
+                <source xml:space="preserve">Logarithmic</source>
+                <target xml:space="preserve">Logarithmic</target>
+            </trans-unit>
+            <trans-unit id="block-tx-counts.linear">
+                <source xml:space="preserve">Linear</source>
+                <target xml:space="preserve">Linear</target>
+            </trans-unit>
+            <trans-unit id="block-tx-counts.logarithmic">
+                <source xml:space="preserve">Logarithmic</source>
+                <target xml:space="preserve">Logarithmic</target>
+            </trans-unit>
+            <trans-unit id="block.component.browser-title">
+                <source xml:space="preserve">Block <x equiv-text="block.height" id="BLOCK_HEIGHT"/>: <x equiv-text="block.id" id="BLOCK_ID"/></source>
+                <target xml:space="preserve">Blok <x equiv-text="block.height" id="BLOCK_HEIGHT"/>: <x equiv-text="block.id" id="BLOCK_ID"/></target>
+            </trans-unit>
+            <trans-unit id="clipboard.copied-message">
+                <source xml:space="preserve">Copied!</source>
+                <target xml:space="preserve">Kopirano!</target>
+            </trans-unit>
+            <trans-unit id="d2bcd3296d2850de762fb943060b7e086a893181">
+                <source xml:space="preserve">Health</source>
+                <target xml:space="preserve">Zdravlje</target>
+            </trans-unit>
+            <trans-unit id="d7f92e6fe26fba6fff568cbdae5db4a5c8c6a55c">
+                <source xml:space="preserve">Preview Transaction</source>
+                <target xml:space="preserve">Pregled transakcije</target>
+            </trans-unit>
+            <trans-unit id="date-base.day">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> day</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> dan</target>
+            </trans-unit>
+            <trans-unit id="date-base.days">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> days</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> dana</target>
+            </trans-unit>
+            <trans-unit id="date-base.hour">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> hour</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> sat</target>
+            </trans-unit>
+            <trans-unit id="date-base.hours">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> hours</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> sati</target>
+            </trans-unit>
+            <trans-unit id="date-base.immediately">
+                <source xml:space="preserve">Immediately</source>
+                <target xml:space="preserve">Odmah</target>
+            </trans-unit>
+            <trans-unit id="date-base.just-now">
+                <source xml:space="preserve">Just now</source>
+                <target xml:space="preserve">Upravo sada</target>
+            </trans-unit>
+            <trans-unit id="date-base.minute">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> minute</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> minuta</target>
+            </trans-unit>
+            <trans-unit id="date-base.minutes">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> minutes</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> minuta</target>
+            </trans-unit>
+            <trans-unit id="date-base.month">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> month</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> mjesec</target>
+            </trans-unit>
+            <trans-unit id="date-base.months">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> months</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> mjeseci</target>
+            </trans-unit>
+            <trans-unit id="date-base.second">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> second</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> sekunda</target>
+            </trans-unit>
+            <trans-unit id="date-base.seconds">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> seconds</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> sekundi</target>
+            </trans-unit>
+            <trans-unit id="date-base.week">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> week</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> tjedan</target>
+            </trans-unit>
+            <trans-unit id="date-base.weeks">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> weeks</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> tjedana</target>
+            </trans-unit>
+            <trans-unit id="date-base.year">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> year</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> godina</target>
+            </trans-unit>
+            <trans-unit id="date-base.years">
+                <source xml:space="preserve"><x equiv-text="counter" id="DATE"/> years</source>
+                <target xml:space="preserve"><x equiv-text="counter" id="DATE"/> godina</target>
+            </trans-unit>
+            <trans-unit id="dfc3c34e182ea73c5d784ff7c8135f087992dac1">
+                <source xml:space="preserve">All</source>
+                <target xml:space="preserve">Sve</target>
+            </trans-unit>
+            <trans-unit id="e5d8bb389c702588877f039d72178f219453a72d">
+                <source xml:space="preserve">Unknown</source>
+                <target xml:space="preserve">Nepoznato</target>
+            </trans-unit>
+            <trans-unit id="ed8e33059967f554ff06b4f5b6049c465b92d9b3">
+                <source xml:space="preserve">Block Fee Rates</source>
+                <target xml:space="preserve">Stope naknada bloka</target>
+            </trans-unit>
+            <trans-unit id="f13cbfe8cfc955918e9f64466d2cafddb4760d9a">
+                <source xml:space="preserve">Broadcast Transaction</source>
+                <target xml:space="preserve">Emitiraj transakciju</target>
+            </trans-unit>
+            <trans-unit id="f74d6f23e06c5a75d95a994017c00191c162ba9f">
+                <source xml:space="preserve">Test Transactions</source>
+                <target xml:space="preserve">Testne transakcije</target>
+            </trans-unit>
+            <trans-unit id="fe5317c6c60dd7e0e86f04d22f566f67cf04d404">
+                <source xml:space="preserve">Mining Pools</source>
+                <target xml:space="preserve">Rudarski pool-ovi</target>
+            </trans-unit>
+            <trans-unit id="mempool-block.block.no">
+                <source xml:space="preserve">Mempool block <x equiv-text="this.mempoolBlockIndex + 1" id="INTERPOLATION"/></source>
+                <target xml:space="preserve">Mempool blok <x equiv-text="this.mempoolBlockIndex + 1" id="INTERPOLATION"/></target>
+            </trans-unit>
+            <trans-unit id="mempool-block.stack.of.blocks">
+                <source xml:space="preserve">Stack of <x equiv-text="blocksInBlock" id="INTERPOLATION"/> mempool blocks</source>
+                <target xml:space="preserve">Hrpa od <x equiv-text="blocksInBlock" id="INTERPOLATION"/> mempool blokova</target>
+            </trans-unit>
+            <trans-unit id="meta.description.about">
+                <source xml:space="preserve">Learn more about the BCH Explorer open-source project. Discover enterprise sponsors, integrations, FOSS licensing, and more.</source>
+                <target xml:space="preserve">Saznajte više o Mempool Open Source Project®: korporativni sponzori, pojedinačni sponzori, integracije, tko doprinosi, FOSS licenciranje i više.</target>
+            </trans-unit>
+            <trans-unit id="meta.description.bitcoin.block">
+                <source xml:space="preserve">See size, weight, fee range, included transactions, audit (expected v actual), and more for Bitcoin<x equiv-text="seoDescriptionNetwork(             this.stateService.network           )" id="PH"/> block <x equiv-text="block.height" id="BLOCK_HEIGHT"/> (<x equiv-text="block.id" id="BLOCK_ID"/>).</source>
+                <target xml:space="preserve">Pogledaj veličinu, težinu, raspon naknada, uključene transakcije, audit (očekivano v stvarno) i više za Bitcoin<x equiv-text="seoDescriptionNetwork(this.stateService.network)" id="PH"/> blok <x equiv-text="block.height" id="BLOCK_HEIGHT"/> ( <x equiv-text="block.id" id="BLOCK_ID"/>).</target>
+            </trans-unit>
+            <trans-unit id="meta.description.bitcoin.graphs.block-fee-rates">
+                <source xml:space="preserve">See Bitcoin Cash feerates visualized over time, including minimum and maximum feerates per block along with feerates at various percentiles.</source>
+                <target xml:space="preserve">Pogledajte bitcoin naknade vizualizirane tijekom vremena, uključujući minimalne i maksimalne naknade po bloku zajedno s naknadama na različitim postocima.</target>
+            </trans-unit>
+            <trans-unit id="meta.description.bitcoin.graphs.block-health">
+                <source xml:space="preserve">See Bitcoin Cash block health visualized over time. Block health is a measure of how many expected transactions were included in an actual mined block. Expected transactions are determined using BCH Explorer&apos;s re-implementation of BCHN&apos;s transaction selection algorithm.</source>
+                <target xml:space="preserve">Pogledajte zdravlje Bitcoin bloka vizualizirano tijekom vremena. Zdravlje bloka mjera je koliko je očekivanih transakcija uključeno u stvarni izrudareni blok. Očekivane transakcije određuju se pomoću Mempoolove re-implementacije Bitcoin Core algoritma za odabir transakcija.</target>
+            </trans-unit>
+            <trans-unit id="meta.description.bitcoin.graphs.hashrate">
+                <source xml:space="preserve">See hashrate and difficulty for the Bitcoin<x equiv-text="seoDescriptionNetwork(           this.network         )" id="PH"/> network visualized over time.</source>
+                <target xml:space="preserve">Pogledajte hashrate i težinu za Bitcoin<x equiv-text="seoDescriptionNetwork(this.network)" id="PH"/> mrežu vizualiziranu tijekom vremena.</target>
+            </trans-unit>
+            <trans-unit id="meta.description.bitcoin.graphs.pool-ranking">
+                <source xml:space="preserve">See the top Bitcoin Cash mining pools ranked by number of blocks mined, over your desired timeframe.</source>
+                <target xml:space="preserve">Pogledajte najbolje rudarske pool-ove Bitcoina poredane prema broju iskopanih blokova u željenom vremenskom okviru.</target>
+            </trans-unit>
+            <trans-unit id="meta.description.docs.electrumrpc">
+                <source xml:space="preserve">Documentation for our Electrum RPC interface: get instant, convenient, and reliable access to a Fulcrum instance.</source>
+                <target xml:space="preserve">Dokumentacija za naše Electrum RPC sučelje: dobijte trenutan, praktičan i pouzdan pristup Esplora instanci.</target>
+            </trans-unit>
+            <trans-unit id="meta.description.docs.faq">
+                <source xml:space="preserve">Get answers to common questions like: What is a mempool? What is a blockchain? How can I run my own instance of BCH Explorer? And more.</source>
+                <target xml:space="preserve">Dobijte odgovore na uobičajena pitanja poput: Što je mempool? Zašto se moja transakcija ne potvrđuje? Kako mogu pokrenuti vlastitu instancu projekta otvorenog koda Mempool? I više od toga.</target>
+            </trans-unit>
+            <trans-unit id="meta.description.docs.rest-bitcoin">
+                <source xml:space="preserve">Documentation for the bchexplorer.cash REST API service: get info on addresses, transactions, blocks, fees, mining, and more.</source>
+                <target xml:space="preserve">Dokumentacija za mempool.space REST API uslugu: saznajte informacije o adresama, transakcijama, blokovima, naknadama, rudarenju, Lightning mreži i više.</target>
+            </trans-unit>
+            <trans-unit id="meta.description.docs.websocket-bitcoin">
+                <source xml:space="preserve">Documentation for the bchexplorer.cash WebSocket API service: get real-time info on blocks, mempools, transactions, addresses, and more.</source>
+                <target xml:space="preserve">Dokumentacija za mempool.space WebSocket API uslugu: dobijte informacije u stvarnom vremenu o blokovima, mempoolima, transakcijama, adresama i više.</target>
+            </trans-unit>
+            <trans-unit id="meta.description.mining.dashboard">
+                <source xml:space="preserve">Get real-time Bitcoin Cash mining stats like hashrate, difficulty adjustment, block rewards, pool dominance, and more.</source>
+                <target xml:space="preserve">Dobijte statistiku rudarenja Bitcoina u stvarnom vremenu kao što je hashrate, prilagodba težine, blok nagrade, dominacija pool-ova i više.</target>
+            </trans-unit>
+            <trans-unit id="meta.description.mining.pool">
+                <source xml:space="preserve">See mining pool stats for <x equiv-text="poolStats.pool.name" id="PH"/>: most recent mined blocks, hashrate over time, total block reward to date, known coinbase addresses, and more.</source>
+                <target xml:space="preserve">Pogledajte statistiku rudarskih pool-ova za <x equiv-text="poolStats.pool.name" id="PH"/>: najnovije iskopane blokove, hashrate tijekom vremena, ukupnu nagradu za blok do danas, poznate coinbase adrese i više.</target>
+            </trans-unit>
+            <trans-unit id="meta.description.preview-tx">
+                <source xml:space="preserve">Preview a transaction to the Bitcoin<x equiv-text="seoDescriptionNetwork(this.stateService.network)" id="PH"/> network using the transaction&apos;s raw hex data.</source>
+                <target xml:space="preserve">Pregledajte transakciju na Bitcoin<x equiv-text="seoDescriptionNetwork(this.stateService.network)" id="PH"/> mreži koristeći raw hex podatke transakcije.</target>
+            </trans-unit>
+            <trans-unit id="meta.description.recent-transactions">
+                <source xml:space="preserve">See the most recent transactions on the Bitcoin Cash<x equiv-text="seoDescriptionNetwork(this.stateService.network)" id="PH"/> network, updated in real-time.</source>
+                <target xml:space="preserve">See the most recent transactions on the Bitcoin Cash<x equiv-text="seoDescriptionNetwork(this.stateService.network)" id="PH"/> network, updated in real-time.</target>
+            </trans-unit>
+            <trans-unit id="meta.description.stale-chain-tips">
+                <source xml:space="preserve">See the most recent stale chain tips on the Bitcoin<x equiv-text="seoDescriptionNetwork(         this.stateService.network       )" id="PH"/> network.</source>
+                <target xml:space="preserve">Pogledajte najnovije vrhove ustajalog lanca na Bitcoin<x equiv-text="seoDescriptionNetwork(this.stateService.network)" id="PH"/> mreži.</target>
+            </trans-unit>
+            <trans-unit id="meta.descriptions.bitcoin.graphs.hashrate-pools">
+                <source xml:space="preserve">See Bitcoin Cash mining pool dominance visualized over time: see how top mining pools&apos; share of total hashrate has fluctuated over time.</source>
+                <target xml:space="preserve">Pogledajte vizualizaciju dominacije pool-ova za rudarenje Bitcoina tijekom vremena: pogledajte kako je udio najvećih pool-ova za rudarenje u ukupnom hashrateu fluktuirao tijekom vremena.</target>
+            </trans-unit>
+            <trans-unit id="meta.title.docs.electrum">
+                <source xml:space="preserve">Electrum RPC</source>
+                <target xml:space="preserve">Electrum RPC</target>
+            </trans-unit>
+            <trans-unit id="meta.title.docs.faq">
+                <source xml:space="preserve">FAQ</source>
+                <target xml:space="preserve">FAQ</target>
+            </trans-unit>
+            <trans-unit id="meta.title.docs.rest">
+                <source xml:space="preserve">REST API</source>
+                <target xml:space="preserve">REST API</target>
+            </trans-unit>
+            <trans-unit id="meta.title.docs.websocket">
+                <source xml:space="preserve">WebSocket API</source>
+                <target xml:space="preserve">WebSocket API</target>
+            </trans-unit>
+            <trans-unit id="mining.pools-historical-dominance">
+                <source xml:space="preserve">Pools Historical Dominance</source>
+                <target xml:space="preserve">Povijesna dominacija pool-ova</target>
+            </trans-unit>
+            <trans-unit id="ngb.datepicker.next-month">
+                <source xml:space="preserve">Next month</source>
+                <target xml:space="preserve">Next month</target>
+            </trans-unit>
+            <trans-unit id="ngb.datepicker.previous-month">
+                <source xml:space="preserve">Previous month</source>
+                <target xml:space="preserve">Previous month</target>
+            </trans-unit>
+            <trans-unit id="ngb.datepicker.select-month">
+                <source xml:space="preserve">Select month</source>
+                <target xml:space="preserve">Select month</target>
+            </trans-unit>
+            <trans-unit id="ngb.datepicker.select-year">
+                <source xml:space="preserve">Select year</source>
+                <target xml:space="preserve">Select year</target>
+            </trans-unit>
+            <trans-unit id="ngb.pagination.first">
+                <source xml:space="preserve">««</source>
+                <target xml:space="preserve">««</target>
+            </trans-unit>
+            <trans-unit id="ngb.pagination.first-aria">
+                <source xml:space="preserve">First</source>
+                <target xml:space="preserve">Prvi</target>
+            </trans-unit>
+            <trans-unit id="ngb.pagination.last">
+                <source xml:space="preserve">»»</source>
+                <target xml:space="preserve">»»</target>
+            </trans-unit>
+            <trans-unit id="ngb.pagination.last-aria">
+                <source xml:space="preserve">Last</source>
+                <target xml:space="preserve">Zadnje</target>
+            </trans-unit>
+            <trans-unit id="ngb.pagination.next">
+                <source xml:space="preserve">»</source>
+                <target xml:space="preserve">»</target>
+            </trans-unit>
+            <trans-unit id="ngb.pagination.next-aria">
+                <source xml:space="preserve">Next</source>
+                <target xml:space="preserve">Sljedeće</target>
+            </trans-unit>
+            <trans-unit id="ngb.pagination.previous">
+                <source xml:space="preserve">«</source>
+                <target xml:space="preserve">«</target>
+            </trans-unit>
+            <trans-unit id="ngb.pagination.previous-aria">
+                <source xml:space="preserve">Previous</source>
+                <target xml:space="preserve">Prethodno</target>
+            </trans-unit>
+            <trans-unit id="page.stale-chain-tips">
+                <source xml:space="preserve">Stale Chain Tips</source>
+                <target xml:space="preserve">Vrhovi ustajalog lanca</target>
+            </trans-unit>
+            <trans-unit id="price-chart.linear">
+                <source xml:space="preserve">Linear</source>
+                <target xml:space="preserve">Linear</target>
+            </trans-unit>
+            <trans-unit id="price-chart.logarithmic">
+                <source xml:space="preserve">Logarithmic</source>
+                <target xml:space="preserve">Logarithmic</target>
+            </trans-unit>
+            <trans-unit id="recent-transactions-title">
+                <source xml:space="preserve">Recent Transactions</source>
+                <target xml:space="preserve">Recent Transactions</target>
+            </trans-unit>
+            <trans-unit id="time-before">
+                <source xml:space="preserve"><x equiv-text="dateStrings.i18nYear" id="DATE"/> before</source>
+                <target xml:space="preserve"><x equiv-text="dateStrings.i18nYear" id="DATE"/> prije</target>
+            </trans-unit>
+            <trans-unit id="time-since">
+                <source xml:space="preserve"><x equiv-text="dateStrings.i18nYear" id="DATE"/> ago</source>
+                <target xml:space="preserve">Prije <x equiv-text="dateStrings.i18nYear" id="DATE"/></target>
+            </trans-unit>
+            <trans-unit id="time-span">
+                <source xml:space="preserve">After <x equiv-text="dateStrings.i18nYear" id="DATE"/></source>
+                <target xml:space="preserve">Nakon <x equiv-text="dateStrings.i18nYear" id="DATE"/></target>
+            </trans-unit>
+            <trans-unit id="time-until">
+                <source xml:space="preserve">In ~<x equiv-text="dateStrings.i18nYear" id="DATE"/></source>
+                <target xml:space="preserve">Za ~<x equiv-text="dateStrings.i18nYear" id="DATE"/></target>
+            </trans-unit>
+            <trans-unit id="time-within">
+                <source xml:space="preserve">within ~<x equiv-text="dateStrings.i18nYear" id="DATE"/></source>
+                <target xml:space="preserve">unutar ~<x equiv-text="dateStrings.i18nYear" id="DATE"/></target>
+            </trans-unit>
+            <trans-unit id="wallet.component.browser-title">
+                <source xml:space="preserve">Wallet: <x equiv-text="walletName" id="INTERPOLATION"/></source>
+                <target xml:space="preserve">Novčanik: <x equiv-text="walletName" id="INTERPOLATION"/></target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

@@ -1,0 +1,6 @@
+.angular
+dist
+node_modules
+cypress
+explorer-frontend-config.json
+README.md

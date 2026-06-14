@@ -1,0 +1,130 @@
+.token-name {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.token-symbol {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.qrSpan {
+  position: relative;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.qr-wrapper {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #ddd;
+}
+
+// Trust level badge colors
+.trust-absent {
+  background-color: #dc3545;
+  color: white;
+}
+
+.trust-marginal {
+  background-color: #da690d;
+  color: white;
+}
+
+.trust-good {
+  background-color: #faf610;
+  color: black;
+}
+
+.trust-high {
+  background-color: #0c9963;
+  color: white;
+}
+
+.trust-ultimate {
+  background-color: #22f00f;
+  color: black;
+}
+
+// Container styles matching pool component
+.container-xl {
+  max-width: 1400px;
+  padding-bottom: 30px;
+}
+
+.token-title {
+  margin-right: 15px;
+  line-height: 1;
+}
+
+.icon-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background-color: var(--bs-warning-bg-subtle);
+  color: var(--bs-warning-text);
+  border-radius: 50%;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.token-block {
+  color: var(--fg);
+  padding-top: 20px;
+  padding-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  @media (min-width: 650px) {
+    flex-direction: row;
+  }
+  h1 {
+    margin: 0rem;
+    margin-right: 15px;
+    color: var(--bs-body-color);
+  }
+}
+
+.token-link {
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  flex-grow: 1;
+  justify-content: flex-start;
+  max-width: 100%;
+  margin-right: 0px;
+  margin-bottom: 0px;
+  margin-top: 8px;
+  @media (min-width: 651px) {
+    flex-grow: 1;
+    margin-bottom: 0px;
+    margin-right: 1em;
+    top: 1px;
+    position: relative;
+  }
+  @media (max-width: 650px) {
+    width: 100%;
+    order: 3;
+  }
+
+  .token-link {
+    width: 200px;
+    min-width: 200px;
+    flex-grow: 1;
+  }
+}
+
+.error {
+  width: 100%;
+  margin: 1em auto;
+  text-align: center;
+}

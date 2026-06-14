@@ -1,0 +1,5 @@
+#!/usr/bin/env zsh
+rm -f $HOME/*/backend/explorer-config.json
+rm -f $HOME/*/frontend/explorer-frontend-config.json
+rm -f $HOME/*/frontend/projects/bch-explorer/explorer-frontend-config.json
+exit 0

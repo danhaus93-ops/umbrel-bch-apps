@@ -1,0 +1,112 @@
+@use "sass:color";
+
+/* Theme */
+$bg: #1d1f31;
+$active-bg: #11131f;
+$hover-bg: #12131e;
+$fg: #fff;
+$nav-bg: $bg;
+$title-fg: #3dbe82;
+
+/* Bootstrap */
+$body-bg: $bg;
+$body-color: $fg;
+$gray-800: $bg;
+$gray-700: $fg;
+
+$nav-tabs-link-active-bg: $active-bg;
+
+$primary: #07805d;
+$secondary: #2d3948;
+$tertiary: #13926e;
+$success: #1a9436;
+$info: #0ec971;
+
+$h5-font-size: 1.15rem !default;
+
+$pagination-bg: $body-bg;
+$pagination-border-color: $gray-800;
+$pagination-disabled-bg: $fg;
+$pagination-disabled-border-color: $bg;
+$pagination-active-color: $fg;
+$pagination-active-bg: $tertiary;
+$pagination-hover-bg: $hover-bg;
+$pagination-hover-border-color: $bg;
+$pagination-disabled-bg: $bg;
+
+$form-select-indicator-color: $fg;
+
+.input-group-text {
+  background-color: #1c2031 !important;
+  border: 1px solid #20263e !important;
+}
+
+$link-color: $info;
+$link-decoration: none !default;
+$link-hover-color: color.adjust($link-color, $lightness: -15%) !default;
+$link-hover-decoration: underline !default;
+
+$dropdown-bg: $bg;
+$dropdown-link-color: $fg;
+
+$dropdown-link-hover-color: $fg;
+$dropdown-link-hover-bg: $active-bg;
+
+$dropdown-link-active-color: $fg;
+$dropdown-link-active-bg: $active-bg;
+
+:root {
+  --bg: #{$bg};
+  --active-bg: #{$active-bg};
+  --hover-bg: #{$hover-bg};
+  --fg: #{$fg};
+  --nav-bg: #{$nav-bg};
+  --nav-icon: #fff;
+  --nav-shadow: #000;
+  --title-fg: #{$title-fg};
+
+  --primary: #{$primary};
+  --secondary: #{$secondary};
+  --tertiary: #{$tertiary};
+  --success: #{$success};
+  --info: #{$info};
+  --link-color: #{$link-color};
+  --link-hover-color: #{$link-hover-color};
+  --icon: #f1f1f1;
+  --skeleton-bg: #2e314e;
+  --skeleton-bg-light: #36355a;
+  --form-control-bg: #f0f0f0;
+  --form-control-color: #141414;
+
+  --box-bg: #24273e;
+  --stat-box-bg: #181b2d;
+  --alert-bg: #3a1c61;
+  --transparent-fg: #ffffff66;
+  --fade-out-box-bg-start: rgba(36, 39, 62, 0);
+  --fade-out-box-bg-end: rgba(36, 39, 62, 1);
+  --opacity: 0.57;
+
+  --testnet: #1d486f;
+  --testnet4: #b99a0f;
+  --scalenet: #c23700;
+  --chipnet: #8b2fc9;
+
+  --mainnet-alt: #27915c;
+  --testnet-alt: #183550;
+  --testnet4-alt: #cca910;
+  --scalenet-alt: #692308;
+  --chipnet-alt: #5a1a8a;
+
+  --green: #0fd378;
+  --red: #dc3545;
+  --yellow: #e9db17;
+  --grey: #7e7e7e;
+  --tooltip-grey: #f7f7f7;
+  --orange: #ff9f00;
+  --pink: #d63384;
+
+  --search-button: #13926e;
+  --search-button-border: #0f946e;
+  --search-button-focus: #2b7963;
+  --search-button-shadow: #10a57b80;
+}

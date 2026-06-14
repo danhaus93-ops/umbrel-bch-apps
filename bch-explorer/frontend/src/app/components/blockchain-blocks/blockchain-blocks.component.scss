@@ -1,0 +1,293 @@
+.bitcoin-block {
+  width: var(--block-size);
+  height: var(--block-size);
+}
+
+.blockLink {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  z-index: 10;
+}
+
+.blockLink:hover {
+  text-decoration: none;
+}
+
+.blockLink.disabled {
+  pointer-events: none;
+}
+
+.on-pool-name-text {
+  display: inline-block;
+  padding-top: 2px;
+  font-weight: normal;
+}
+
+.timestamp-info {
+  color: var(--fg);
+  position: relative;
+  z-index: 11;
+  font-size: 14px;
+  margin-left: 4px;
+  transition: color 0.15s ease-in-out;
+  &:hover {
+    color: var(--info);
+  }
+}
+
+.on-pool {
+  align-items: center;
+  background-color: var(--bg);
+  display: inline-block;
+  margin-top: 4px;
+  padding: 0.25em 0.4em;
+  border-radius: 0.25rem;
+}
+
+.on-pool-container {
+  align-items: center;
+  position: relative;
+  top: -8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.on-pool-container.selected {
+  top: 0px;
+}
+
+.pool-container {
+  margin-top: 12px;
+}
+
+.mined-block {
+  position: absolute;
+  top: 0px;
+  transition:
+    background 2s,
+    left 2s,
+    transform 1s,
+    opacity 1s;
+}
+
+.mined-block.offscreen {
+  opacity: 0;
+}
+
+.mined-block.placeholder-block {
+  background: none !important;
+}
+
+.block-size {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.blocks-container {
+  --block-size: 125px;
+  --block-offset: calc(0.32 * var(--block-size));
+  position: absolute;
+  top: 0px;
+  left: var(--block-offset);
+}
+
+.block-body {
+  text-align: center;
+}
+
+.time-difference {
+  font-size: 13px;
+}
+
+.fees {
+  font-size: 12px;
+  margin-top: 10px;
+  margin-bottom: 2px;
+}
+
+.fee-span {
+  font-size: 11px;
+  margin-bottom: 5px;
+  color: var(--yellow);
+}
+
+.transaction-count {
+  font-size: 10px;
+  margin-top: 3px;
+  margin-bottom: 4px;
+}
+
+.block-height {
+  position: absolute;
+  font-size: 16px;
+  bottom: 160px;
+  width: 100%;
+  left: -12px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.block-height-link {
+  pointer-events: all;
+}
+
+.bitcoin-block::after {
+  content: "";
+  width: var(--block-size);
+  height: calc(0.192 * var(--block-size));
+  position: absolute;
+  top: calc(-0.192 * var(--block-size));
+  left: calc(-0.16 * var(--block-size));
+  background-color: var(--block-top);
+  transform: skew(40deg);
+  transform-origin: top;
+}
+
+.bitcoin-block::before {
+  content: "";
+  width: calc(0.16 * var(--block-size));
+  height: var(--block-size);
+  position: absolute;
+  top: calc(-0.096 * var(--block-size));
+  left: calc(-0.16 * var(--block-size));
+  background-color: var(--block-side);
+
+  transform: skewY(50deg);
+  transform-origin: top;
+}
+
+.bitcoin-block .stale-ghost {
+  position: absolute;
+  --stale-index: 0;
+  top: calc(-1 * ((var(--stale-index) * 0.144) + 0.24) * var(--block-size));
+  left: calc(-1 * ((var(--stale-index) * 0.12) + 0.2) * var(--block-size));
+  width: var(--block-size);
+  height: var(--block-size);
+  z-index: calc(-1 * (var(--stale-index) + 1));
+  opacity: 0.75;
+  cursor: pointer;
+}
+
+.bitcoin-block .stale-ghost::after {
+  content: "";
+  width: var(--block-size);
+  height: calc(0.096 * var(--block-size));
+  position: absolute;
+  top: calc(-0.096 * var(--block-size));
+  left: calc(-0.08 * var(--block-size));
+  background-color: var(--block-top);
+  transform: skew(40deg);
+  transform-origin: top;
+}
+
+.bitcoin-block .stale-ghost::before {
+  content: "";
+  width: calc(0.08 * var(--block-size));
+  height: var(--block-size);
+  position: absolute;
+  top: calc(-0.048 * var(--block-size));
+  left: calc(-0.08 * var(--block-size));
+  background-color: var(--block-side);
+
+  transform: skewY(50deg);
+  transform-origin: top;
+}
+
+.bitcoin-block .stale-ghost:hover {
+  opacity: 1;
+}
+
+.bitcoin-block.placeholder-block::after {
+  content: none;
+  background: 0;
+}
+
+.bitcoin-block.placeholder-block::before {
+  content: none;
+  background: 0;
+}
+
+.black-background {
+  background-color: var(--active-bg);
+  z-index: 100;
+  position: relative;
+}
+
+#arrow-up {
+  position: relative;
+  left: calc(var(--block-size) * 0.6);
+  top: calc(var(--block-size) * 1.28);
+  width: 0;
+  height: 0;
+  border-left: calc(var(--block-size) * 0.2) solid transparent;
+  border-right: calc(var(--block-size) * 0.2) solid transparent;
+  border-bottom: calc(var(--block-size) * 0.2) solid var(--nav-icon);
+}
+
+.flashing {
+  /* force compositing */
+  will-change: opacity;
+  transform: translateZ(0);
+  /* effective max frame rate = (#keyframes - 1) x steps / duration */
+  animation: opacityPulse 2s steps(30, end);
+  animation-iteration-count: infinite;
+  opacity: 1;
+}
+
+.loading .bitcoin-block.mined-block {
+  background: var(--secondary);
+}
+
+@keyframes opacityPulse {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+.badge {
+  position: relative;
+  top: 19px;
+  z-index: 101;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 145px;
+
+  &.miner-name {
+    max-width: 125px;
+  }
+}
+
+.animated {
+  transition: all 0.15s ease-in-out;
+  white-space: nowrap;
+}
+
+.time-ltr {
+  .bitcoin-block {
+    transform: scaleX(-1);
+  }
+}
+
+.spotlight-bottom {
+  position: absolute;
+  width: calc(0.6 * var(--block-size));
+  height: calc(0.25 * var(--block-size));
+  border-left: solid calc(0.3 * var(--block-size)) transparent;
+  border-bottom: solid calc(0.3 * var(--block-size)) var(--fg);
+  border-right: solid calc(0.3 * var(--block-size)) transparent;
+  transform: translate(
+    calc(0.2 * var(--block-size)),
+    calc(1.1 * var(--block-size))
+  );
+  border-radius: 2px;
+  z-index: -1;
+}

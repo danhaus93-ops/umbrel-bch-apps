@@ -1,0 +1,17 @@
+@if (metadata && category) {
+  <a
+    class="token-link"
+    style="display: contents"
+    [routerLink]="['/token/' | relativeUrl, category]"
+    title="{{ metadata?.name || category }}"
+  >
+    <img
+      *ngIf="resolveIconUrl(metadata?.uris?.['icon']) as iconUrl"
+      class="token-icon"
+      [src]="iconUrl"
+      alt="{{ metadata?.name }} icon"
+      loading="lazy"
+    />
+    <span>{{ metadata?.name }}</span>
+  </a>
+}

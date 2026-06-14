@@ -1,0 +1,233 @@
+<app-indexing-progress *ngIf="!widget"></app-indexing-progress>
+
+<div [class]="widget === false ? 'full-container' : ''">
+  <div *ngIf="widget">
+    <div
+      class="price-widget"
+      *ngIf="priceObservable$ | async as price; else loadingPrice"
+    >
+      <div class="item">
+        <h5 class="card-title" i18n="price-chart.bitcoin-price">
+          Bitcoin Cash Price
+        </h5>
+        <p class="card-text">
+          <app-fiat [value]="100_000_000"></app-fiat>
+        </p>
+      </div>
+      <div class="item">
+        <h5 class="card-title" i18n="price-chart.percent-change">% Change</h5>
+        <p
+          class="card-text"
+          [ngClass]="{
+            'text-success': price.percentChange > 0,
+            'text-danger': price.percentChange < 0,
+          }"
+        >
+          {{ price.percentChange > 0 ? "+" : ""
+          }}{{ price.percentChange | number: "1.2-2" }}%
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-header mb-0 mb-md-4" [style]="widget ? 'display:none' : ''">
+    <div class="d-flex d-md-block align-items-baseline">
+      <span i18n="price-chart.title">Bitcoin Cash Price</span>
+      <span *ngIf="priceObservable$ | async as price">
+        ⎯ {{ price.latestPrice | currency: this.currency }} (<span
+          class="card-text"
+          [ngClass]="{
+            'text-success': price.percentChange > 0,
+            'text-danger': price.percentChange < 0,
+          }"
+          >{{ price.percentChange > 0 ? "+" : ""
+          }}{{ price.percentChange | number: "1.2-2" }}%</span
+        >)</span
+      >
+      <button
+        class="btn p-0 ps-2"
+        style="margin: 0 0 4px 0px"
+        (click)="onSaveChart()"
+        aria-label="Download chart"
+      >
+        <fa-icon [icon]="['fas', 'download']" [fixedWidth]="true"></fa-icon>
+      </button>
+    </div>
+
+    <form
+      [formGroup]="radioGroupForm"
+      class="formRadioGroup"
+      *ngIf="priceObservable$ | async as price"
+    >
+      <div class="small-buttons">
+        <button
+          class="btn btn-purple btn-sm mb-0"
+          [class.active]="scaleType === 'log'"
+          (click)="toggleScale()"
+          [title]="
+            scaleType === 'value'
+              ? 'Switch to logarithmic scale'
+              : 'Switch to linear scale'
+          "
+          aria-label="Toggle scale type"
+          i18n-title="price-chart.toggle-scale-title"
+        >
+          <ng-container *ngIf="scaleType === 'log'; else linearText">
+            <span i18n="@@price-chart.logarithmic">Logarithmic</span>
+          </ng-container>
+          <ng-template #linearText>
+            <span i18n="@@price-chart.linear">Linear</span>
+          </ng-template>
+        </button>
+      </div>
+      <div class="btn-group" role="group" name="radioBasic">
+        <input
+          type="radio"
+          class="btn-check"
+          id="price-24h"
+          [value]="'24h'"
+          fragment="24h"
+          [routerLink]="['/graphs/price' | relativeUrl]"
+          formControlName="dateSpan"
+        />
+        <label class="btn btn-purple btn-sm" for="price-24h">24h</label>
+        <input
+          type="radio"
+          class="btn-check"
+          id="price-3d"
+          [value]="'3d'"
+          fragment="3d"
+          [routerLink]="['/graphs/price' | relativeUrl]"
+          formControlName="dateSpan"
+        />
+        <label class="btn btn-purple btn-sm" for="price-3d">3D</label>
+        <input
+          type="radio"
+          class="btn-check"
+          id="price-1w"
+          [value]="'1w'"
+          fragment="1w"
+          [routerLink]="['/graphs/price' | relativeUrl]"
+          formControlName="dateSpan"
+        />
+        <label class="btn btn-purple btn-sm" for="price-1w">1W</label>
+        <input
+          type="radio"
+          class="btn-check"
+          id="price-1m"
+          [value]="'1m'"
+          fragment="1m"
+          [routerLink]="['/graphs/price' | relativeUrl]"
+          formControlName="dateSpan"
+        />
+        <label class="btn btn-purple btn-sm" for="price-1m">1M</label>
+        <input
+          type="radio"
+          class="btn-check"
+          id="price-3m"
+          [value]="'3m'"
+          fragment="3m"
+          [routerLink]="['/graphs/price' | relativeUrl]"
+          formControlName="dateSpan"
+        />
+        <label class="btn btn-purple btn-sm" for="price-3m">3M</label>
+        <input
+          type="radio"
+          class="btn-check"
+          id="price-6m"
+          [value]="'6m'"
+          fragment="6m"
+          [routerLink]="['/graphs/price' | relativeUrl]"
+          formControlName="dateSpan"
+        />
+        <label class="btn btn-purple btn-sm" for="price-6m">6M</label>
+        <input
+          type="radio"
+          class="btn-check"
+          id="price-1y"
+          [value]="'1y'"
+          fragment="1y"
+          [routerLink]="['/graphs/price' | relativeUrl]"
+          formControlName="dateSpan"
+        />
+        <label class="btn btn-purple btn-sm" for="price-1y">1Y</label>
+        <input
+          type="radio"
+          class="btn-check"
+          id="price-2y"
+          [value]="'2y'"
+          fragment="2y"
+          [routerLink]="['/graphs/price' | relativeUrl]"
+          formControlName="dateSpan"
+        />
+        <label class="btn btn-purple btn-sm" for="price-2y">2Y</label>
+        <input
+          type="radio"
+          class="btn-check"
+          id="price-3y"
+          [value]="'3y'"
+          fragment="3y"
+          [routerLink]="['/graphs/price' | relativeUrl]"
+          formControlName="dateSpan"
+        />
+        <label class="btn btn-purple btn-sm" for="price-3y">3Y</label>
+        <input
+          type="radio"
+          class="btn-check"
+          id="price-4y"
+          [value]="'4y'"
+          fragment="4y"
+          [routerLink]="['/graphs/price' | relativeUrl]"
+          formControlName="dateSpan"
+        />
+        <label class="btn btn-purple btn-sm" for="price-4y">4Y</label>
+        <input
+          type="radio"
+          class="btn-check"
+          id="price-all"
+          [value]="'all'"
+          fragment="all"
+          [routerLink]="['/graphs/price' | relativeUrl]"
+          formControlName="dateSpan"
+        />
+        <label class="btn btn-purple btn-sm" for="price-all">ALL</label>
+      </div>
+    </form>
+  </div>
+
+  <div
+    [class]="!widget ? 'chart' : 'chart-widget'"
+    *browserOnly
+    [style]="{
+      height: widget ? height + 20 + 'px' : null,
+      opacity: isLoading ? 0.5 : 1,
+    }"
+    echarts
+    [initOpts]="chartInitOptions"
+    [options]="chartOptions"
+    (chartInit)="onChartInit($event)"
+  ></div>
+  <div
+    class="text-center loadingGraphs"
+    *ngIf="!stateService.isBrowser || isLoading"
+  >
+    <div class="spinner-border text-light"></div>
+  </div>
+</div>
+
+<ng-template #loadingPrice>
+  <div class="price-widget">
+    <div class="item">
+      <h5 class="card-title" i18n="price-chart.bitcoin-price">Bitcoin Price</h5>
+      <p class="card-text">
+        <span class="skeleton-loader skeleton-loader-big"></span>
+      </p>
+    </div>
+    <div class="item">
+      <h5 class="card-title" i18n="price-chart.percent-change">% Change</h5>
+      <p class="card-text">
+        <span class="skeleton-loader skeleton-loader-big"></span>
+      </p>
+    </div>
+  </div>
+</ng-template>

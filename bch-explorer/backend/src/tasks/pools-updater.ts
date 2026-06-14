@@ -1,0 +1,249 @@
+import axios, { AxiosResponse } from 'axios';
+import poolsParser from '../api/pools-parser';
+import config from '../config';
+import DB from '../database';
+import backendInfo from '../api/backend-info';
+import logger from '../logger';
+import { SocksProxyAgent } from 'socks-proxy-agent';
+import * as https from 'https';
+import { Common } from '../api/common';
+
+/**
+ * Maintain the most recent version of pools-v2.json
+ */
+class PoolsUpdater {
+  tag = 'PoolsUpdater';
+
+  lastRun = 0;
+  currentSha: string | null = null;
+  poolsUrl: string = config.EXPLORER.POOLS_JSON_URL;
+  treeUrl: string = config.EXPLORER.POOLS_JSON_TREE_URL;
+  poolsSource: string = config.EXPLORER.POOLS_SOURCE || 'gitlab';
+
+  public async $startService(): Promise<void> {
+    while (true) {
+      try {
+        await this.updatePoolsJson();
+      } catch (e: any) {
+        logger.info(`Exception ${e} in PoolsUpdater::$startService. Code: ${e.code}. Message: ${e.message}`, this.tag);
+      }
+      await Common.sleep$(10000);
+    }
+  }
+
+  public async updatePoolsJson(): Promise<void> {
+    if (
+      ['mainnet', 'testnet4', 'chipnet', 'scalenet'].includes(config.EXPLORER.NETWORK) === false ||
+      config.EXPLORER.ENABLED === false
+    ) {
+      return;
+    }
+
+    const now = new Date().getTime() / 1000;
+    if (now - this.lastRun < config.EXPLORER.POOLS_UPDATE_DELAY) {
+      // Execute the PoolsUpdate only once a week, or upon restart
+      return;
+    }
+
+    this.lastRun = now;
+
+    try {
+      if (config.DATABASE.ENABLED === true) {
+        this.currentSha = await this.getShaFromDb();
+      }
+
+      let sha: string | null = null;
+      if (this.poolsSource === 'gitlab') {
+        sha = await this.fetchGitLabPoolsSha(); // Fetch pools-v2.json sha from GitLab
+      } else {
+        sha = await this.fetchGitHubPoolsSha(); // Fetch pools-v2.json sha from GitHub
+      }
+
+      if (sha === null) {
+        logger.warn(`Failed to fetch pools-v2.json sha from ${this.poolsSource}`, this.tag);
+        return;
+      }
+
+      logger.debug(`pools-v2.json sha | Current: ${this.currentSha} | ${this.poolsSource}: ${sha}`, this.tag);
+      if (this.currentSha !== null && this.currentSha === sha) {
+        logger.info('No new mining pools data available, skip update', this.tag);
+        return;
+      }
+
+      // See backend README for more details about the mining pools update process
+      if (
+        this.currentSha !== null && // If we don't have any mining pool, download it at least once
+        config.EXPLORER.AUTOMATIC_POOLS_UPDATE !== true && // Automatic pools update is disabled
+        !process.env.npm_config_update_pools // We're not manually updating mining pool
+      ) {
+        logger.warn(`Updated mining pools data is available (${sha}) but AUTOMATIC_POOLS_UPDATE is disabled`, this.tag);
+        logger.info(
+          `You can update your mining pools using the --update-pools command flag. You may want to clear your nginx cache as well if applicable`,
+          this.tag
+        );
+        return;
+      }
+
+      const network = config.SOCKS5PROXY.ENABLED ? 'tor' : 'clearnet';
+      if (this.currentSha === null) {
+        logger.info(`Downloading pools-v2.json for the first time from ${this.poolsUrl} over ${network}`, this.tag);
+      } else {
+        logger.warn(`pools-v2.json is outdated, fetching latest from ${this.poolsUrl} over ${network}`, this.tag);
+      }
+      const poolsJson = await this.query(this.poolsUrl);
+      if (poolsJson === undefined) {
+        return;
+      }
+      poolsParser.setMiningPools(poolsJson);
+
+      if (config.DATABASE.ENABLED === false) {
+        // Don't run db operations
+        logger.info(`Mining pools-v2.json (${sha}) import completed (no database)`, this.tag);
+        return;
+      }
+
+      try {
+        await DB.query('START TRANSACTION;');
+        await this.updateDBSha(sha);
+        await poolsParser.migratePoolsJson();
+        await DB.query('COMMIT;');
+      } catch (e) {
+        logger.err(`Could not migrate mining pools, rolling back. Exception: ${JSON.stringify(e)}`, this.tag);
+        await DB.query('ROLLBACK;');
+      }
+      logger.info(`Mining pools-v2.json (${sha}) import completed`, this.tag);
+    } catch (e) {
+      // fast-forward lastRun to 10 minutes before the next scheduled update
+      this.lastRun = now - Math.max(config.EXPLORER.POOLS_UPDATE_DELAY - 600, 600);
+      logger.err(`PoolsUpdater failed. Will try again in 10 minutes. Exception: ${JSON.stringify(e)}`, this.tag);
+    }
+  }
+
+  /**
+   * Update our latest pools-v2.json sha in the db
+   */
+  private async updateDBSha(sha: string): Promise<void> {
+    this.currentSha = sha;
+    if (config.DATABASE.ENABLED === true) {
+      try {
+        await DB.query('DELETE FROM state where name="pools_json_sha"');
+        await DB.query(`INSERT INTO state VALUES('pools_json_sha', NULL, '${sha}')`);
+      } catch (e) {
+        logger.err(
+          'Cannot save GitLab pools-v2.json sha into the db. Reason: ' + (e instanceof Error ? e.message : e),
+          this.tag
+        );
+      }
+    }
+  }
+
+  /**
+   * Fetch our latest pools-v2.json sha from the db
+   */
+  public async getShaFromDb(): Promise<string | null> {
+    try {
+      const [rows]: any[] = await DB.query('SELECT string FROM state WHERE name="pools_json_sha"');
+      return rows.length > 0 ? rows[0].string : null;
+    } catch (e) {
+      logger.err('Cannot fetch pools-v2.json sha from db. Reason: ' + (e instanceof Error ? e.message : e), this.tag);
+      return null;
+    }
+  }
+
+  /**
+   * Fetch our latest pools-v2.json sha from GitLab v4 API end point
+   */
+  private async fetchGitLabPoolsSha(): Promise<string | null> {
+    const response = await this.query(this.treeUrl);
+
+    if (response !== undefined) {
+      for (const file of response) {
+        if (file['name'] === 'pools-v2.json') {
+          return file['id']; // id is the sha
+        }
+      }
+    }
+
+    logger.err(`Cannot find "pools-v2.json" in git tree (${this.treeUrl})`, this.tag);
+    return null;
+  }
+
+  /**
+   * Fetch our latest pools-v2.json sha from GitHub
+   */
+  private async fetchGitHubPoolsSha(): Promise<string | null> {
+    const response = await this.query(this.treeUrl);
+
+    if (response !== undefined) {
+      for (const file of response['tree']) {
+        if (file['path'] === 'pools-v2.json') {
+          return file['sha'];
+        }
+      }
+    }
+
+    logger.err(`Cannot find "pools-v2.json" in git tree (${this.treeUrl})`, this.tag);
+    return null;
+  }
+
+  /**
+   * Http request wrapper
+   */
+  private async query(path): Promise<any[] | undefined> {
+    type axiosOptions = {
+      headers: {
+        'User-Agent': string;
+      };
+      timeout: number;
+      httpsAgent?: https.Agent;
+    };
+    const setDelay = (secs = 1): Promise<void> => new Promise((resolve) => setTimeout(() => resolve(), secs * 1000));
+    const axiosOptions: axiosOptions = {
+      headers: {
+        'User-Agent':
+          config.EXPLORER.USER_AGENT === 'explorer'
+            ? `BCHExplorer/v${backendInfo.getBackendInfo().version}`
+            : `${config.EXPLORER.USER_AGENT}`,
+      },
+      timeout: config.SOCKS5PROXY.ENABLED ? 30000 : 10000,
+    };
+    let retry = 0;
+
+    while (retry < config.EXPLORER.EXTERNAL_MAX_RETRY) {
+      try {
+        if (config.SOCKS5PROXY.ENABLED) {
+          const socksOptions: any = {
+            agentOptions: {
+              keepAlive: true,
+            },
+            hostname: config.SOCKS5PROXY.HOST,
+            port: config.SOCKS5PROXY.PORT,
+          };
+
+          if (config.SOCKS5PROXY.USERNAME && config.SOCKS5PROXY.PASSWORD) {
+            socksOptions.username = config.SOCKS5PROXY.USERNAME;
+            socksOptions.password = config.SOCKS5PROXY.PASSWORD;
+          } else {
+            // Retry with different tor circuits https://stackoverflow.com/a/64960234
+            socksOptions.username = `circuit${retry}`;
+          }
+
+          axiosOptions.httpsAgent = new SocksProxyAgent(socksOptions);
+        }
+
+        const data: AxiosResponse = await axios.get(path, axiosOptions);
+        if (data.statusText === 'error' || !data.data) {
+          throw new Error(`Could not fetch data from ${path}, Error: ${data.status}`);
+        }
+        return data.data;
+      } catch (e) {
+        logger.err('Could not connect to Github. Reason: ' + (e instanceof Error ? e.message : e), this.tag);
+        retry++;
+      }
+      await setDelay(config.EXPLORER.EXTERNAL_RETRY_INTERVAL);
+    }
+    return undefined;
+  }
+}
+
+export default new PoolsUpdater();

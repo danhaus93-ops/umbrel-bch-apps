@@ -1,0 +1,148 @@
+<div
+  class="block-filters"
+  [class.filters-active]="activeFilters.length > 0"
+  [class.any-mode]="filterMode === 'or'"
+  [class.none-mode]="filterMode === 'nor'"
+  [class.menu-open]="menuOpen"
+  [class.small]="cssWidth < 500"
+  [class.vsmall]="cssWidth < 400"
+  [class.tiny]="cssWidth < 200"
+>
+  <a
+    *ngIf="menuOpen"
+    [routerLink]="['/docs/faq' | relativeUrl]"
+    fragment="how-do-explorer-goggles-work"
+    class="info-badges float-end"
+    i18n-ngbTooltip="Explorer Goggles tooltip"
+    ngbTooltip="select filter categories to highlight matching transactions"
+  >
+    <fa-icon
+      [icon]="['fas', 'info-circle']"
+      [fixedWidth]="true"
+      size="lg"
+    ></fa-icon>
+  </a>
+  <div class="filter-bar">
+    <button
+      class="menu-toggle"
+      (click)="menuOpen = !menuOpen"
+      title="Explorer Goggles"
+      aria-label="Toggle filter menu"
+    >
+      <app-svg-images
+        name="goggles"
+        width="100%"
+        height="100%"
+      ></app-svg-images>
+    </button>
+    <div class="active-tags">
+      <ng-container *ngFor="let filter of activeFilters">
+        <button class="btn filter-tag selected" (click)="toggleFilter(filter)">
+          {{ filters[filter].label }}
+        </button>
+      </ng-container>
+    </div>
+  </div>
+  <div class="filter-menu" *ngIf="menuOpen && cssWidth > 280">
+    <div class="filter-row">
+      <div class="filter-element">
+        <h5 i18n="mempool-goggles.match">Match</h5>
+        <div class="btn-group" role="group">
+          <input
+            type="radio"
+            class="btn-check"
+            id="filter-mode-all"
+            [value]="'all'"
+            [checked]="filterMode === 'and'"
+            (click)="setFilterMode('and')"
+          />
+          <label class="btn btn-xs blue mode-toggle" for="filter-mode-all"
+            ><ng-container i18n>All</ng-container></label
+          >
+          <input
+            type="radio"
+            class="btn-check"
+            id="filter-mode-any"
+            [value]="'any'"
+            [checked]="filterMode === 'or'"
+            (click)="setFilterMode('or')"
+          />
+          <label class="btn btn-xs green mode-toggle" for="filter-mode-any"
+            ><ng-container i18n="mempool-goggles.any">Any</ng-container></label
+          >
+          <input
+            type="radio"
+            class="btn-check"
+            id="filter-mode-nor"
+            [value]="'nor'"
+            [checked]="filterMode === 'nor'"
+            (click)="setFilterMode('nor')"
+          />
+          <label class="btn btn-xs red mode-toggle" for="filter-mode-nor"
+            ><ng-container i18n="mempool-goggles.none"
+              >None</ng-container
+            ></label
+          >
+        </div>
+      </div>
+      <div class="filter-element">
+        <h5 i18n="mempool-goggles.tint">Tint</h5>
+        <div class="btn-group" role="group">
+          <input
+            type="radio"
+            class="btn-check"
+            id="gradient-mode-fee"
+            [value]="'fee'"
+            [checked]="gradientMode === 'fee'"
+            (click)="setGradientMode('fee')"
+          />
+          <label class="btn btn-xs yellow mode-toggle" for="gradient-mode-fee"
+            ><ng-container i18n="mempool-goggles.classic"
+              >Classic</ng-container
+            ></label
+          >
+          <input
+            type="radio"
+            class="btn-check"
+            id="gradient-mode-age"
+            [value]="'age'"
+            [checked]="gradientMode === 'age'"
+            (click)="setGradientMode('age')"
+          />
+          <label class="btn btn-xs blue mode-toggle" for="gradient-mode-age"
+            ><ng-container i18n="mempool-goggles.age">Age</ng-container></label
+          >
+        </div>
+      </div>
+    </div>
+    <ng-container *ngFor="let group of filterGroups">
+      <h5>{{ group.label }}</h5>
+      <div class="filter-group">
+        <ng-container *ngFor="let filter of group.filters">
+          <button
+            *ngIf="!disabledFilters[filter.key]"
+            class="btn filter-tag"
+            [class.selected]="filterFlags[filter.key]"
+            (click)="toggleFilter(filter.key)"
+          >
+            {{ filter.label }}
+          </button>
+        </ng-container>
+      </div>
+    </ng-container>
+  </div>
+  <div class="filter-menu" *ngIf="menuOpen && cssWidth <= 280">
+    <ng-container *ngFor="let group of filterGroups">
+      <ng-container *ngFor="let filter of group.filters">
+        <button
+          *ngIf="filter.important"
+          class="btn filter-tag"
+          [class.selected]="filterFlags[filter.key]"
+          (click)="toggleFilter(filter.key)"
+        >
+          {{ filter.label }}
+        </button>
+      </ng-container>
+    </ng-container>
+  </div>
+</div>

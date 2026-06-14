@@ -1,0 +1,88 @@
+<div class="container-xl">
+  <div class="text-center">
+    <h2>Address Converter</h2>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+      <form [formGroup]="form">
+        <div class="input-group input-group-lg mb-2">
+          <span class="input-group-text">Address</span>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="address"
+            placeholder="Legacy, CashAddr or Token address"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="btn btn-primary" type="button" (click)="convert()">
+            Convert
+          </button>
+        </div>
+      </form>
+
+      <div *ngIf="error" class="alert alert-danger mt-2" role="alert">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+
+  <ng-container *ngIf="cashAddr && legacyAddr">
+    <div class="row justify-content-center mt-3">
+      <div class="col-12 col-lg-10">
+        <div class="btn-group w-100 mb-3" role="group">
+          <input
+            type="radio"
+            class="btn-check"
+            id="tab-cashaddr"
+            name="addrTab"
+            [checked]="activeTab === 'cashaddr'"
+            (click)="setTab('cashaddr')"
+          />
+          <label class="btn btn-outline-primary" for="tab-cashaddr"
+            >CashAddr</label
+          >
+
+          <input
+            type="radio"
+            class="btn-check"
+            id="tab-token"
+            name="addrTab"
+            [checked]="activeTab === 'token'"
+            (click)="setTab('token')"
+          />
+          <label class="btn btn-outline-primary" for="tab-token"
+            >Token Address</label
+          >
+
+          <input
+            type="radio"
+            class="btn-check"
+            id="tab-legacy"
+            name="addrTab"
+            [checked]="activeTab === 'legacy'"
+            (click)="setTab('legacy')"
+          />
+          <label class="btn btn-outline-primary" for="tab-legacy"
+            >Legacy (Base58)</label
+          >
+        </div>
+
+        <div class="result-card">
+          <div class="result-address-row">
+            <a
+              class="result-address"
+              [routerLink]="['/address/' | relativeUrl, activeAddr]"
+              >{{ activeAddr }}</a
+            >
+            <app-clipboard [text]="activeAddr"></app-clipboard>
+          </div>
+          <div class="qr-wrapper mt-3">
+            <app-qrcode [data]="activeAddr" [size]="200"></app-qrcode>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

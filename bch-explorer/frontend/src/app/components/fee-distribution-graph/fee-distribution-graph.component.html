@@ -1,0 +1,17 @@
+<div
+  class="fee-distribution-chart"
+  *ngIf="mempoolSizeFeesOptions && stateService.isBrowser; else loadingFees"
+>
+  <div
+    *browserOnly
+    echarts
+    [initOpts]="mempoolSizeFeesInitOptions"
+    [options]="mempoolSizeFeesOptions"
+  ></div>
+</div>
+
+<ng-template #loadingFees>
+  <div class="text-center">
+    <div class="spinner-border text-light"></div>
+  </div>
+</ng-template>

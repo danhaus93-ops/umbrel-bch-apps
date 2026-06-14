@@ -1,6 +1,6 @@
 # Bitcoin Cash Explorer (mempool-style) for Umbrel
-# Reads blocks/txs from the Bitcoin Cash Node (RPC) and address history from Fulcrum (Electrum).
-# Prebuilt upstream images; nothing is built from source.
+# Images built from source in YOUR ghcr (see .github/workflows/build-explorer.yml).
+# Backend reads blocks/txs from the BCH Node (RPC) and address history from Fulcrum (Electrum).
 services:
   app_proxy:
     environment:
@@ -9,20 +9,22 @@ services:
 
   # ---- Frontend (Angular served by nginx) ----
   web:
-    image: registry.melroy.org/bitcoincash/bitcoin-cash-explorer/bch-explorer-frontend:3.11.12
+    image: ghcr.io/danhaus93-ops/bch-explorer-frontend:latest
     user: "1000:1000"
     restart: on-failure
     stop_grace_period: 1m
     environment:
       FRONTEND_HTTP_PORT: "8080"
       BACKEND_MAINNET_HTTP_HOST: "api"
+      BACKEND_MAINNET_HTTP_PORT: "8999"
+      MAINNET_ENABLED: "true"
     command: "./wait-for db:3306 --timeout=720 -- nginx -g 'daemon off;'"
     depends_on:
       - api
 
-  # ---- Backend (Node API + indexer) ----
+  # ---- Backend (Node API + indexer, includes Rust gbt) ----
   api:
-    image: registry.melroy.org/bitcoincash/bitcoin-cash-explorer/bch-explorer-backend:3.11.12
+    image: ghcr.io/danhaus93-ops/bch-explorer-backend:latest
     user: "1000:1000"
     restart: on-failure
     stop_grace_period: 1m
@@ -37,7 +39,7 @@ services:
       CORE_RPC_PORT: "8332"
       CORE_RPC_USERNAME: "bchn"
       CORE_RPC_PASSWORD: "bchn_local_rpc_pw_2f9c"
-      # Your Fulcrum (Electrum) — plaintext TCP endpoint
+      # Your Fulcrum (Electrum) — plaintext TCP
       ELECTRUM_HOST: "sslabs-fulcrum_fulcrum_1"
       ELECTRUM_PORT: "50021"
       ELECTRUM_TLS_ENABLED: "false"
@@ -60,7 +62,7 @@ services:
 
   # ---- Database (MariaDB) ----
   db:
-    image: mariadb:12.2.1
+    image: mariadb:11.4
     user: "1000:1000"
     restart: on-failure
     stop_grace_period: 1m

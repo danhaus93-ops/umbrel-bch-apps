@@ -1,0 +1,92 @@
+<div class="container-xl">
+  <div style="display: flex; width: 100%; align-items: center; flex-wrap: wrap">
+    <h1 class="text-start" i18n="shared.test-transactions|Test Transactions">
+      Test Transactions
+    </h1>
+  </div>
+
+  <form
+    [formGroup]="testTxsForm"
+    (submit)="testTxsForm.valid && testTxs()"
+    novalidate
+  >
+    <label for="allowhighfees" i18n="test.tx.raw-hex">Raw hex</label>
+    <div class="mb-3">
+      <textarea
+        formControlName="txs"
+        class="form-control"
+        rows="5"
+        i18n-placeholder="transaction.test-transactions"
+        placeholder="Comma-separated list of raw transactions"
+      ></textarea>
+    </div>
+    <div class="form-check mb-3">
+      <input
+        type="checkbox"
+        class="form-check-input"
+        formControlName="allowhighfees"
+        id="allowhighfees"
+      />
+      <label
+        class="form-check-label"
+        for="allowhighfees"
+        i18n="test.tx.allow-high-fees"
+        >Allow high fees?</label
+      >
+    </div>
+    <button
+      [disabled]="isLoading"
+      type="submit"
+      class="btn btn-success me-2"
+      i18n="shared.test-transactions|Test Transactions"
+    >
+      Test Transactions
+    </button>
+    <p class="red-color d-inline">{{ error }}</p>
+  </form>
+
+  <br />
+
+  <div class="box" *ngIf="results?.length">
+    <table
+      class="accept-results table table-fixed table-borderless table-striped"
+    >
+      <tbody>
+        <tr>
+          <th class="allowed" i18n="test-tx.is-allowed">Allowed?</th>
+          <th class="txid" i18n="dashboard.latest-transactions.txid">TXID</th>
+          <th class="rate" i18n="transaction.fee-rate|Transaction fee rate">
+            Fee rate
+          </th>
+          <th class="reason" i18n="test-tx.rejection-reason">
+            Rejection reason
+          </th>
+        </tr>
+        <ng-container *ngFor="let result of results">
+          <tr>
+            <td class="allowed">
+              <ng-container [ngSwitch]="result.allowed">
+                <span *ngSwitchCase="true">✅</span>
+                <span *ngSwitchCase="false">❌</span>
+                <span *ngSwitchDefault>-</span>
+              </ng-container>
+            </td>
+            <td class="txid">
+              <app-truncate [text]="result.txid || '-'"></app-truncate>
+            </td>
+            <td class="rate">
+              <app-fee-rate
+                *ngIf="result.fees?.['feerate'] != null"
+                [fee]="result.fees?.['feerate'] * 100000"
+              ></app-fee-rate>
+              <span *ngIf="result.fees?.['feerate'] == null">-</span>
+            </td>
+            <td class="reason">
+              {{ result["reject-reason"] || "-" }}
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+</div>

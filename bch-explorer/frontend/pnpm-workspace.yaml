@@ -1,0 +1,18 @@
+allowBuilds:
+  '@parcel/watcher': false
+  cypress: true
+  esbuild: false
+  lmdb: false
+  msgpackr-extract: false
+minimumReleaseAgeExclude:
+  - '@typescript-eslint/eslint-plugin@8.59.4'
+  - '@typescript-eslint/parser@8.59.4'
+  - '@typescript-eslint/project-service@8.59.4'
+  - '@typescript-eslint/scope-manager@8.59.4'
+  - '@typescript-eslint/tsconfig-utils@8.59.4'
+  - '@typescript-eslint/type-utils@8.59.4'
+  - '@typescript-eslint/types@8.59.4'
+  - '@typescript-eslint/typescript-estree@8.59.4'
+  - '@typescript-eslint/utils@8.59.4'
+  - '@typescript-eslint/visitor-keys@8.59.4'
+  - baseline-browser-mapping@2.10.31

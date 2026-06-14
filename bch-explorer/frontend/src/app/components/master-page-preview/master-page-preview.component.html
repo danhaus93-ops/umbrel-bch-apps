@@ -1,0 +1,84 @@
+<ng-container *ngIf="{ val: network$ | async } as network">
+  <div class="preview-wrapper">
+    <header>
+      <span class="header-brand" style="position: relative">
+        @if (enterpriseInfo) {
+          <img
+            [src]="enterpriseInfo.logoUrl"
+            [alt]="enterpriseInfo.title"
+            class="subdomain_logo"
+            [style.height]="!enterpriseInfo?.dualLogo ? '60px' : null"
+            [class.rounded]="enterpriseInfo.rounded_corner"
+          />
+        }
+        @if (!enterpriseInfo || enterpriseInfo.dualLogo) {
+          <app-svg-images
+            *ngIf="!officialSite"
+            name="mempoolSpace"
+            viewBox="0 0 500 126"
+            width="500"
+            height="126"
+            class="mempool-logo"
+            style="width: 200px; height: 50px"
+          ></app-svg-images>
+          <app-svg-images
+            *ngIf="officialSite"
+            name="officialMempoolSpace"
+            style="width: 200px; height: 50px"
+            width="500"
+            height="126"
+            viewBox="0 0 500 126"
+          ></app-svg-images>
+        }
+      </span>
+
+      <div [ngSwitch]="network.val">
+        <span *ngSwitchCase="'chipnet'" class="network chipnet"
+          ><app-svg-images
+            name="testnet4"
+            width="35"
+            height="35"
+            viewBox="0 0 65 65"
+            style="width: 40px; height: 48px"
+            class="mainnet me-1"
+          ></app-svg-images>
+          Chipnet</span
+        >
+        <span *ngSwitchCase="'scalenet'" class="network testnet"
+          ><app-svg-images
+            name="testnet4"
+            width="35"
+            height="35"
+            viewBox="0 0 65 65"
+            style="width: 40px; height: 48px"
+            class="mainnet me-1"
+          ></app-svg-images>
+          Scalenet</span
+        >
+        <span *ngSwitchCase="'testnet4'" class="network testnet"
+          ><app-svg-images
+            name="testnet4"
+            width="35"
+            height="35"
+            viewBox="0 0 65 65"
+            style="width: 40px; height: 48px"
+            class="mainnet me-1"
+          ></app-svg-images>
+          Testnet4</span
+        >
+        <span *ngSwitchDefault class="network mainnet"
+          ><app-svg-images
+            name="bitcoin"
+            width="35"
+            height="35"
+            viewBox="0 0 65 65"
+            style="width: 40px; height: 48px"
+            class="mainnet me-1"
+          ></app-svg-images>
+          Mainnet</span
+        >
+      </div>
+    </header>
+    <router-outlet></router-outlet>
+  </div>
+</ng-container>

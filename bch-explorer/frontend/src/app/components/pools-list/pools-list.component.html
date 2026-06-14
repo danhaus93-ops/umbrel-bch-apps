@@ -1,0 +1,204 @@
+<app-indexing-progress></app-indexing-progress>
+
+<div class="container-xl" *ngIf="!error; else errorTemplate">
+  <div
+    class="float-start"
+    style="display: flex; width: 100%; align-items: center"
+  >
+    <h1 i18n="master-page.pools">Mining Pools</h1>
+    <div *ngIf="isLoading" class="spinner-border" role="status"></div>
+  </div>
+
+  <table
+    class="table table-borderless"
+    [alwaysCallback]="true"
+    infiniteScroll
+    [infiniteScrollDistance]="1.5"
+    [infiniteScrollUpDistance]="1.5"
+    [infiniteScrollThrottle]="50"
+  >
+    <ng-container *ngIf="pools$ | async as pools; else skeleton">
+      <thead *ngIf="pools.length > 0">
+        <th class="rank" i18n="pools.rank">Rank</th>
+        <th class="pool" i18n="pools.pool">Pool</th>
+        <th class="slug" i18n="pools.slug">Slug</th>
+        <th class="blocks" i18n="pools.blocks">Blocks</th>
+        <th class="empty-blocks" i18n="pools.empty-blocks">Empty Blocks</th>
+        <th
+          *ngIf="auditAvailable"
+          class="avg-health"
+          i18n="latest-blocks.avg_health"
+        >
+          Avg Health
+        </th>
+        <th
+          *ngIf="auditAvailable"
+          class="avg-fees d-none d-sm-table-cell"
+          i18n="mining.fees-per-block"
+        >
+          Avg Block Fees
+        </th>
+        <th class="link" i18n="pools.link">Link</th>
+      </thead>
+      <tbody [style]="isLoading ? 'opacity: 0.75' : ''">
+        <tr *ngFor="let pool of pools; let i = index; trackBy: trackByPool">
+          <td class="rank">
+            {{ pool.rank }}
+          </td>
+          <td class="pool">
+            <div class="d-flex align-items-center">
+              <img
+                width="24"
+                height="24"
+                [src]="pool.logo"
+                [alt]="pool.name + ' mining pool logo'"
+                onError="this.onerror=null; this.src = '/resources/mining-pools/default.svg'"
+                class="me-2"
+              />
+              <div class="d-flex flex-column">
+                <a
+                  [routerLink]="['/mining/pool' | relativeUrl, pool.slug]"
+                  class="text-decoration-none"
+                >
+                  {{ pool.name }}
+                </a>
+              </div>
+            </div>
+          </td>
+          <td class="slug">
+            <span class="badge bg-secondary">{{ pool.slug }}</span>
+          </td>
+          <td class="blocks">
+            {{ pool.blockCount
+            }}<span>&nbsp;({{ pool.share | number: "1.2-2" }}%)</span>
+          </td>
+          <td class="empty-blocks">
+            {{ pool.emptyBlocks
+            }}<span
+              >&nbsp;({{
+                (pool.emptyBlocks / pool.blockCount) * 100 | number: "1.2-2"
+              }}%)</span
+            >
+          </td>
+          <td *ngIf="auditAvailable" class="avg-health">
+            <a
+              class="health-badge badge"
+              [class.bg-success]="pool.avgMatchRate >= 99"
+              [class.bg-warning]="
+                pool.avgMatchRate >= 75 && pool.avgMatchRate < 99
+              "
+              [class.bg-danger]="pool.avgMatchRate < 75"
+              *ngIf="pool.avgMatchRate != null; else nullHealth"
+              >{{ pool.avgMatchRate }}%</a
+            >
+            <ng-template #nullHealth>
+              <span class="health-badge badge bg-secondary" i18n="unknown"
+                >Unknown</span
+              >
+            </ng-template>
+          </td>
+          <td *ngIf="auditAvailable" class="avg-fees d-none d-sm-table-cell">
+            <span
+              *ngIf="pool.avgFeeDelta != null; else nullFeeDelta"
+              class="difference"
+              [class.positive]="pool.avgFeeDelta >= 0"
+              [class.negative]="pool.avgFeeDelta < 0"
+            >
+              {{ pool.avgFeeDelta > 0 ? "+" : ""
+              }}{{ pool.avgFeeDelta * 100 | amountShortener: 2 }}%
+            </span>
+            <ng-template #nullFeeDelta>-</ng-template>
+          </td>
+          <td class="link">
+            <a
+              *ngIf="pool.link"
+              [href]="pool.link"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-sm btn-outline-primary"
+            >
+              Website
+              <span>&nbsp;</span>
+              <fa-icon
+                [icon]="['fas', 'external-link-alt']"
+                [fixedWidth]="true"
+                style="
+                  vertical-align: text-top;
+                  font-size: 13px;
+                  color: var(--title-fg);
+                "
+              ></fa-icon>
+            </a>
+            <span *ngIf="!pool.link" class="text-muted">-</span>
+          </td>
+        </tr>
+      </tbody>
+    </ng-container>
+
+    <ng-template #skeleton>
+      <thead>
+        <th class="rank" i18n="pools.rank">Rank</th>
+        <th class="pool" i18n="pools.pool">Pool</th>
+        <th class="slug" i18n="pools.slug">Slug</th>
+        <th class="blocks" i18n="pools.blocks">Blocks</th>
+        <th class="empty-blocks" i18n="pools.empty-blocks">Empty Blocks</th>
+        <th
+          *ngIf="auditAvailable"
+          class="avg-health"
+          i18n="latest-blocks.avg_health"
+        >
+          Avg Health
+        </th>
+        <th
+          *ngIf="auditAvailable"
+          class="avg-fees d-none d-sm-table-cell"
+          i18n="mining.fees-per-block"
+        >
+          Avg Block Fees
+        </th>
+        <th class="link" i18n="pools.link">Link</th>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of skeletonLines">
+          <td class="rank">
+            <span class="skeleton-loader"></span>
+          </td>
+          <td class="pool">
+            <div class="d-flex align-items-center">
+              <div
+                class="skeleton-loader me-2"
+                style="width: 24px; height: 24px"
+              ></div>
+              <span class="skeleton-loader"></span>
+            </div>
+          </td>
+          <td class="slug">
+            <span class="skeleton-loader"></span>
+          </td>
+          <td class="blocks text-end">
+            <span class="skeleton-loader"></span>
+          </td>
+          <td class="empty-blocks text-end">
+            <span class="skeleton-loader"></span>
+          </td>
+          <td *ngIf="auditAvailable" class="avg-health">
+            <span class="skeleton-loader"></span>
+          </td>
+          <td *ngIf="auditAvailable" class="avg-fees d-none d-sm-table-cell">
+            <span class="skeleton-loader"></span>
+          </td>
+          <td class="link">
+            <span class="skeleton-loader"></span>
+          </td>
+        </tr>
+      </tbody>
+    </ng-template>
+  </table>
+</div>
+
+<ng-template #errorTemplate>
+  <br />
+  <app-http-error [error]="error">
+    <span i18n="pool.error.loading-pool-data">Error loading pool data.</span>
+  </app-http-error>
+</ng-template>

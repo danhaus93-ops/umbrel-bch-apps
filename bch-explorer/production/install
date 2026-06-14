@@ -1,0 +1,1310 @@
+#!/usr/bin/env zsh
+set -e
+echo -n "Initializing..."
+
+case `uname -s` in
+
+    FreeBSD)
+        OS=FreeBSD
+        NPROC=$(sysctl hw.ncpu | awk '{print $2}')
+    ;;
+
+    Linux)
+        if [ "$(grep -Ei 'debian|buntu|mint' /etc/*release)" ]; then
+            OS=Debian
+            NPROC=$(nproc --all)
+        else
+            echo "Your distribution of Linux is not yet supported by this installation script"
+            exit 1
+        fi
+    ;;
+
+    *)
+        echo "Unsupported OS"
+        exit 1
+    ;;
+
+esac
+
+########################################
+##### mempool installation options #####
+########################################
+
+# tor onion and clearnet hostname
+TOR_INSTALL=ON
+CERTBOT_INSTALL=ON
+
+# install 4 network daemons
+BITCOIN_INSTALL=ON
+
+# configure 4 network instances
+BITCOIN_MAINNET_ENABLE=ON
+BITCOIN_MAINNET_MINFEE_ENABLE=ON
+BITCOIN_TESTNET_ENABLE=ON
+BITCOIN_TESTNET4_ENABLE=ON
+BITCOIN_CHIPNET_ENABLE=ON
+BITCOIN_SCALENET_ENABLE=ON
+
+# automaitcally configure firewall
+FIREWALL_CONFIGURE=ON
+
+############
+# probe OS #
+############
+
+HOSTNAME=$(hostname)
+
+# get newest zpool if using zfs
+ZPOOL=""
+[ "${OS}" = FreeBSD ] && ZPOOL=$(zpool list -H|head -1|cut -f 1)
+
+MD5=md5sum
+[ "${OS}" = FreeBSD ] && MD5=md5
+
+##################################################
+##### P2P / RPC / HTTP network communication #####
+##################################################
+
+# used for firewall configuration
+BITCOIN_MAINNET_P2P_HOST=127.0.0.1
+BITCOIN_MAINNET_P2P_PORT=8333
+# used for RPC communication
+BITCOIN_MAINNET_RPC_HOST=127.0.0.1
+BITCOIN_MAINNET_RPC_PORT=8332
+# generate random hex string
+BITCOIN_RPC_USER=$(head -150 /dev/urandom | ${MD5} | awk '{print $1}')
+BITCOIN_RPC_PASS=$(head -150 /dev/urandom | ${MD5} | awk '{print $1}')
+
+# used for firewall configuration
+BITCOIN_TESTNET_P2P_HOST=127.0.0.1
+BITCOIN_TESTNET_P2P_PORT=18333
+# used for RPC communication
+BITCOIN_TESTNET_RPC_HOST=127.0.0.1
+BITCOIN_TESTNET_RPC_PORT=18332
+
+# used for firewall configuration
+BITCOIN_TESTNET4_P2P_HOST=127.0.0.1
+BITCOIN_TESTNET4_P2P_PORT=28333
+# used for RPC communication
+BITCOIN_TESTNET4_RPC_HOST=127.0.0.1
+BITCOIN_TESTNET4_RPC_PORT=28332
+
+# used for firewall configuration
+BITCOIN_CHIPNET_P2P_HOST=127.0.0.1
+BITCOIN_CHIPNET_P2P_PORT=48333
+# used for RPC communication
+BITCOIN_CHIPNET_RPC_HOST=127.0.0.1
+BITCOIN_CHIPNET_RPC_PORT=48332
+# generate random hex string
+BITCOIN_CHIPNET_RPC_USER=$(head -150 /dev/urandom | ${MD5} | awk '{print $1}')
+BITCOIN_CHIPNET_RPC_PASS=$(head -150 /dev/urandom | ${MD5} | awk '{print $1}')
+
+# used for firewall configuration
+BITCOIN_SCALENET_P2P_HOST=127.0.0.1
+BITCOIN_SCALENET_P2P_PORT=38333
+# used for RPC communication
+BITCOIN_SCALENET_RPC_HOST=127.0.0.1
+BITCOIN_SCALENET_RPC_PORT=38332
+# generate random hex string
+BITCOIN_SCALENET_RPC_USER=$(head -150 /dev/urandom | ${MD5} | awk '{print $1}')
+BITCOIN_SCALENET_RPC_PASS=$(head -150 /dev/urandom | ${MD5} | awk '{print $1}')
+
+# set either socket or TCP host/port, not both
+#EXPLORER_MAINNET_HTTP_SOCK=/tmp/bitcoin.mainnet.mempool
+EXPLORER_MAINNET_HTTP_HOST=127.0.0.1
+EXPLORER_MAINNET_HTTP_PORT=8999
+
+# set either socket or TCP host/port, not both
+#EXPLORER_TESTNET_HTTP_SOCK=/tmp/bitcoin.testnet.mempool
+EXPLORER_TESTNET_HTTP_HOST=127.0.0.1
+EXPLORER_TESTNET_HTTP_PORT=8997
+
+# set either socket or TCP host/port, not both
+#EXPLORER_TESTNET4_HTTP_SOCK=/tmp/bitcoin.testnet.mempool
+EXPLORER_TESTNET4_HTTP_HOST=127.0.0.1
+EXPLORER_TESTNET4_HTTP_PORT=8990
+
+# set either socket or TCP host/port, not both
+#EXPLORER_CHIPNET_HTTP_SOCK=/tmp/bitcoin.chipnet.mempool
+EXPLORER_CHIPNET_HTTP_HOST=127.0.0.1
+EXPLORER_CHIPNET_HTTP_PORT=8995
+
+# set either socket or TCP host/port, not both
+#EXPLORER_SCALENET_HTTP_SOCK=/tmp/bitcoin.scalenet.mempool
+EXPLORER_SCALENET_HTTP_HOST=127.0.0.1
+EXPLORER_SCALENET_HTTP_PORT=8997
+
+##### OS options, should be automatically detected
+
+case $OS in
+    FreeBSD)
+        ROOT_USER=root
+        ROOT_GROUP=wheel
+        ROOT_HOME=/root
+        TOR_CONFIGURATION=/usr/local/etc/tor/torrc
+        TOR_RESOURCES=/var/db/tor
+        TOR_PKG=tor
+        TOR_USER=_tor
+        TOR_GROUP=_tor
+        NGINX_USER=www
+        NGINX_GROUP=www
+        NGINX_ETC_FOLDER=/usr/local/etc/nginx
+        NGINX_CONFIGURATION=/usr/local/etc/nginx/nginx.conf
+        CERTBOT_PKG=py39-certbot
+    ;;
+
+    Debian)
+        ROOT_USER=root
+        ROOT_GROUP=root
+        ROOT_HOME=/root
+        TOR_CONFIGURATION=/etc/tor/torrc
+        TOR_RESOURCES=/var/lib/tor
+        TOR_PKG=tor
+        TOR_USER=debian-tor
+        TOR_GROUP=debian-tor
+        CERTBOT_PKG=python3-certbot-nginx
+        NGINX_USER=www-data
+        NGINX_GROUP=www-data
+        NGINX_ETC_FOLDER=/etc/nginx
+        NGINX_CONFIGURATION=/etc/nginx/nginx.conf
+    ;;
+esac
+
+# where systemd services get installed
+DEBIAN_SERVICE_HOME=/etc/systemd/system
+# where environment variables for services are set
+DEBIAN_ENV_HOME=/etc/default
+# where rc.d scripts live
+FREEBSD_SERVICE_HOME=/usr/local/etc/rc.d
+
+# mysql data folder and user/group
+MYSQL_HOME=/mysql
+MYSQL_USER=mysql
+MYSQL_GROUP=mysql
+
+# mempool mysql user/password
+EXPLORER_MAINNET_USER='mempool'
+EXPLORER_TESTNET_USER='mempool_testnet'
+EXPLORER_TESTNET4_USER='mempool_testnet4'
+EXPLORER_CHIPNET_USER='mempool_chipnet'
+EXPLORER_SCALENET_USER='mempool_scalenet'
+# generate random hex string
+EXPLORER_MAINNET_PASS=$(head -150 /dev/urandom | ${MD5} | awk '{print $1}')
+EXPLORER_TESTNET_PASS=$(head -150 /dev/urandom | ${MD5} | awk '{print $1}')
+EXPLORER_TESTNET4_PASS=$(head -150 /dev/urandom | ${MD5} | awk '{print $1}')
+EXPLORER_CHIPNET_PASS=$(head -150 /dev/urandom | ${MD5} | awk '{print $1}')
+EXPLORER_SCALENET_PASS=$(head -150 /dev/urandom | ${MD5} | awk '{print $1}')
+
+# mempool data folder and user/group
+EXPLORER_HOME=/mempool
+EXPLORER_USER=mempool
+EXPLORER_GROUP=mempool
+EXPLORER_MYSQL_CREDENTIALS="${EXPLORER_HOME}/.mysql_credentials"
+# name of Tor hidden service in torrc
+EXPLORER_TOR_HS=mempool
+
+# bitcoin user/group
+BITCOIN_USER=bitcoin
+BITCOIN_GROUP=bitcoin
+# bitcoin core data folder, needs about 300GB
+BITCOIN_HOME=/bitcoin
+
+# ckpool user/group
+CKPOOL_HOME=/ckpool
+CKPOOL_USER=ckpool
+CKPOOL_GROUP=ckpool
+
+# bitcoin testnet data
+BITCOIN_TESTNET_DATA=${BITCOIN_HOME}/testnet3
+# bitcoin testnet4 data
+BITCOIN_TESTNET4_DATA=${BITCOIN_HOME}/testnet4
+# bitcoin chipnet data
+BITCOIN_CHIPNET_DATA=${BITCOIN_HOME}/chipnet
+# bitcoin scalenet data
+BITCOIN_SCALENET_DATA=${BITCOIN_HOME}/scalenet
+
+# minfee user/group
+MINFEE_USER=minfee
+MINFEE_GROUP=minfee
+# minfee core data folder, needs about 30GB
+MINFEE_HOME=/minfee
+
+##### git repo settings, shouldn't need changing
+
+EXPLORER_REPO_URL=https://github.com/mempool/mempool
+EXPLORER_REPO_NAME=mempool
+EXPLORER_REPO_BRANCH=master
+EXPLORER_LATEST_RELEASE=master
+
+BITCOIN_REPO_URL=https://github.com/bitcoin/bitcoin
+BITCOIN_REPO_NAME=bitcoin
+BITCOIN_REPO_BRANCH=master
+#BITCOIN_LATEST_RELEASE=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest|grep tag_name|head -1|cut -d '"' -f4)
+BITCOIN_LATEST_RELEASE=v30.0
+echo -n '.'
+
+#######################
+##### OS packages #####
+#######################
+
+# packages needed for mempool ecosystem
+DEBIAN_PKG=()
+DEBIAN_PKG+=(zsh vim curl screen openssl python3 dialog cron)
+DEBIAN_PKG+=(build-essential git clang cmake jq)
+DEBIAN_PKG+=(autotools-dev autoconf automake pkg-config bsdmainutils)
+DEBIAN_PKG+=(libevent-dev libdb-dev libssl-dev libtool autotools-dev)
+DEBIAN_PKG+=(libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-test-dev libboost-thread-dev)
+DEBIAN_PKG+=(nodejs npm mariadb-server nginx-core python3-certbot-nginx rsync ufw)
+DEBIAN_PKG+=(geoipupdate)
+
+# packages needed for mempool ecosystem
+FREEBSD_PKG=()
+FREEBSD_PKG+=(zsh sudo git screen curl wget calc neovim)
+FREEBSD_PKG+=(openssh-portable py311-pip rust llvm17 jq base64 libzmq4 rocksdb)
+FREEBSD_PKG+=(boost-libs autoconf automake gmake gcc gcc13 libevent libtool pkgconf cmake)
+FREEBSD_PKG+=(nginx rsync py311-certbot-nginx mariadb1011-server)
+FREEBSD_PKG+=(redis sqlite3 pango cairo)
+FREEBSD_PKG+=(libepoll-shim)
+
+#############################
+##### utility functions #####
+#############################
+
+osSudo()
+{
+    SUDO_USER=$1
+    shift
+    case $OS in
+        FreeBSD)
+            sudo -H -i -u "${SUDO_USER}" $*
+        ;;
+        Debian)
+            sudo -H -i -u "${SUDO_USER}" $*
+        ;;
+    esac
+}
+
+osPackageUpdate()
+{
+    echo "[*] Updating OS sources"
+    case $OS in
+        FreeBSD)
+            pkg update
+        ;;
+        Debian)
+            osSudo "${ROOT_USER}" DEBIAN_FRONTEND=noninteractive apt-get update -q
+        ;;
+    esac
+}
+
+osPackageUpgrade()
+{
+    echo "[*] Upgrading OS packages $*"
+    case $OS in
+        FreeBSD)
+            pkg upgrade -y $*
+        ;;
+        Debian)
+            osSudo "${ROOT_USER}" DEBIAN_FRONTEND=noninteractive apt-get upgrade -qq -y $*
+        ;;
+    esac
+}
+
+osPackageInstall()
+{
+    echo "[*] Installing OS packages $*"
+    case $OS in
+        FreeBSD)
+            pkg install -y $*
+        ;;
+        Debian)
+            osSudo "${ROOT_USER}" DEBIAN_FRONTEND=noninteractive apt-get install -qq -y $*
+        ;;
+    esac
+}
+
+osPackageInstallAll()
+{
+    case $OS in
+        FreeBSD)
+            osPackageInstall ${FREEBSD_PKG[@]}
+        ;;
+        Debian)
+            osPackageInstall ${DEBIAN_PKG[@]}
+        ;;
+    esac
+}
+
+# osUserCreate username home_directory main_groupname [additional_group]
+osUserCreate()
+{
+    case $OS in
+        FreeBSD)
+            # pw useradd -d /mempool -g mempool [-G additional_group] -n mampool
+            if [ $# -eq 3 ] ; then
+                osSudo "${ROOT_USER}" pw useradd -d "$2" -g "$3" -n "$1"
+            elif [ $# -eq 4 ]; then
+                osSudo "${ROOT_USER}" pw useradd -d "$2" -g "$3" -G "$4" -n "$1"
+            else
+                echo "Illegal number of parameters"
+                exit 1
+           fi
+        ;;
+        Debian)
+            # useradd -d /mempool -g mempool [-G additional_group] mempool
+            if [ $# -eq 3 ] ; then
+                osSudo "${ROOT_USER}" useradd -d "$2" -g "$3" "$1"
+            elif [ $# -eq 4 ]; then
+                osSudo "${ROOT_USER}" useradd -d "$2" -g "$3" -G "$4" "$1"
+            else
+                echo "Illegal number of parameters"
+                exit 1
+           fi
+        ;;
+    esac
+}
+
+osGroupCreate()
+{
+    case $OS in
+        FreeBSD)
+            osSudo "${ROOT_USER}" pw groupadd $*
+        ;;
+        Debian)
+            osSudo "${ROOT_USER}" groupadd $*
+        ;;
+    esac
+}
+
+osCertbotDryRun()
+{
+    if [ ! -z "${HOSTNAME}" ];then
+        case $OS in
+            FreeBSD)
+                osPackageInstall "${FREEBSD_PKG_CERTBOT}"
+            ;;
+            Debian)
+                osPackageInstall "${DEBIAN_PKG_CERTBOT}"
+            ;;
+        esac
+
+        certbot certonly --dry-run --standalone --agree-tos --register-unsafely-without-email -d "${HOSTNAME}"
+    fi
+}
+
+zfsCreateFilesystems()
+{
+    zfs create -o "mountpoint=/backup" "${ZPOOL}/backup"
+    zfs create -o "mountpoint=/var/cache/nginx" "${ZPOOL}/cache"
+
+    zfs create -o "mountpoint=${BITCOIN_HOME}" "${ZPOOL}/bitcoin"
+    zfs create -o "mountpoint=${MINFEE_HOME}" "${ZPOOL}/minfee"
+    zfs create -o "mountpoint=${EXPLORER_HOME}" "${ZPOOL}/mempool"
+    zfs create -o "mountpoint=${MYSQL_HOME}" "${ZPOOL}/mysql" || true
+
+    # create /bitcoin/socket with custom ACL for (used to be for electrs) unix sockets
+    zfs create -o "mountpoint=${BITCOIN_HOME}/socket" "${ZPOOL}/bitcoin/socket"
+
+    # Bitcoin Mainnet
+    if [ "${BITCOIN_MAINNET_ENABLE}" = ON ];then
+        for folder in chainstate indexes blocks
+        do
+            zfs create -o "mountpoint=${BITCOIN_HOME}/${folder}" "${ZPOOL}/bitcoin/${folder}"
+        done
+    fi
+
+    # Bitcoin Testnet
+    if [ "${BITCOIN_TESTNET_ENABLE}" = ON ];then
+        zfs create -o "mountpoint=${BITCOIN_TESTNET_DATA}" "${ZPOOL}/bitcoin/testnet"
+        for folder in chainstate indexes blocks
+        do
+            zfs create -o "mountpoint=${BITCOIN_TESTNET_DATA}/${folder}" "${ZPOOL}/bitcoin/testnet/${folder}"
+        done
+    fi
+
+    # Bitcoin Testnet4
+    if [ "${BITCOIN_TESTNET4_ENABLE}" = ON ];then
+        zfs create -o "mountpoint=${BITCOIN_TESTNET4_DATA}" "${ZPOOL}/bitcoin/testnet4"
+        for folder in chainstate indexes blocks
+        do
+            zfs create -o "mountpoint=${BITCOIN_TESTNET4_DATA}/${folder}" "${ZPOOL}/bitcoin/testnet4/${folder}"
+        done
+    fi
+
+    # Bitcoin Chipnet
+    if [ "${BITCOIN_CHIPNET_ENABLE}" = ON ];then
+        zfs create -o "mountpoint=${BITCOIN_CHIPNET_DATA}" "${ZPOOL}/bitcoin/chipnet"
+        for folder in chainstate indexes blocks
+        do
+            zfs create -o "mountpoint=${BITCOIN_CHIPNET_DATA}/${folder}" "${ZPOOL}/bitcoin/chipnet/${folder}"
+        done
+    fi
+
+    # Bitcoin Scalenet
+    if [ "${BITCOIN_SCALENET_ENABLE}" = ON ];then
+        zfs create -o "mountpoint=${BITCOIN_SCALENET_DATA}" "${ZPOOL}/bitcoin/scalenet"
+        for folder in chainstate indexes blocks
+        do
+            zfs create -o "mountpoint=${BITCOIN_SCALENET_DATA}/${folder}" "${ZPOOL}/bitcoin/scalenet/${folder}"
+        done
+    fi
+}
+
+ext4CreateDir()
+{
+    mkdir -p "/backup" "${BITCOIN_HOME}" "${MINFEE_HOME}" "${EXPLORER_HOME}" "${MYSQL_HOME}"
+
+    # Bitcoin Mainnet
+    if [ "${BITCOIN_MAINNET_ENABLE}" = ON ];then
+        for folder in chainstate indexes blocks
+        do
+            mkdir -p "${BITCOIN_HOME}/${folder}"
+        done
+    fi
+
+    # Bitcoin Testnet
+    if [ "${BITCOIN_TESTNET_ENABLE}" = ON ];then
+        mkdir -p "${BITCOIN_TESTNET_DATA}"
+        for folder in chainstate indexes blocks
+        do
+            mkdir -p "${BITCOIN_TESTNET_DATA}/${folder}"
+        done
+    fi
+
+    # Bitcoin Testnet4
+    if [ "${BITCOIN_TESTNET4_ENABLE}" = ON ];then
+        mkdir -p "${BITCOIN_TESTNET4_DATA}"
+        for folder in chainstate indexes blocks
+        do
+            mkdir -p "${BITCOIN_TESTNET4_DATA}/${folder}"
+        done
+    fi
+
+    # Bitcoin Chipnet
+    if [ "${BITCOIN_CHIPNET_ENABLE}" = ON ];then
+        mkdir -p "${BITCOIN_CHIPNET_DATA}"
+        for folder in chainstate indexes blocks
+        do
+            mkdir -p "${BITCOIN_CHIPNET_DATA}/${folder}"
+        done
+    fi
+
+    # Bitcoin Scalenet
+    if [ "${BITCOIN_SCALENET_ENABLE}" = ON ];then
+        mkdir -p "${BITCOIN_SCALENET_DATA}"
+        for folder in chainstate indexes blocks
+        do
+            mkdir -p "${BITCOIN_SCALENET_DATA}/${folder}"
+        done
+    fi
+}
+
+
+##### Perform sanity checks before trying anything
+
+# what OS running, what FS partitions, etc.
+# how much free disk space available?
+# is something listening on port 80 already?
+# is nginx or apache running?
+
+##### Determine what actually needs to be installed
+
+# does bitcoin exist?
+
+##########
+# dialog #
+##########
+
+: ${DIALOG=dialog}
+
+: ${DIALOG_OK=0}
+: ${DIALOG_CANCEL=1}
+: ${DIALOG_HELP=2}
+: ${DIALOG_EXTRA=3}
+: ${DIALOG_ITEM_HELP=4}
+: ${DIALOG_ESC=255}
+
+: ${SIG_OFFNE=0}
+: ${SIG_HUP=1}
+: ${SIG_INT=2}
+: ${SIG_QUIT=3}
+: ${SIG_KILL=9}
+: ${SIG_TERM=15}
+
+input=`tempfile 2>/dev/null` || input=/tmp/input$$
+output=`tempfile 2>/dev/null` || output=/tmp/test$$
+trap "rm -f $input $output" $SIG_OFFNE $SIG_HUP $SIG_INT $SIG_TRAP $SIG_TERM
+
+DIALOG_ERROR=254
+export DIALOG_ERROR
+
+backtitle="Mempool Fullnode Installer"
+title="Mempool Fullnode Installer"
+returncode=0
+
+#################
+# dialog part 1 #
+#################
+
+$CUT >$input <<-EOF
+Tor:Enable Tor v3 HS Onion:ON
+CKPool:Enable CKPool Stratum Interface:ON
+Mainnet:Enable Bitcoin Mainnet:ON
+Mainnet-Minfee:Enable Bitcoin Mainnet Minfee:ON
+Testnet:Enable Bitcoin Testnet:ON
+Testnet4:Enable Bitcoin Testnet4:ON
+Chipnet:Enable Bitcoin Chipnet:ON
+Scalenet:Enable Bitcoin Scalenet:ON
+Unfurl:Enable Unfurl:ON
+EOF
+
+cat $input | sed -e 's/^/"/' -e 's/:/" "/g' -e 's/$/"/' >$output
+cat $output >$input
+
+$DIALOG --backtitle "${backtitle}" \
+        --title "${title}" "$@" \
+        --checklist "Toggle the features below to configure your fullnode:\n" \
+        20 80 10 \
+        --file $input 2> $output
+
+retval=$?
+
+tempfile=$output
+if [ $retval != $DIALOG_OK ];then
+    echo "Installation aborted."
+    exit 1
+fi
+
+if grep Tor $tempfile >/dev/null 2>&1;then
+    TOR_INSTALL=ON
+else
+    TOR_INSTALL=OFF
+fi
+
+
+if grep Mainnet $tempfile >/dev/null 2>&1;then
+    BITCOIN_MAINNET_ENABLE=ON
+else
+    BITCOIN_MAINNET_ENABLE=OFF
+fi
+
+if grep Mainnet-Minfee $tempfile >/dev/null 2>&1;then
+    BITCOIN_MAINNET_MINFEE_ENABLE=ON
+else
+    BITCOIN_MAINNET_MINFEE_ENABLE=OFF
+fi
+
+if grep Testnet $tempfile >/dev/null 2>&1;then
+    BITCOIN_TESTNET_ENABLE=ON
+else
+    BITCOIN_TESTNET_ENABLE=OFF
+fi
+
+if grep Testnet4 $tempfile >/dev/null 2>&1;then
+    BITCOIN_TESTNET4_ENABLE=ON
+else
+    BITCOIN_TESTNET4_ENABLE=OFF
+fi
+
+if grep Chipnet $tempfile >/dev/null 2>&1;then
+    BITCOIN_CHIPNET_ENABLE=ON
+else
+    BITCOIN_CHIPNET_ENABLE=OFF
+fi
+
+if grep Scalenet $tempfile >/dev/null 2>&1;then
+    BITCOIN_SCALENET_ENABLE=ON
+else
+    BITCOIN_SCALENET_ENABLE=OFF
+fi
+
+if [ "${BITCOIN_MAINNET_ENABLE}" = ON -o "${BITCOIN_MAINNET_MINFEE_ENABLE}" = ON -o "${BITCOIN_TESTNET_ENABLE}" = ON -o "${BITCOIN_TESTNET4_ENABLE}" = ON -o "${BITCOIN_CHIPNET_ENABLE}" = ON -o "${BITCOIN_SCALENET_ENABLE}" = ON ];then
+    BITCOIN_INSTALL=ON
+else
+    BITCOIN_INSTALL=OFF
+fi
+
+
+##################
+## dialog part 2 #
+##################
+#
+#$DIALOG --cr-wrap \
+#        --title "INPUT BOX" --clear \
+#        --inputbox "$@" \
+#"Enter the FQDN hostname for obtaining an SSL certificate using Certbot:" 0 0 "${HOSTNAME}" 2> $tempfile
+#HOSTNAME=$(cat $tempfile)
+#
+##################
+## dialog part 3 #
+##################
+#
+##   --form text height width formheight
+##   [ label y x item y x flen ilen ]
+#    #"BISQ_BLOCKNOTIFY_HOST"             0 1 "${BISQ_BLOCKNOTIFY_HOST}"              0 30 0 0 \
+#
+#$DIALOG --ok-label "Submit" \
+#    --backtitle "$backtitle" "$@" \
+#    --form "Your fullnode will be installed as follows:" 0 0 0 \
+#    "BITCOIN_LATEST_RELEASE"            10 1 "${BITCOIN_LATEST_RELEASE}"            10 35 35 0 \
+#    "BITCOIN_MAINNET_ENABLE"            11 1 "${BITCOIN_MAINNET_ENABLE}"            11 35 35 0 \
+#    "BITCOIN_REPO_BRANCH"               12 1 "${BITCOIN_REPO_BRANCH}"               12 35 35 0 \
+#    "BITCOIN_REPO_NAME"                 13 1 "${BITCOIN_REPO_NAME}"                 13 35 35 0 \
+#    "BITCOIN_REPO_URL"                  14 1 "${BITCOIN_REPO_URL}"                  14 35 35 0 \
+#    "BITCOIN_TESTNET_ENABLE"            15 1 "${BITCOIN_TESTNET_ENABLE}"            15 35 35 0 \
+#    "EXPLORER_LATEST_RELEASE"            22 1 "${EXPLORER_LATEST_RELEASE}"            22 35 35 0 \
+#    "EXPLORER_MAINNET_HTTP_HOST"         25 1 "${EXPLORER_MAINNET_HTTP_HOST}"         25 35 35 0 \
+#    "EXPLORER_MAINNET_HTTP_PORT"         26 1 "${EXPLORER_MAINNET_HTTP_PORT}"         26 35 35 0 \
+#    "EXPLORER_REPO_BRANCH"               27 1 "${EXPLORER_REPO_BRANCH}"               27 35 35 0 \
+#    "EXPLORER_REPO_NAME"                 28 1 "${EXPLORER_REPO_NAME}"                 28 35 35 0 \
+#    "EXPLORER_REPO_URL"                  29 1 "${EXPLORER_REPO_URL}"                  29 35 35 0 \
+#    "EXPLORER_TESTNET_HTTP_HOST"         30 1 "${EXPLORER_TESTNET_HTTP_HOST}"         30 35 35 0 \
+#    "EXPLORER_TESTNET_HTTP_PORT"         31 1 "${EXPLORER_TESTNET_HTTP_PORT}"         31 35 35 0 \
+#    "EXPLORER_TOR_HS"                    32 1 "${EXPLORER_TOR_HS}"                    32 35 35 0 \
+#    "HOSTNAME"                          33 1 "${HOSTNAME}"                          33 35 35 0 \
+#    "TOR_INSTALL"                       34 1 "${TOR_INSTALL}"                       34 35 35 0 \
+#    "CERTBOT_INSTALL"                   35 1 "${CERTBOT_INSTALL}"                   35 35 35 0 \
+#2> $tempfile
+#
+#retval=$?
+#
+#if [ $retval != $DIALOG_OK ];then
+#    echo "Installation aborted."
+#    exit 1
+#fi
+
+############################
+# START DOING ACTUAL STUFF #
+############################
+
+date
+echo "[*] Mempool installation script for ${OS}"
+
+###################################
+# create filesystems if necessary #
+###################################
+
+case $OS in
+    FreeBSD)
+        zfsCreateFilesystems
+    ;;
+    Debian)
+        ext4CreateDir
+    ;;
+esac
+
+###############################
+# Install all the OS packages #
+###############################
+
+osPackageUpdate
+osPackageUpgrade
+osPackageInstallAll
+
+##########################
+# Mempool top-level repo #
+##########################
+
+echo "[*] Creating Mempool user with Tor access"
+osGroupCreate "${EXPLORER_GROUP}"
+osUserCreate "${EXPLORER_USER}" "${EXPLORER_HOME}" "${EXPLORER_GROUP}"
+osSudo "${ROOT_USER}" chsh -s `which zsh` "${EXPLORER_USER}"
+id "${EXPLORER_USER}"
+
+echo "[*] Creating Mempool data folder"
+osSudo "${ROOT_USER}" mkdir -p "${EXPLORER_HOME}"
+osSudo "${ROOT_USER}" chown -R "${EXPLORER_USER}:${EXPLORER_GROUP}" "${EXPLORER_HOME}"
+osSudo "${ROOT_USER}" chown -R "${EXPLORER_USER}:${EXPLORER_GROUP}" /backup
+osSudo "${EXPLORER_USER}" touch "${EXPLORER_HOME}/.zshrc"
+
+echo "[*] Cloning Mempool repo from ${EXPLORER_REPO_URL}"
+osSudo "${EXPLORER_USER}" git config --global pull.rebase true
+osSudo "${EXPLORER_USER}" git config --global advice.detachedHead false
+osSudo "${EXPLORER_USER}" git clone --branch "${EXPLORER_REPO_BRANCH}" "${EXPLORER_REPO_URL}" "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}"
+osSudo "${EXPLORER_USER}" ln -s explorer/production/mempool-build-all upgrade
+osSudo "${EXPLORER_USER}" ln -s explorer/production/mempool-kill-all stop
+osSudo "${EXPLORER_USER}" ln -s explorer/production/mempool-start-all start
+osSudo "${EXPLORER_USER}" ln -s explorer/production/mempool-reset-all reset
+
+case $OS in
+    FreeBSD)
+        echo "[*] Installing syslog configuration"
+        osSudo "${ROOT_USER}" mkdir -p /usr/local/etc/syslog.d
+        osSudo "${ROOT_USER}" install -c -m 755 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/mempool-logger" /usr/local/bin/mempool-logger
+        osSudo "${ROOT_USER}" install -c -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/syslog.conf" /usr/local/etc/syslog.d/mempool.conf
+
+        echo "[*] Installing valkey configuration"
+        osSudo "${ROOT_USER}" install -c -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/valkey.conf" /usr/local/etc/valkey.conf
+
+        echo "[*] Installing newsyslog configuration"
+        osSudo "${ROOT_USER}" mkdir -p /usr/local/etc/newsyslog.conf.d
+        osSudo "${ROOT_USER}" install -c -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/newsyslog-mempool-backend.conf" /usr/local/etc/newsyslog.conf.d/newsyslog-mempool-backend.conf
+        osSudo "${ROOT_USER}" install -c -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/newsyslog-mempool-nginx.conf" /usr/local/etc/newsyslog.conf.d/newsyslog-mempool-nginx.conf
+
+        echo "[*] Creating log files"
+        osSudo "${ROOT_USER}" newsyslog -C
+    ;;
+    Debian)
+        echo "[*] Installing syslog configuration"
+        osSudo "${ROOT_USER}" install -c -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/linux/rsyslog.conf" /etc/rsyslog.d/10-mempool.conf
+        osSudo "${ROOT_USER}" sed -i.orig -e 's/^\*\.\*;auth,authpriv\.none/*\.*;auth,authpriv\.none,local7\.none/' /etc/rsyslog.d/50-default.conf
+    ;;
+esac
+
+echo "[*] Installing Mempool crontab"
+osSudo "${ROOT_USER}" crontab -u "${EXPLORER_USER}" "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/mempool.crontab"
+
+echo "[*] Installing nvm.sh from GitHub"
+osSudo "${EXPLORER_USER}" sh -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash'
+
+echo "[*] Building NodeJS via nvm.sh"
+osSudo "${EXPLORER_USER}" zsh -c 'source ~/.zshrc ; CC=gcc CXX=g++ nvm install v24.13.0 --shared-zlib'
+osSudo "${EXPLORER_USER}" zsh -c 'source ~/.zshrc ; nvm alias default 24.13.0'
+
+####################
+# Tor installation #
+####################
+
+if [ "${TOR_INSTALL}" = ON ];then
+
+    echo "[*] Installing Tor package"
+    osPackageInstall "${TOR_PKG}"
+
+    echo "[*] Installing Tor base configuration"
+    osSudo "${ROOT_USER}" install -c -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/torrc" "${TOR_CONFIGURATION}"
+    osSudo "${ROOT_USER}" sed -i.orig "s!__TOR_RESOURCES__!${TOR_RESOURCES}!" "${TOR_CONFIGURATION}"
+
+    case $OS in
+        FreeBSD)
+            echo net.inet.ip.random_id=1 >> /etc/sysctl.conf
+            sysctl net.inet.ip.random_id=1
+        ;;
+    esac
+
+    # start tor now so it can bootstrap in time for bitcoin starting a few mins later
+    echo "[*] Starting Tor service"
+    osSudo "${ROOT_USER}" service tor restart
+fi
+
+########################
+# Bitcoin installation #
+########################
+
+if [ "${BITCOIN_INSTALL}" = ON ];then
+
+    echo "[*] Creating Bitcoin user with Tor access"
+    osGroupCreate "${BITCOIN_GROUP}"
+    if [ "${TOR_INSTALL}" = ON ];then
+        osUserCreate "${BITCOIN_USER}" "${BITCOIN_HOME}" "${BITCOIN_GROUP}" "${TOR_GROUP}"
+    else
+        osUserCreate "${BITCOIN_USER}" "${BITCOIN_HOME}" "${BITCOIN_GROUP}"
+    fi
+    osSudo "${ROOT_USER}" chsh -s `which zsh` "${BITCOIN_USER}"
+
+    echo "[*] Creating Bitcoin minfee user with Tor access"
+    osGroupCreate "${MINFEE_GROUP}"
+    if [ "${TOR_INSTALL}" = ON ];then
+        osUserCreate "${MINFEE_USER}" "${MINFEE_HOME}" "${MINFEE_GROUP}" "${TOR_GROUP}"
+    else
+        osUserCreate "${MINFEE_USER}" "${MINFEE_HOME}" "${MINFEE_GROUP}"
+    fi
+    osSudo "${ROOT_USER}" chown -R "${MINFEE_USER}:${MINFEE_GROUP}" "${MINFEE_HOME}"
+    osSudo "${ROOT_USER}" chsh -s `which zsh` "${MINFEE_USER}"
+    osSudo "${MINFEE_USER}" touch "${MINFEE_HOME}/.zshrc"
+    osSudo "${MINFEE_USER}" ln -s . .bitcoin
+
+    echo "[*] Creating Bitcoin data folder"
+    osSudo "${ROOT_USER}" mkdir -p "${BITCOIN_HOME}"
+    osSudo "${ROOT_USER}" chown -R "${BITCOIN_USER}:${BITCOIN_GROUP}" "${BITCOIN_HOME}"
+    osSudo "${BITCOIN_USER}" touch "${BITCOIN_HOME}/.zshrc"
+    osSudo "${BITCOIN_USER}" ln -s . .bitcoin
+
+    echo "[*] Cloning Bitcoin repo from ${BITCOIN_REPO_URL}"
+    osSudo "${BITCOIN_USER}" git config --global advice.detachedHead false
+    osSudo "${BITCOIN_USER}" git clone --branch "${BITCOIN_REPO_BRANCH}" "${BITCOIN_REPO_URL}" "${BITCOIN_HOME}/${BITCOIN_REPO_NAME}"
+
+    echo "[*] Checking out Bitcoin ${BITCOIN_LATEST_RELEASE}"
+    osSudo "${BITCOIN_USER}" sh -c "cd ${BITCOIN_HOME}/${BITCOIN_REPO_NAME} && git checkout ${BITCOIN_LATEST_RELEASE}"
+
+    echo "[*] Building Bitcoin from source repo"
+
+    # use cmake if > v28
+    if [ "${BITCOIN_LATEST_RELEASE:1:2}" -gt "28" ];then
+        osSudo "${BITCOIN_USER}" sh -c "cd ${BITCOIN_REPO_NAME} && cmake -B build -DWITH_GUI=OFF -DENABLE_IPC=OFF -DENABLE_WALLET=OFF -DBUILD_BITCOIN_TESTS=OFF"
+        osSudo "${BITCOIN_USER}" sh -c "cd ${BITCOIN_REPO_NAME} && cmake --build build -j${NPROC}"
+
+        echo "[*] Installing Bitcoin binaries into OS"
+        osSudo "${ROOT_USER}" sh -c "cd ${BITCOIN_HOME}/${BITCOIN_REPO_NAME}/build && cmake --install ."
+    else # use gmake if <= v28
+        osSudo "${BITCOIN_USER}" sh -c "cd ${BITCOIN_REPO_NAME} && ./autogen.sh --quiet"
+        osSudo "${BITCOIN_USER}" sh -c "cd ${BITCOIN_REPO_NAME} && MAKE=gmake CC=cc CXX=c++ CPPFLAGS=-I/usr/local/include ./configure --with-gui=no --disable-wallet --disable-tests"
+        osSudo "${BITCOIN_USER}" sh -c "cd ${BITCOIN_REPO_NAME} && gmake -j${NPROC}"
+
+        echo "[*] Installing Bitcoin binaries into OS"
+        osSudo "${ROOT_USER}" sh -c "cd ${BITCOIN_HOME}/${BITCOIN_REPO_NAME} && gmake install"
+    fi
+
+    echo "[*] Installing Bitcoin configuration"
+    osSudo "${ROOT_USER}" install -c -o "${BITCOIN_USER}" -g "${BITCOIN_GROUP}" -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/bitcoin.conf" "${BITCOIN_HOME}/bitcoin.conf"
+
+    echo "[*] Installing Bitcoin minfee configuration"
+    osSudo "${ROOT_USER}" install -c -o "${MINFEE_USER}" -g "${MINFEE_GROUP}" -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/bitcoin.minfee.conf" "${MINFEE_HOME}/bitcoin.conf"
+
+    echo "[*] Installing Bitcoin RPC credentials"
+    osSudo "${ROOT_USER}" sed -i.orig "s/__BITCOIN_RPC_USER__/${BITCOIN_RPC_USER}/" "${BITCOIN_HOME}/bitcoin.conf"
+    osSudo "${ROOT_USER}" sed -i.orig "s/__BITCOIN_RPC_PASS__/${BITCOIN_RPC_PASS}/" "${BITCOIN_HOME}/bitcoin.conf"
+    osSudo "${ROOT_USER}" sed -i.orig "s/__BITCOIN_RPC_USER__/${BITCOIN_RPC_USER}/" "${MINFEE_HOME}/bitcoin.conf"
+    osSudo "${ROOT_USER}" sed -i.orig "s/__BITCOIN_RPC_PASS__/${BITCOIN_RPC_PASS}/" "${MINFEE_HOME}/bitcoin.conf"
+fi
+
+#######################
+# CKPool Installation #
+#######################
+
+#CKPool cronjob installer
+install_ckpool_cron() {
+    local network=$1
+    local network_label=$2
+    local network_cmd=$3
+    local port=$4
+
+    echo "[*] Installing CKPool ${network_label} Cron for 'ckpool' user"
+    case $OS in
+        FreeBSD)
+            osSudo "${CKPOOL_USER}" sh -c "cd ${CKPOOL_HOME} && (crontab -l > ${TEMP_CRON_FILE} 2>/dev/null || echo \"\" > ${TEMP_CRON_FILE})"
+            osSudo "${CKPOOL_USER}" sh -c "cd ${CKPOOL_HOME} && echo '@reboot screen -dmS ckpool-${network} sh -c \"while true; do ${CKPOOL_HOME}/${CKPOOL_REPO_NAME}/start ${network_cmd} ${port}; sleep 1; done\"' >> ${TEMP_CRON_FILE}"
+            osSudo "${CKPOOL_USER}" sh -c "cd ${CKPOOL_HOME} && crontab ${TEMP_CRON_FILE}"
+            osSudo "${CKPOOL_USER}" sh -c "cd ${CKPOOL_HOME} && rm -f ${TEMP_CRON_FILE}"
+        ;;
+        Debian)
+        ;;
+    esac
+}
+
+#CKPool binary Installer
+if [ "${CKPOOL_INSTALL}" = ON ]; then
+    echo "[*] Creating 'ckpool' user"
+    osGroupCreate "${CKPOOL_GROUP}"
+    osUserCreate  "${CKPOOL_USER}" "${CKPOOL_HOME}" "${CKPOOL_GROUP}"
+    osSudo "${ROOT_USER}" chsh -s `which zsh` "${CKPOOL_USER}"
+
+    echo "[*] Creating 'ckpool' data folder"
+    osSudo "${ROOT_USER}" mkdir -p "${CKPOOL_HOME}"
+    osSudo "${ROOT_USER}" chown -R "${CKPOOL_USER}:${CKPOOL_GROUP}" "${CKPOOL_HOME}"
+    osSudo "${CKPOOL_USER}" touch "${CKPOOL_HOME}/.zshrc"
+
+    echo "[*] Creating '.ckpool' directory in ckpool user's home to store config files"
+    osSudo "${ROOT_USER}" mkdir -p "${CKPOOL_HOME}/.ckpool"
+    osSudo "${ROOT_USER}" chown "${CKPOOL_USER}:${CKPOOL_GROUP}" "${CKPOOL_HOME}/.ckpool"
+
+    echo "[*] Cloning Mempool CKPool repo from ${CKPOOL_REPO_URL}"
+    osSudo "${CKPOOL_USER}" git config --global advice.detachedHead false
+    osSudo "${CKPOOL_USER}" git clone --branch "${CKPOOL_REPO_BRANCH}" "${CKPOOL_REPO_URL}" "${CKPOOL_HOME}/${CKPOOL_REPO_NAME}"
+
+    echo "[*] Checking out CKPOOL ${CKPOOL_LATEST_RELEASE}"
+    osSudo "${CKPOOL_USER}" sh -c "cd ${CKPOOL_HOME}/${CKPOOL_REPO_NAME} && git checkout ${CKPOOL_LATEST_RELEASE}"
+
+    echo "[*] Building CKPool from source repo"
+    osSudo "${CKPOOL_USER}" sh -c "cd ${CKPOOL_REPO_NAME} && ./autogen.sh --quiet"
+    osSudo "${CKPOOL_USER}" sh -c "cd ${CKPOOL_REPO_NAME} && ./configure CFLAGS=\"-g3 -O0 -fno-inline -fno-omit-frame-pointer -fno-eliminate-unused-debug-types -fno-eliminate-unused-debug-symbols -Wall -I/usr/local/include/libepoll-shim\" LDFLAGS=\"-L/usr/local/lib -lepoll-shim -lpthread\""
+    osSudo "${CKPOOL_USER}" sh -c "cd ${CKPOOL_REPO_NAME} && gmake -j${NPROC}"
+
+    echo "[*] Copy CKPool binarary into OS"
+    osSudo "${ROOT_USER}" sh -c "cd ${CKPOOL_HOME}/${CKPOOL_REPO_NAME} && cp src/ckpool /usr/local/bin"
+
+    TEMP_CRON_FILE="tmp_cron"
+
+    if [ "${BITCOIN_MAINNET_ENABLE}" = ON ]; then
+        install_ckpool_cron "mainnet" "Mainnet" "bitcoin" 2333
+    fi
+
+    if [ "${BITCOIN_TESTNET_ENABLE}" = ON ]; then
+        install_ckpool_cron "testnet" "Testnet" "testnet" 2334
+    fi
+
+    if [ "${BITCOIN_TESTNET4_ENABLE}" = ON ]; then
+        install_ckpool_cron "testnet4" "Testnet4" "testnet4" 2335
+    fi
+fi
+
+################################
+# Bitcoin instance for Mainnet #
+################################
+
+if [ "${BITCOIN_MAINNET_ENABLE}" = ON ];then
+    echo "[*] Installing Bitcoin Mainnet service"
+    case $OS in
+
+        FreeBSD)
+            osSudo "${ROOT_USER}" install -c -o "${ROOT_USER}" -g "${ROOT_GROUP}" -m 755 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/freebsd/rc.d/bitcoin" "${FREEBSD_SERVICE_HOME}"
+        ;;
+
+        Debian)
+            osSudo "${ROOT_USER}" install -c -o "${ROOT_USER}" -g "${ROOT_GROUP}" -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/linux/bitcoin.service" "${DEBIAN_SERVICE_HOME}"
+        ;;
+    esac
+fi
+
+#######################################
+# Bitcoin instance for Mainnet Minfee #
+#######################################
+
+if [ "${BITCOIN_MAINNET_MINFEE_ENABLE}" = ON ];then
+    echo "[*] Installing Bitcoin Minfee service"
+    case $OS in
+
+        FreeBSD)
+        ;;
+
+        Debian)
+            osSudo "${ROOT_USER}" install -c -o "${ROOT_USER}" -g "${ROOT_GROUP}" -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/linux/bitcoin-minfee.service" "${DEBIAN_SERVICE_HOME}"
+        ;;
+    esac
+fi
+
+################################
+# Bitcoin instance for Testnet #
+################################
+
+if [ "${BITCOIN_TESTNET_ENABLE}" = ON ];then
+    echo "[*] Installing Bitcoin Testnet service"
+    case $OS in
+
+        FreeBSD)
+        ;;
+
+        Debian)
+            osSudo "${ROOT_USER}" install -c -o "${ROOT_USER}" -g "${ROOT_GROUP}" -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/linux/bitcoin-testnet.service" "${DEBIAN_SERVICE_HOME}"
+        ;;
+    esac
+fi
+
+#################################
+# Bitcoin instance for Testnet4 #
+#################################
+
+if [ "${BITCOIN_TESTNET4_ENABLE}" = ON ];then
+    echo "[*] Installing Bitcoin Testnet service"
+    case $OS in
+
+        FreeBSD)
+        ;;
+
+        Debian)
+            osSudo "${ROOT_USER}" install -c -o "${ROOT_USER}" -g "${ROOT_GROUP}" -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/linux/bitcoin-testnet4.service" "${DEBIAN_SERVICE_HOME}"
+        ;;
+    esac
+fi
+
+################################
+# Bitcoin instance for Chipnet #
+################################
+
+if [ "${BITCOIN_CHIPNET_ENABLE}" = ON ];then
+    echo "[*] Installing Bitcoin Chipnet service"
+    case $OS in
+
+        FreeBSD)
+        ;;
+
+        Debian)
+            osSudo "${ROOT_USER}" install -c -o "${ROOT_USER}" -g "${ROOT_GROUP}" -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/linux/bitcoin-chipnet.service" "${DEBIAN_SERVICE_HOME}"
+        ;;
+    esac
+fi
+
+#################################
+# Bitcoin instance for Scalenet #
+#################################
+
+if [ "${BITCOIN_SCALENET_ENABLE}" = ON ];then
+    echo "[*] Installing Bitcoin Scalenet service"
+    case $OS in
+
+        FreeBSD)
+        ;;
+
+        Debian)
+            osSudo "${ROOT_USER}" install -c -o "${ROOT_USER}" -g "${ROOT_GROUP}" -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/linux/bitcoin-scalenet.service" "${DEBIAN_SERVICE_HOME}"
+        ;;
+    esac
+fi
+
+##### Mempool -> Bitcoin Mainnet instance
+
+if [ "${BITCOIN_MAINNET_ENABLE}" = ON -o "${BITCOIN_TESTNET_ENABLE}" = ON -o "${BITCOIN_TESTNET4_ENABLE}" = ON -o "${BITCOIN_CHIPNET_ENABLE}" = ON -o "${BITCOIN_SCALENET_ENABLE}" = ON ];then
+    echo "[*] Creating Mempool instance for Bitcoin Mainnet"
+    osSudo "${EXPLORER_USER}" git config --global advice.detachedHead false
+    osSudo "${EXPLORER_USER}" git clone --branch "${EXPLORER_REPO_BRANCH}" "${EXPLORER_REPO_URL}" "${EXPLORER_HOME}/mainnet"
+
+    echo "[*] Checking out Mempool ${EXPLORER_LATEST_RELEASE} for Bitcoin Mainnet"
+    osSudo "${EXPLORER_USER}" sh -c "cd ${EXPLORER_HOME}/mainnet && git checkout ${EXPLORER_LATEST_RELEASE}"
+fi
+
+if [ "${BITCOIN_TESTNET_ENABLE}" = ON ];then
+    echo "[*] Creating Mempool instance for Bitcoin Testnet"
+    osSudo "${EXPLORER_USER}" git config --global advice.detachedHead false
+    osSudo "${EXPLORER_USER}" git clone --branch "${EXPLORER_REPO_BRANCH}" "${EXPLORER_REPO_URL}" "${EXPLORER_HOME}/testnet"
+
+    echo "[*] Checking out Mempool ${EXPLORER_LATEST_RELEASE} for Bitcoin Testnet"
+    osSudo "${EXPLORER_USER}" sh -c "cd ${EXPLORER_HOME}/testnet && git checkout ${EXPLORER_LATEST_RELEASE}"
+fi
+
+if [ "${BITCOIN_TESTNET4_ENABLE}" = ON ];then
+    echo "[*] Creating Mempool instance for Bitcoin Testnet4"
+    osSudo "${EXPLORER_USER}" git config --global advice.detachedHead false
+    osSudo "${EXPLORER_USER}" git clone --branch "${EXPLORER_REPO_BRANCH}" "${EXPLORER_REPO_URL}" "${EXPLORER_HOME}/testnet4"
+
+    echo "[*] Checking out Mempool ${EXPLORER_LATEST_RELEASE} for Bitcoin Testnet4"
+    osSudo "${EXPLORER_USER}" sh -c "cd ${EXPLORER_HOME}/testnet4 && git checkout ${EXPLORER_LATEST_RELEASE}"
+fi
+
+
+if [ "${BITCOIN_CHIPNET_ENABLE}" = ON ];then
+    echo "[*] Creating Mempool instance for Bitcoin Chipnet"
+    osSudo "${EXPLORER_USER}" git config --global advice.detachedHead false
+    osSudo "${EXPLORER_USER}" git clone --branch "${EXPLORER_REPO_BRANCH}" "${EXPLORER_REPO_URL}" "${EXPLORER_HOME}/chipnet"
+
+    echo "[*] Checking out Mempool ${EXPLORER_LATEST_RELEASE} for Bitcoin Chipnet"
+    osSudo "${EXPLORER_USER}" sh -c "cd ${EXPLORER_HOME}/chipnet && git checkout ${EXPLORER_LATEST_RELEASE}"
+fi
+
+if [ "${BITCOIN_SCALENET_ENABLE}" = ON ];then
+    echo "[*] Creating Mempool instance for Bitcoin Scalenet"
+    osSudo "${EXPLORER_USER}" git config --global advice.detachedHead false
+    osSudo "${EXPLORER_USER}" git clone --branch "${EXPLORER_REPO_BRANCH}" "${EXPLORER_REPO_URL}" "${EXPLORER_HOME}/scalenet"
+
+    echo "[*] Checking out Mempool ${EXPLORER_LATEST_RELEASE} for Bitcoin Scalenet"
+    osSudo "${EXPLORER_USER}" sh -c "cd ${EXPLORER_HOME}/scalenet && git checkout ${EXPLORER_LATEST_RELEASE}"
+fi
+
+
+##### mariadb
+
+echo "[*] Adding MySQL configuration"
+case $OS in
+
+    FreeBSD)
+        osSudo "${ROOT_USER}" service mysql-server onestart
+    ;;
+    Debian)
+        osSudo "${ROOT_USER}" service mysql start
+    ;;
+esac
+
+# wait for mysql to start
+sleep 10
+
+mysql << _EOF_
+create database if not exists mempool;
+grant all on mempool.* to '${EXPLORER_MAINNET_USER}'@'localhost' identified by '${EXPLORER_MAINNET_PASS}';
+
+create database if not exists mempool_testnet;
+grant all on mempool_testnet.* to '${EXPLORER_TESTNET_USER}'@'localhost' identified by '${EXPLORER_TESTNET_PASS}';
+
+create database if not exists mempool_testnet4;
+grant all on mempool_testnet4.* to '${EXPLORER_TESTNET4_USER}'@'localhost' identified by '${EXPLORER_TESTNET4_PASS}';
+
+create database if not exists explorer_chipnet;
+grant all on explorer_chipnet.* to '${EXPLORER_CHIPNET_USER}'@'localhost' identified by '${EXPLORER_CHIPNET_PASS}';
+
+create database if not exists explorer_scalenet;
+grant all on explorer_scalenet.* to '${EXPLORER_SCALENET_USER}'@'localhost' identified by '${EXPLORER_SCALENET_PASS}';
+
+_EOF_
+
+echo "[*] save MySQL credentials"
+cat > "${EXPLORER_MYSQL_CREDENTIALS}" << _EOF_
+declare -x EXPLORER_MAINNET_USER="${EXPLORER_MAINNET_USER}"
+declare -x EXPLORER_MAINNET_PASS="${EXPLORER_MAINNET_PASS}"
+declare -x EXPLORER_TESTNET_USER="${EXPLORER_TESTNET_USER}"
+declare -x EXPLORER_TESTNET_PASS="${EXPLORER_TESTNET_PASS}"
+declare -x EXPLORER_TESTNET4_USER="${EXPLORER_TESTNET4_USER}"
+declare -x EXPLORER_TESTNET4_PASS="${EXPLORER_TESTNET4_PASS}"
+declare -x EXPLORER_CHIPNET_USER="${EXPLORER_CHIPNET_USER}"
+declare -x EXPLORER_CHIPNET_PASS="${EXPLORER_CHIPNET_PASS}"
+declare -x EXPLORER_SCALENET_USER="${EXPLORER_SCALENET_USER}"
+declare -x EXPLORER_SCALENET_PASS="${EXPLORER_SCALENET_PASS}"
+_EOF_
+chown "${EXPLORER_USER}:${EXPLORER_GROUP}" "${EXPLORER_MYSQL_CREDENTIALS}"
+
+##### nginx
+
+echo "[*] Adding Nginx configuration"
+osSudo "${ROOT_USER}" install -c -o "${ROOT_USER}" -g "${ROOT_GROUP}" -m 644 "${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/nginx/nginx.conf" "${NGINX_CONFIGURATION}"
+ln -s "${EXPLORER_HOME}/mempool" "${NGINX_ETC_FOLDER}/mempool"
+osSudo "${ROOT_USER}" sed -i.orig "s!__NGINX_USER__!${NGINX_USER}!" "${NGINX_CONFIGURATION}"
+osSudo "${ROOT_USER}" sed -i.orig "s!__NGINX_ETC_FOLDER__!${NGINX_ETC_FOLDER}!" "${NGINX_CONFIGURATION}"
+
+#if [ "${TOR_INSTALL}" = ON ];then
+#    echo "[*] Read tor v3 onion hostnames"
+#
+#    NGINX_EXPLORER_ONION=$(cat "${TOR_RESOURCES}/mempool/hostname")
+#    osSudo "${ROOT_USER}" sed -i.orig "s!__NGINX_EXPLORER_ONION__!${NGINX_EXPLORER_ONION%.onion}!" "${NGINX_CONFIGURATION}"
+#
+#
+#fi
+
+##### OS systemd
+
+echo "[*] Setting permissions for bitcoind sockets"
+case $OS in
+
+    FreeBSD)
+        setfacl -m "user:bitcoin:full_set:f:allow,user:mempool:full_set:f:allow,user:www:full_set:f:allow,everyone@::f:allow" "${BITCOIN_HOME}/socket"
+        chown "${BITCOIN_USER}:${BITCOIN_GROUP}" "${BITCOIN_HOME}/socket"
+    ;;
+
+    Debian)
+    ;;
+esac
+
+##### OS systemd
+
+echo "[*] Updating system startup configuration"
+case $OS in
+
+    FreeBSD)
+        cat >> /etc/rc.conf <<EOF
+moused_nondefault_enable="NO"
+
+nginx_enable="YES"
+#nginx_profiles="mempool"
+#nginx_mempool_flags="-p /mempool"
+#nginx_mempool_configfile="/mempool/mempool.space/nginx/nginx.conf"
+
+mysql_enable="YES"
+mysql_dbdir="/mysql"
+mysql_args="--innodb-buffer-pool-size=8G --bind-address 127.0.0.1"
+
+kld_list="nvidia"
+nvidia_xorg_enable="YES"
+
+dbus_enable="YES"
+tor_enable="YES"
+bitcoin_enable="YES"
+postfix_enable="YES"
+EOF
+    ;;
+
+    Debian)
+        osSudo "${ROOT_USER}" systemctl daemon-reload
+        if [ "${TOR_ENABLE}" = ON ];then
+            osSudo "${ROOT_USER}" systemctl enable tor.service
+        fi
+        if [ "${BITCOIN_MAINNET_ENABLE}" = ON ];then
+            osSudo "${ROOT_USER}" systemctl enable bitcoin.service
+        fi
+        if [ "${BITCOIN_MAINNET_MINFEE_ENABLE}" = ON ];then
+            osSudo "${ROOT_USER}" systemctl enable bitcoin-minfee.service
+        fi
+        if [ "${BITCOIN_TESTNET_ENABLE}" = ON ];then
+            osSudo "${ROOT_USER}" systemctl enable bitcoin-testnet.service
+        fi
+        if [ "${BITCOIN_TESTNET4_ENABLE}" = ON ];then
+            osSudo "${ROOT_USER}" systemctl enable bitcoin-testnet4.service
+        fi
+        if [ "${BITCOIN_CHIPNET_ENABLE}" = ON ];then
+            osSudo "${ROOT_USER}" systemctl enable bitcoin-chipnet.service
+        fi
+        if [ "${BITCOIN_SCALENET_ENABLE}" = ON ];then
+            osSudo "${ROOT_USER}" systemctl enable bitcoin-scalenet.service
+        fi
+    ;;
+esac
+
+echo "[*] Restarting Nginx"
+osSudo "${ROOT_USER}" service nginx restart
+
+##### OS set Linux user ulimits
+
+echo "[*] Setting ulimits for users"
+case $OS in
+
+    FreeBSD)
+    ;;
+
+    Debian)
+        cat >> /etc/security/limits.conf <<EOF
+*        soft     nproc          200000
+*        hard     nproc          200000
+*        soft     nofile         200000
+*        hard     nofile         200000
+EOF
+        echo "session required pam_limits.so" >> /etc/pam.d/common-session
+    ;;
+esac
+
+##### Build Mempool
+
+echo "[*] Build Mempool"
+osSudo "${EXPLORER_USER}" sh -c "cd ${EXPLORER_HOME} && ./upgrade" || true
+
+
+
+##### OS services
+
+#if [ "${BITCOIN_MAINNET_ENABLE}" = ON ];then
+#    echo "[*] Starting Bitcoin Mainnet"
+#    case $OS in
+#
+#        FreeBSD)
+#            osSudo "${ROOT_USER}" service bitcoin onestart
+#            osSudo "${BITCOIN_USER}" sh -c "grep @reboot ${EXPLORER_HOME}/${EXPLORER_REPO_NAME}/production/bitcoin.crontab|cut -d ';' -f2|zsh"
+#        ;;
+#
+#        Debian)
+#            osSudo "${ROOT_USER}" systemctl start bitcoin
+#            osSudo "${ROOT_USER}" journalctl --no-pager --unit bitcoin
+#        ;;
+#    esac
+#fi
+#
+#if [ "${BITCOIN_TESTNET_ENABLE}" = ON ];then
+#    echo "[*] Starting Bitcoin Mainnet"
+#    case $OS in
+#
+#        FreeBSD)
+#        ;;
+#
+#        Debian)
+#            echo "[*] Starting Bitcoin Testnet"
+#            osSudo "${ROOT_USER}" systemctl start bitcoin-testnet
+#            osSudo "${ROOT_USER}" journalctl --no-pager --unit bitcoin-testnet
+#    esac
+#fi
+#osSudo "${ROOT_USER}" tail "${BITCOIN_HOME}/debug.log"
+
+##### OS notes
+
+#echo "[*] Adding notes to motd"
+#osSudo "${ROOT_USER}" sh -c 'echo " " >> /etc/motd'
+
+##### OS firewall
+
+#case $OS in
+#
+#    FreeBSD)
+#    ;;
+#
+#    Debian)
+#        echo "[*] Preparing firewall"
+#        osSudo "${ROOT_USER}" ufw default deny incoming
+#        osSudo "${ROOT_USER}" ufw default allow outgoing
+#        osSudo "${ROOT_USER}" ufw allow from any to any port ${BITCOIN_MAINNET_P2P_PORT} proto tcp
+#        osSudo "${ROOT_USER}" ufw allow from any to any port ${BITCOIN_TESTNET_P2P_PORT} proto tcp
+#    ;;
+#esac
+
+##### finish
+
+#if [ "${TOR_INSTALL}" = ON ];then
+#    echo "Your auto-generated Tor addresses are:"
+#    echo "${NGINX_EXPLORER_ONION}"
+#fi
+
+echo
+echo 'Please reboot to start all the services.'
+echo '[*] Done!'
+
+exit 0

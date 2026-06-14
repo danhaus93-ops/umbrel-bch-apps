@@ -1,0 +1,15 @@
+<div [formGroup]="themeForm" class="text-small text-center">
+  <select
+    formControlName="theme"
+    class="form-select form-select-sm form-control-secondary form-control mx-auto"
+    (change)="changeTheme()"
+    aria-label="Select theme"
+  >
+    <option value="default">Dark theme</option>
+    <option value="light">Light theme</option>
+    <!-- kinda redundant: <option value="bch">BCH</option> -->
+    <option value="softsimon">Softsimon</option>
+    <option value="contrast">BlueMatt</option>
+    <option value="bukele">Bukele</option>
+  </select>
+</div>

@@ -1,0 +1,54 @@
+.webring {
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  background: var(--box-bg);
+  color: var(--fg);
+  text-align: center;
+
+  h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--primary);
+  }
+
+  p {
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+  }
+
+  a {
+    color: var(--link-color);
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      color: var(--link-hover-color);
+      text-decoration: underline;
+    }
+  }
+
+  .nav {
+    margin-top: 0.75rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+
+    a {
+      background: var(--primary);
+      color: var(--fg);
+      padding: 0.3rem 0.85rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      text-decoration: none;
+
+      &:hover {
+        background: var(--tertiary);
+        text-decoration: none;
+      }
+    }
+  }
+}

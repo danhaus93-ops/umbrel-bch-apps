@@ -1,0 +1,69 @@
+name: Build BCH Explorer images
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master, main ]
+    paths:
+      - 'bch-explorer/**'
+      - '.github/workflows/build-explorer.yml'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Replicates docker/init.sh (assembles the build contexts; no melroy paths)
+      - name: Assemble build contexts
+        working-directory: bch-explorer
+        run: |
+          set -e
+          # backend: copy Dockerfile + start/wait/config template into the context
+          cp -r ./docker/backend/* ./backend/
+          # frontend: copy Dockerfile + entrypoint + wait-for, plus the nginx confs
+          cp ./docker/frontend/* ./frontend/
+          cp ./nginx.conf ./frontend/
+          cp ./nginx-explorer.conf ./frontend/
+          # rewrite nginx confs to use runtime placeholders (substituted by entrypoint.sh)
+          sed -i -e "s/127.0.0.1:80/0.0.0.0:__EXPLORER_FRONTEND_HTTP_PORT__/g" ./frontend/nginx.conf
+          sed -i -e "s/127.0.0.1/0.0.0.0/g" ./frontend/nginx.conf
+          sed -i -e "s/user nobody;//g" ./frontend/nginx.conf
+          sed -i -e "s!/etc/nginx/nginx-explorer.conf!/etc/nginx/conf.d/nginx-explorer.conf!g" ./frontend/nginx.conf
+          sed -i -e "s/127.0.0.1:8999/__EXPLORER_BACKEND_MAINNET_HTTP_HOST__:__EXPLORER_BACKEND_MAINNET_HTTP_PORT__/g" ./frontend/nginx-explorer.conf
+
+      - name: Build & push FRONTEND (multi-arch)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./bch-explorer/frontend
+          file: ./bch-explorer/frontend/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            commitHash=${{ github.sha }}
+          tags: ghcr.io/danhaus93-ops/bch-explorer-frontend:latest
+
+      - name: Build & push BACKEND (multi-arch, named contexts)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./bch-explorer/backend
+          file: ./bch-explorer/backend/Dockerfile
+          build-contexts: |
+            backend=./bch-explorer/backend
+            rustgbt=./bch-explorer/rust
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            commitHash=${{ github.sha }}
+          tags: ghcr.io/danhaus93-ops/bch-explorer-backend:latest
