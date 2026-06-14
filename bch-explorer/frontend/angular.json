@@ -203,6 +203,11 @@
                 "bundleName": "light",
                 "inject": false
               },
+              {
+                "input": "src/theme-sslabs.scss",
+                "bundleName": "sslabs",
+                "inject": false
+              },
               "node_modules/@fortawesome/fontawesome-svg-core/styles.css"
             ],
             "allowedCommonJsDependencies": ["qrcode"],

@@ -2,21 +2,6 @@
   <div class="container-fluid">
     <div class="row main" [class]="{ services: isServicesPage }">
       <div class="col-md-12 branding mt-2">
-        <div id="donate" class="text-center my-4" style="z-index: 99999">
-          <img
-            src="/resources/qr_code.png"
-            width="315"
-            height="315"
-            alt="Bitcoin Cash address"
-          />
-          <p>
-            Donations -
-            <code>bitcoincash:qzqmakefvntudp0fv7sunt5fjxdswlxv2yhezq7pdl</code>
-            <app-clipboard
-              text="bitcoincash:qzqmakefvntudp0fv7sunt5fjxdswlxv2yhezq7pdl"
-            ></app-clipboard>
-          </p>
-        </div>
         <div class="main-logo" [class]="{ services: isServicesPage }">
           <img
             src="/resources/explorer_bitcoin_cash_logo_banner.png"
@@ -25,27 +10,6 @@
             class="bch-explorer-logo"
           />
         </div>
-        <p class="explore-tagline-mobile">
-          &copy; Created by:
-          <a
-            target="_blank"
-            href="https://bchexplorer.cash"
-            aria-label="Visit official BCH explorer website"
-            >Melroy van den Berg</a
-          >
-        </p>
-        <p *ngIf="!officialBCHExplorerSite" class="explore-tagline-mobile">
-          <b
-            >This is NOT the official
-            <a
-              href="https://bchexplorer.cash"
-              target="_blank"
-              style="color: var(--fg)"
-              >bchexplorer.cash</a
-            >
-            website.</b
-          >
-        </p>
         <div
           class="site-options language-selector d-flex justify-content-center align-items-center"
           [class]="{ services: isServicesPage }"
@@ -112,27 +76,6 @@
             >Sign In</span
           >
         </a>
-        <p class="explore-tagline-desktop">
-          &copy; Created by:
-          <a
-            target="_blank"
-            href="https://bchexplorer.cash"
-            aria-label="Visit official BCH explorer website"
-            >Melroy van den Berg</a
-          >
-        </p>
-        <p *ngIf="!officialBCHExplorerSite" class="explore-tagline-desktop">
-          <b
-            >This is NOT the official
-            <a
-              href="https://bchexplorer.cash"
-              target="_blank"
-              style="color: var(--fg)"
-              >bchexplorer.cash</a
-            >
-            website.</b
-          >
-        </p>
       </div>
     </div>
     <div class="row col-md-12 link-tree" [class]="{ services: isServicesPage }">
@@ -361,157 +304,6 @@
         </p>
       </div>
     </div>
-    <div class="row col-md-12 web-ring">
-      <app-bch-webring site="https://bchexplorer.cash"></app-bch-webring>
-    </div>
-
-    <div class="row social-links">
-      <div class="col-sm-12">
-        <a
-          href="https://t.me/bchexplorer"
-          target="_blank"
-          title="BCH Explorer on Telegram"
-          aria-label="BCH Explorer on Telegram"
-          ><svg
-            style="width: 32px"
-            width="32"
-            height="32"
-            viewBox="0 0 32 32"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle cx="16" cy="16" r="14" fill="url(#paint0_linear_87_7225)" />
-            <path
-              d="M22.9866 10.2088C23.1112 9.40332 22.3454 8.76755 21.6292 9.082L7.36482 15.3448C6.85123 15.5703 6.8888 16.3483 7.42147 16.5179L10.3631 17.4547C10.9246 17.6335 11.5325 17.541 12.0228 17.2023L18.655 12.6203C18.855 12.4821 19.073 12.7665 18.9021 12.9426L14.1281 17.8646C13.665 18.3421 13.7569 19.1512 14.314 19.5005L19.659 22.8523C20.2585 23.2282 21.0297 22.8506 21.1418 22.1261L22.9866 10.2088Z"
-              fill="white"
-            />
-            <defs>
-              <linearGradient
-                id="paint0_linear_87_7225"
-                x1="16"
-                y1="2"
-                x2="16"
-                y2="30"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop stop-color="#37BBFE" />
-                <stop offset="1" stop-color="#007DBB" />
-              </linearGradient>
-            </defs></svg
-        ></a>
-        <a
-          href="https://x.com/bchexplorer"
-          target="_blank"
-          title="BCH Explorer on X"
-          aria-label="BCH Explorer on X"
-          ><svg
-            width="23"
-            height="23"
-            style="width: 23px"
-            class="fill"
-            viewBox="0 0 1200 1227"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z"
-            /></svg
-        ></a>
-        <a
-          href="https://matrix.to/#/#bchexplorer:melroy.org"
-          target="_blank"
-          title="BCH Explorer on Matrix chat"
-          aria-label="BCH Explorer on Matrix chat"
-          ><svg
-            role="img"
-            style="width: 28px"
-            class="fill"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <title>Matrix</title>
-            <path
-              d="M.632.55v22.9H2.28V24H0V0h2.28v.55zm7.043 7.26v1.157h.033c.309-.443.683-.784 1.117-1.024.433-.245.936-.365 1.5-.365.54 0 1.033.107 1.481.314.448.208.785.582 1.02 1.108.254-.374.6-.706 1.034-.992.434-.287.95-.43 1.546-.43.453 0 .872.056 1.26.167.388.11.716.286.993.53.276.245.489.559.646.951.152.392.23.863.23 1.417v5.728h-2.349V11.52c0-.286-.01-.559-.032-.812a1.755 1.755 0 0 0-.18-.66 1.106 1.106 0 0 0-.438-.448c-.194-.11-.457-.166-.785-.166-.332 0-.6.064-.803.189a1.38 1.38 0 0 0-.48.499 1.946 1.946 0 0 0-.231.696 5.56 5.56 0 0 0-.06.785v4.768h-2.35v-4.8c0-.254-.004-.503-.018-.752a2.074 2.074 0 0 0-.143-.688 1.052 1.052 0 0 0-.415-.503c-.194-.125-.476-.19-.854-.19-.111 0-.259.024-.439.074-.18.051-.36.143-.53.282-.171.138-.319.337-.439.595-.12.259-.18.6-.18 1.02v4.966H5.46V7.81zm15.693 15.64V.55H21.72V0H24v24h-2.28v-.55z"
-            /></svg
-        ></a>
-        <a
-          href="https://mastodon.melroy.org/@bchexplorer"
-          target="_blank"
-          title="BCH Explorer on Mastodon"
-          aria-label="BCH Explorer on Mastodon"
-          ><svg
-            role="img"
-            style="width: 28px"
-            viewBox="0 0 256 256"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fill="#2b90d9"
-              d="M211.80734 139.0875c-3.18125 16.36625-28.4925 34.2775-57.5625 37.74875-15.15875 1.80875-30.08375 3.47125-45.99875 2.74125-26.0275-1.1925-46.565-6.2125-46.565-6.2125 0 2.53375.15625 4.94625.46875 7.2025 3.38375 25.68625 25.47 27.225 46.39125 27.9425 21.11625.7225 39.91875-5.20625 39.91875-5.20625l.8675 19.09s-14.77 7.93125-41.08125 9.39c-14.50875.7975-32.52375-.365-53.50625-5.91875C9.23234 213.82 1.40609 165.31125.20859 116.09125c-.365-14.61375-.14-28.39375-.14-39.91875 0-50.33 32.97625-65.0825 32.97625-65.0825C49.67234 3.45375 78.20359.2425 107.86484 0h.72875c29.66125.2425 58.21125 3.45375 74.8375 11.09 0 0 32.975 14.7525 32.975 65.0825 0 0 .41375 37.13375-4.59875 62.915"
-            />
-            <path
-              fill="#fff"
-              d="M177.50984 80.077v60.94125h-24.14375v-59.15c0-12.46875-5.24625-18.7975-15.74-18.7975-11.6025 0-17.4175 7.5075-17.4175 22.3525v32.37625H96.20734V85.42325c0-14.845-5.81625-22.3525-17.41875-22.3525-10.49375 0-15.74 6.32875-15.74 18.7975v59.15H38.90484V80.077c0-12.455 3.17125-22.3525 9.54125-29.675 6.56875-7.3225 15.17125-11.07625 25.85-11.07625 12.355 0 21.71125 4.74875 27.8975 14.2475l6.01375 10.08125 6.015-10.08125c6.185-9.49875 15.54125-14.2475 27.8975-14.2475 10.6775 0 19.28 3.75375 25.85 11.07625 6.36875 7.3225 9.54 17.22 9.54 29.675"
-            /></svg
-        ></a>
-        <a
-          href="https://gitlab.melroy.org/bitcoincash/bitcoin-cash-explorer"
-          title="Source Code on GitLab"
-          target="_blank"
-          aria-label="Source Code on GitLab"
-          ><svg
-            xmlns="http://www.w3.org/2000/svg"
-            style="width: 42px"
-            viewBox="100 75 250 250"
-          >
-            <defs>
-              <style>
-                .cls-1 {
-                  fill: #fca326;
-                }
-
-                .cls-2 {
-                  fill: #fc6d26;
-                }
-
-                .cls-3 {
-                  fill: #e24329;
-                }
-              </style>
-            </defs>
-            <title>GitLab</title>
-            <path
-              class="cls-3"
-              d="M265.26416,174.37243l-.2134-.55822-21.19899-55.30908c-.4236-1.08359-1.18542-1.99642-2.17699-2.62689-.98837-.63373-2.14749-.93253-3.32305-.87014-1.1689.06239-2.29195.48925-3.20809,1.21821-.90957.73554-1.56629,1.73047-1.87493,2.85346l-14.31327,43.80662h-57.90965l-14.31327-43.80662c-.30864-1.12299-.96536-2.11791-1.87493-2.85346-.91614-.72895-2.03911-1.15582-3.20809-1.21821-1.17548-.06239-2.33468.23641-3.32297.87014-.99166.63047-1.75348,1.5433-2.17707,2.62689l-21.19891,55.31237-.21348.55493c-6.28158,16.38521-.92929,34.90803,13.05891,45.48782.02621.01641.04922.03611.07552.05582l.18719.14119,32.29094,24.17392,15.97151,12.09024,9.71951,7.34871c2.34117,1.77316,5.57877,1.77316,7.92002,0l9.71943-7.34871,15.96822-12.09024,32.48142-24.31511c.02958-.02299.05588-.04269.08538-.06568,13.97834-10.57977,19.32735-29.09604,13.04905-45.47796Z"
-            />
-            <path
-              class="cls-2"
-              d="M265.26416,174.37243l-.2134-.55822c-10.5174,2.16062-20.20405,6.6099-28.49844,12.81593-.1346.0985-25.20497,19.05805-46.55171,35.19699,15.84998,11.98517,29.6477,22.40405,29.6477,22.40405l32.48142-24.31511c.02958-.02299.05588-.04269.08538-.06568,13.97834-10.57977,19.32735-29.09604,13.04905-45.47796Z"
-            />
-            <path
-              class="cls-1"
-              d="M160.34962,244.23117l15.97151,12.09024,9.71951,7.34871c2.34117,1.77316,5.57877,1.77316,7.92002,0l9.71943-7.34871,15.96822-12.09024s-13.79772-10.41888-29.6477-22.40405c-15.85327,11.98517-29.65099,22.40405-29.65099,22.40405Z"
-            />
-            <path
-              class="cls-2"
-              d="M143.44561,186.63014c-8.29111-6.20274-17.97446-10.65531-28.49507-12.81264l-.21348.55493c-6.28158,16.38521-.92929,34.90803,13.05891,45.48782.02621.01641.04922.03611.07552.05582l.18719.14119,32.29094,24.17392s13.79772-10.41888,29.65099-22.40405c-21.34673-16.13894-46.42031-35.09848-46.55499-35.19699Z"
-            />
-          </svg>
-        </a>
-        <!--<a href="https://youtube.com/@" target="_blank"
-          ><svg
-            fill="#fff"
-            role="img"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <title>YouTube</title>
-            <path
-              d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"
-            /></svg
-        ></a>-->
-      </div>
-    </div>
-
     <div
       class="row version"
       [style]="{ 'background-color': isServicesPage ? 'var(--bg)' : '' }"
@@ -522,7 +314,7 @@
             <span
               >{{ backend.hostname }} (v{{ backend.version }}) [<a
                 target="_blank"
-                href="https://gitlab.melroy.org/bitcoincash/bitcoin-cash-explorer/-/commit/{{
+                href="https://github.com/danhaus93-ops/umbrel-bch-apps/commit/{{
                   backend.gitCommit | slice: 0 : 8
                 }}"
                 >{{ backend.gitCommit | slice: 0 : 8 }}</a
@@ -538,7 +330,7 @@
             <p>
               v{{ packetJsonVersion }} [<a
                 target="_blank"
-                href="https://gitlab.melroy.org/bitcoincash/bitcoin-cash-explorer/-/commit/{{
+                href="https://github.com/danhaus93-ops/umbrel-bch-apps/commit/{{
                   frontendGitCommitHash
                 }}"
                 >{{ frontendGitCommitHash }}</a
@@ -549,7 +341,7 @@
         <p *ngIf="!officialBCHExplorerSite">
           v{{ packetJsonVersion }} [<a
             target="_blank"
-            href="https://gitlab.melroy.org/bitcoincash/bitcoin-cash-explorer/-/commit/{{
+            href="https://github.com/danhaus93-ops/umbrel-bch-apps/commit/{{
               frontendGitCommitHash
             }}"
             >{{ frontendGitCommitHash }}</a

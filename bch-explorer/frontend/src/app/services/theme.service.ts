@@ -24,16 +24,16 @@ export class ThemeService {
     let theme =
       this.stateService.env.customize?.theme ||
       this.storageService.getValue('theme-preference') ||
-      'default';
+      'sslabs';
     // theme preference must be a valid known public theme
     if (
       !this.stateService.env.customize?.theme &&
-      !['default', 'contrast', 'softsimon', 'bch', 'bukele', 'light'].includes(
+      !['default', 'contrast', 'softsimon', 'bch', 'bukele', 'light', 'sslabs'].includes(
         theme
       )
     ) {
-      theme = 'default';
-      this.storageService.setValue('theme-preference', 'default');
+      theme = 'sslabs';
+      this.storageService.setValue('theme-preference', 'sslabs');
     }
     this.apply(theme);
   }

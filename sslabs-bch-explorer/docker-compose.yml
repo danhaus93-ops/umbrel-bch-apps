@@ -32,7 +32,10 @@ services:
       EXPLORER_BACKEND: "electrum"
       EXPLORER_NETWORK: "mainnet"
       EXPLORER_OFFICIAL: "false"
-      EXPLORER_INDEXING_BLOCKS_AMOUNT: "-1"
+      EXPLORER_POOLS_SOURCE: "github"
+      EXPLORER_POOLS_JSON_URL: "https://raw.githubusercontent.com/BitcoinCash1/mining-pools/main/pools-v2.json"
+      EXPLORER_POOLS_JSON_TREE_URL: "https://api.github.com/repos/BitcoinCash1/mining-pools/git/trees/main"
+      EXPLORER_INDEXING_BLOCKS_AMOUNT: "11000"
       EXPLORER_USE_SECOND_NODE_FOR_MINFEE: "false"
       # Your Bitcoin Cash Node (RPC)
       CORE_RPC_HOST: "sslabs-bitcoin-cash-node_bitcoind_1"
