@@ -1,9 +1,9 @@
 manifestVersion: 1
-id: gavin-fulcrum
+id: sslabs-fulcrum
 category: networking
 name: Fulcrum (BCH)
 version: "1.3.2"
-icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-fulcrum/icon.svg
+icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-fulcrum/icon.svg
 tagline: Electrum server for your Bitcoin Cash node — connect your wallet
 description: >-
   Fulcrum is a fast Electrum server for Bitcoin Cash. It indexes your own node
@@ -16,14 +16,14 @@ description: >-
 
   Donations are never expected — but if SoloStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
 releaseNotes: Added installable home-screen (PWA) icons and manifest.
-developer: Gavin
+developer: SoloStrike Labs
 website: https://github.com/cculianu/Fulcrum
 dependencies:
-  - gavin-bitcoin-cash-node
+  - sslabs-bitcoin-cash-node
 repo: https://github.com/danhaus93-ops/umbrel-bch-apps
 support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
 port: 3331
 gallery: []
 path: ""
-submitter: Gavin
+submitter: SoloStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps

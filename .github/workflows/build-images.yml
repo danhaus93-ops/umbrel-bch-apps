@@ -5,9 +5,9 @@ on:
   push:
     branches: [ master, main ]
     paths:
-      - 'gavin-solostrike-cash/dashboard/**'
-      - 'gavin-solostrike-cash/pool/**'
-      - 'gavin-fulcrum/web/**'
+      - 'sslabs-solostrike-cash/dashboard/**'
+      - 'sslabs-solostrike-cash/pool/**'
+      - 'sslabs-fulcrum/web/**'
       - 'dashboard/**'
       - '.github/workflows/build-images.yml'
 
@@ -23,11 +23,11 @@ jobs:
         include:
           - context: ./dashboard
             image: bchn-dashboard
-          - context: ./gavin-solostrike-cash/dashboard
+          - context: ./sslabs-solostrike-cash/dashboard
             image: solostrike-cash-dashboard
-          - context: ./gavin-solostrike-cash/pool
+          - context: ./sslabs-solostrike-cash/pool
             image: asicseer-pool
-          - context: ./gavin-fulcrum/web
+          - context: ./sslabs-fulcrum/web
             image: fulcrum-info
     steps:
       - uses: actions/checkout@v4

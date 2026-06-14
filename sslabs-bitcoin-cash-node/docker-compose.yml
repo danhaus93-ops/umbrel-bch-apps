@@ -1,9 +1,9 @@
 # Bitcoin Cash Node (node only) for Umbrel
-# Fulcrum is now its own app (gavin-fulcrum). ZMQ added for SoloStrike Cash.
+# Fulcrum is now its own app (sslabs-fulcrum). ZMQ added for SoloStrike Cash.
 services:
   app_proxy:
     environment:
-      APP_HOST: gavin-bitcoin-cash-node_web_1
+      APP_HOST: sslabs-bitcoin-cash-node_web_1
       APP_PORT: 3000
 
   tor:
@@ -16,7 +16,7 @@ services:
       - ${APP_DATA_DIR}/data/tor:/data
     networks:
       default:
-        ipv4_address: ${APP_GAVIN_BITCOIN_CASH_NODE_TOR_IP}
+        ipv4_address: ${APP_SSLABS_BITCOIN_CASH_NODE_TOR_IP}
 
   bitcoind:
     image: zquestz/bitcoin-cash-node:29.0.0
@@ -56,7 +56,7 @@ services:
     environment:
       PORT: 3000
       APP_VERSION: v29.1.5
-      TOR_IP: ${APP_GAVIN_BITCOIN_CASH_NODE_TOR_IP}
+      TOR_IP: ${APP_SSLABS_BITCOIN_CASH_NODE_TOR_IP}
       RPC_HOST: bitcoind
       RPC_PORT: "8332"
       RPC_USER: bchn

@@ -1,7 +1,7 @@
 services:
   app_proxy:
     environment:
-      APP_HOST: gavin-fulcrum_web_1
+      APP_HOST: sslabs-fulcrum_web_1
       APP_PORT: 80
 
   # Writes fulcrum.conf into the data volume with this install's RPC password.
@@ -18,7 +18,7 @@ services:
       - |
         cat > /data/fulcrum.conf <<CONF
         datadir = /data
-        bitcoind = gavin-bitcoin-cash-node_bitcoind_1:8332
+        bitcoind = sslabs-bitcoin-cash-node_bitcoind_1:8332
         rpcuser = bchn
         rpcpassword = $${RPC_PASS}
         tcp = 0.0.0.0:50021

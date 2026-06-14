@@ -1,9 +1,9 @@
 manifestVersion: 1
-id: gavin-bitcoin-cash-node
+id: sslabs-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
 version: "29.1.8"
-icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-bitcoin-cash-node/icon.svg
+icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
   Run Bitcoin Cash on your own terms. Bitcoin Cash Node (BCHN) — the
@@ -21,7 +21,7 @@ description: >-
 releaseNotes: Node now runs more RPC threads so heavy mining (large getblocktemplate load) no longer starves the dashboard or pool connections.
   Split out from Fulcrum — Fulcrum is now its own app. ZMQ enabled for
   SoloStrike Cash. Update (don't reinstall) to keep your synced chain.
-developer: Gavin
+developer: SoloStrike Labs
 website: https://bitcoincashnode.org
 dependencies: []
 repo: https://github.com/danhaus93-ops/umbrel-bch-apps
@@ -29,5 +29,5 @@ support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
 port: 3330
 gallery: []
 path: ""
-submitter: Gavin
+submitter: SoloStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps

@@ -1,10 +1,10 @@
 manifestVersion: 1
-id: gavin-solostrike-cash
+id: sslabs-solostrike-cash
 category: bitcoin
 name: SoloStrike Cash
 version: "1.4.7"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
-icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/gavin-solostrike-cash/icon.svg
+icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
   SoloStrike Cash is a self-hosted solo mining pool for Bitcoin Cash, powered by
   the asicseer-pool engine (a BCH-native ckpool fork) and wrapped in a real-time
@@ -33,15 +33,15 @@ description: >-
   • Backing-node status: block height and live network difficulty
 
   Donations are never expected — but if SoloStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
-developer: Gavin
+developer: SoloStrike Labs
 website: https://github.com/danhaus93-ops/umbrel-bch-apps
 dependencies:
-  - gavin-bitcoin-cash-node
+  - sslabs-bitcoin-cash-node
 repo: https://github.com/danhaus93-ops/umbrel-bch-apps
 support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
 port: 3000
 gallery: []
 
 releaseNotes: Restores the correct dashboard server (worker session uptime, blocks-found counter, and real best-at-hit) — the previous build shipped a stale server file.
-submitter: Gavin
+submitter: SoloStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
