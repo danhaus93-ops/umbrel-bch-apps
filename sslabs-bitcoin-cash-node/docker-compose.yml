@@ -20,7 +20,6 @@ services:
 
   bitcoind:
     image: mainnet/bitcoin-cash-node:v29.0.0@sha256:5144a579369cbab859119b04c86e4e078cf8ef830a1cb721be96bdc0b7498a35
-    user: "999"
     restart: always
     stop_grace_period: 1m
     volumes:
