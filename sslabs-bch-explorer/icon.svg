@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.4" r="0.78">
+      <stop offset="0" stop-color="#12361F"/><stop offset="0.55" stop-color="#0A2017"/><stop offset="1" stop-color="#06110C"/>
+    </radialGradient>
+    <linearGradient id="mark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#35F0BD"/><stop offset="0.5" stop-color="#10C795"/><stop offset="1" stop-color="#0A8E6A"/>
+    </linearGradient>
+    <clipPath id="lens"><circle cx="430" cy="430" r="205"/></clipPath>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+
+  <!-- blockchain "blocks" revealed inside the lens -->
+  <g clip-path="url(#lens)">
+    <g fill="url(#mark)">
+      <rect x="300" y="300" width="120" height="120" rx="22" opacity="0.95"/>
+      <rect x="440" y="300" width="120" height="120" rx="22" opacity="0.70"/>
+      <rect x="300" y="440" width="120" height="120" rx="22" opacity="0.70"/>
+      <rect x="440" y="440" width="120" height="120" rx="22" opacity="0.95"/>
+    </g>
+    <!-- connecting links between blocks -->
+    <g stroke="url(#mark)" stroke-width="14" opacity="0.55">
+      <line x1="420" y1="360" x2="440" y2="360"/>
+      <line x1="420" y1="500" x2="440" y2="500"/>
+      <line x1="360" y1="420" x2="360" y2="440"/>
+      <line x1="500" y1="420" x2="500" y2="440"/>
+    </g>
+  </g>
+
+  <!-- magnifying glass ring -->
+  <circle cx="430" cy="430" r="235" fill="none" stroke="url(#mark)" stroke-width="62"/>
+  <!-- handle -->
+  <line x1="600" y1="600" x2="812" y2="812" stroke="url(#mark)" stroke-width="92" stroke-linecap="round"/>
+</svg>
