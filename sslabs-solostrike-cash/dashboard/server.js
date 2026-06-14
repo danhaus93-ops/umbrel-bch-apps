@@ -293,8 +293,12 @@ app.get('/api/status', async (_req, res) => {
     const h = parseHash(p.hashrate5m || p.hashrate1m);
     out.hashrate = { val: h.val, unit: h.unit };
     lastAcceptedTotal = out.accepted;
-    const baseline = Number(blockState.acceptedAtLastBlock) || 0;
-    out.roundShares = Math.max(0, out.accepted - baseline);
+    // asicseer-pool zeroes 'accepted' (accounted_diff_shares) on every block solve
+    // via reset_bestshares(), so pool.status 'accepted' is already the current
+    // round's share total. Subtracting a stale acceptedAtLastBlock baseline pinned
+    // effort at 0% after a solve until 'accepted' re-climbed past it. Mirror the
+    // pool's own effort calc (accounted_diff_shares / network_diff) and use it directly.
+    out.roundShares = out.accepted;
     const hs = hashToHs(p.hashrate5m || p.hashrate1m);
     out.poolHs = hs;
     out.workerList = readWorkers();
