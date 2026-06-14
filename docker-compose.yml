@@ -1,0 +1,78 @@
+# Bitcoin Cash Explorer (mempool-style) for Umbrel
+# Reads blocks/txs from the Bitcoin Cash Node (RPC) and address history from Fulcrum (Electrum).
+# Prebuilt upstream images; nothing is built from source.
+services:
+  app_proxy:
+    environment:
+      APP_HOST: sslabs-bch-explorer_web_1
+      APP_PORT: 8080
+
+  # ---- Frontend (Angular served by nginx) ----
+  web:
+    image: registry.melroy.org/bitcoincash/bitcoin-cash-explorer/bch-explorer-frontend:3.11.12
+    user: "1000:1000"
+    restart: on-failure
+    stop_grace_period: 1m
+    environment:
+      FRONTEND_HTTP_PORT: "8080"
+      BACKEND_MAINNET_HTTP_HOST: "api"
+    command: "./wait-for db:3306 --timeout=720 -- nginx -g 'daemon off;'"
+    depends_on:
+      - api
+
+  # ---- Backend (Node API + indexer) ----
+  api:
+    image: registry.melroy.org/bitcoincash/bitcoin-cash-explorer/bch-explorer-backend:3.11.12
+    user: "1000:1000"
+    restart: on-failure
+    stop_grace_period: 1m
+    environment:
+      EXPLORER_BACKEND: "electrum"
+      EXPLORER_NETWORK: "mainnet"
+      EXPLORER_OFFICIAL: "false"
+      EXPLORER_INDEXING_BLOCKS_AMOUNT: "-1"
+      EXPLORER_USE_SECOND_NODE_FOR_MINFEE: "false"
+      # Your Bitcoin Cash Node (RPC)
+      CORE_RPC_HOST: "sslabs-bitcoin-cash-node_bitcoind_1"
+      CORE_RPC_PORT: "8332"
+      CORE_RPC_USERNAME: "bchn"
+      CORE_RPC_PASSWORD: "bchn_local_rpc_pw_2f9c"
+      # Your Fulcrum (Electrum) — plaintext TCP endpoint
+      ELECTRUM_HOST: "sslabs-fulcrum_fulcrum_1"
+      ELECTRUM_PORT: "50021"
+      ELECTRUM_TLS_ENABLED: "false"
+      # Bundled database
+      DATABASE_ENABLED: "true"
+      DATABASE_HOST: "db"
+      DATABASE_DATABASE: "explorer"
+      DATABASE_USERNAME: "explorer"
+      DATABASE_PASSWORD: "explorer"
+      STATISTICS_ENABLED: "true"
+    command: "./wait-for-it.sh db:3306 --timeout=720 --strict -- ./start.sh"
+    volumes:
+      - ${APP_DATA_DIR}/data/cache:/backend/cache
+    depends_on:
+      - db
+    ulimits:
+      nofile:
+        soft: 165535
+        hard: 500000
+
+  # ---- Database (MariaDB) ----
+  db:
+    image: mariadb:12.2.1
+    user: "1000:1000"
+    restart: on-failure
+    stop_grace_period: 1m
+    environment:
+      MYSQL_DATABASE: "explorer"
+      MYSQL_USER: "explorer"
+      MYSQL_PASSWORD: "explorer"
+      MYSQL_ROOT_PASSWORD: "explorer_root_local_pw"
+      MARIADB_AUTO_UPGRADE: "1"
+    volumes:
+      - ${APP_DATA_DIR}/data/mysql:/var/lib/mysql
+    ulimits:
+      nofile:
+        soft: 165535
+        hard: 500000
