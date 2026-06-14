@@ -6,6 +6,7 @@ ARG commitHash
 ENV DOCKER_COMMIT_HASH=${commitHash}
 ENV CYPRESS_INSTALL_BINARY=0
 ENV NODE_ENV=production
+ENV SKIP_SYNC=1
 
 # pnpm 11.1.3 comes from the repo's "packageManager" field via corepack
 RUN corepack enable
