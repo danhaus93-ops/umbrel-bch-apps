@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-bch-explorer
 category: networking
 name: Bitcoin Cash Explorer
-version: "3.11.15"
+version: "3.11.17"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bch-explorer/icon.svg
 tagline: A mempool-style block explorer for your own Bitcoin Cash node
 description: >-

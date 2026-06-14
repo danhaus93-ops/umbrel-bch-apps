@@ -35,7 +35,7 @@ export class ThemeService {
       theme = 'sslabs';
       this.storageService.setValue('theme-preference', 'sslabs');
     }
-    this.apply(theme);
+    this.apply('sslabs'); // locked to SoloStrike
   }
 
   apply(theme: string): void {

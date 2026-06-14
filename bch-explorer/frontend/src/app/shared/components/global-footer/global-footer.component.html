@@ -29,14 +29,6 @@
           >
             <app-amount-selector></app-amount-selector>
           </div>
-          @if (!env.customize?.theme) {
-            <div
-              class="selector d-none"
-              [ngClass]="isServicesPage ? 'd-lg-flex' : 'd-md-flex'"
-            >
-              <app-theme-selector></app-theme-selector>
-            </div>
-          }
           <a
             *ngIf="stateService.isofficialBCHExplorerSiteBuild"
             class="btn btn-purple sponsor d-none justify-content-center"
@@ -58,7 +50,6 @@
             [ngClass]="isServicesPage ? 'd-lg-none' : 'd-md-none'"
           >
             <app-amount-selector class="add-margin"></app-amount-selector>
-            <app-theme-selector class="add-margin"></app-theme-selector>
           </div>
         }
 

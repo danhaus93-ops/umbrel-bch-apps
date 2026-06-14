@@ -42,6 +42,11 @@ jobs:
           sed -i -e "s/user nobody;//g" ./frontend/nginx.conf
           sed -i -e "s!/etc/nginx/nginx-explorer.conf!/etc/nginx/conf.d/nginx-explorer.conf!g" ./frontend/nginx.conf
           sed -i -e "s/127.0.0.1:8999/__EXPLORER_BACKEND_MAINNET_HTTP_HOST__:__EXPLORER_BACKEND_MAINNET_HTTP_PORT__/g" ./frontend/nginx-explorer.conf
+          # Bundle mining-pool logos from the live GitHub mirror (melroy host is dead)
+          git clone --depth 1 https://github.com/BitcoinCash1/mining-pool-logos.git /tmp/pool-logos
+          mkdir -p ./frontend/src/resources/mining-pools
+          find /tmp/pool-logos -maxdepth 1 -type f -exec cp {} ./frontend/src/resources/mining-pools/ \;
+          echo "bundled $(ls ./frontend/src/resources/mining-pools | wc -l) pool logos"
 
       - name: Build & push FRONTEND (multi-arch)
         uses: docker/build-push-action@v5
