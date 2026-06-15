@@ -62,7 +62,8 @@ start_pool() {
   fi
   write_conf "$addr"
   echo "[SoloStrike Cash] starting asicseer-pool (solo) -> ${RPC_HOST}:${RPC_PORT}; payout ${addr}"
-  asicseer-pool -B -c /pool/asicseer-pool.conf &
+  local lflag=""; [ -f /pool/config/logshares ] && lflag="-L"
+  asicseer-pool -B $lflag -c /pool/asicseer-pool.conf &
   POOL_PID=$!
 }
 
@@ -115,6 +116,16 @@ while true; do
     fi
   fi
   FIRST_DIFF_SEEN=1
+  NEW_LS="$( [ -f /pool/config/logshares ] && echo on || echo off )"
+  if [ "$NEW_LS" != "${CUR_LS:-}" ]; then
+    CUR_LS="$NEW_LS"
+    if [ -n "${FIRST_LS_SEEN:-}" ]; then
+      echo "[SoloStrike Cash] share logging toggled ($NEW_LS) — restarting pool"
+      stop_pool
+      start_pool "$CUR_ADDR"
+    fi
+  fi
+  FIRST_LS_SEEN=1
   NEW_ADDR="$(read_addr)"
   if [ "$NEW_ADDR" != "$CUR_ADDR" ]; then
     echo "[SoloStrike Cash] address changed -> '${NEW_ADDR}'; restarting pool"

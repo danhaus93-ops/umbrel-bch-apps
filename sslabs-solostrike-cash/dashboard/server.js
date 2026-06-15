@@ -77,6 +77,74 @@ function readPoolStatus() {
 }
 
 // per-user files live in logdir/users/<address>; each lists its workers.
+// ---- per-worker reset masking (fallback when share logging is off) ----
+const BASELINE_FILE = path.join(POOL_DIR, 'config', 'best_baselines.json');
+function readBaselines() { try { return JSON.parse(fs.readFileSync(BASELINE_FILE, 'utf8')) || {}; } catch (_) { return {}; } }
+function writeBaselines(b) { try { fs.mkdirSync(path.dirname(BASELINE_FILE), { recursive: true }); fs.writeFileSync(BASELINE_FILE, JSON.stringify(b)); } catch (_) {} }
+// ---- SHARELOG_REBUILD: live per-worker best-since-reset from asicseer's -L sharelog ----
+const LOGSHARES_FLAG = path.join(POOL_DIR, 'config', 'logshares');
+const RESET_STATE_FILE = path.join(POOL_DIR, 'config', 'best_resets.json');
+const SHARELOG_CAP = Number(process.env.SHARELOG_CAP_BYTES || 50 * 1024 * 1024);
+const shareBest = {};      // worker -> best sdiff since its reset (in-memory)
+const shareOffset = {};    // sharelog path -> bytes already consumed
+function logSharesOn() { try { return fs.existsSync(LOGSHARES_FLAG); } catch (_) { return false; } }
+function setLogShares(on) { try { fs.mkdirSync(path.dirname(LOGSHARES_FLAG), { recursive: true }); if (on) fs.writeFileSync(LOGSHARES_FLAG, '1'); else fs.rmSync(LOGSHARES_FLAG, { force: true }); } catch (_) {} }
+function readResetState() { try { return JSON.parse(fs.readFileSync(RESET_STATE_FILE, 'utf8')) || {}; } catch (_) { return {}; } }
+function writeResetState(s) { try { fs.mkdirSync(path.dirname(RESET_STATE_FILE), { recursive: true }); fs.writeFileSync(RESET_STATE_FILE, JSON.stringify(s)); } catch (_) {} }
+function shortName(wn) { wn = String(wn || ''); const p = wn.split('.'); return p.slice(1).join('.') || wn; }
+function findSharelogs() {
+  const out = []; const seen = new Set();
+  const walk = (d, depth) => {
+    if (depth > 3) return;
+    let ents = []; try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch (_) { return; }
+    for (const e of ents) {
+      const fp = path.join(d, e.name);
+      if (e.isDirectory()) walk(fp, depth + 1);
+      else if (e.name.endsWith('.sharelog') && !seen.has(fp)) { seen.add(fp); out.push(fp); }
+    }
+  };
+  for (const r of [POOL_LOGDIR, POOL_DIR]) walk(r, 0);
+  return out;
+}
+function shareTs(j) { return parseInt(String(j.createdate || '').split(',')[0], 10) || 0; }
+function tailSharelogs() {
+  if (!logSharesOn()) return;
+  const rs = readResetState();
+  if (!Object.keys(rs).length) return;
+  for (const fp of findSharelogs()) {
+    let st; try { st = fs.statSync(fp); } catch (_) { continue; }
+    let off = shareOffset[fp] || 0;
+    if (st.size < off) off = 0;
+    if (st.size === off) continue;
+    let buf; try { const fd = fs.openSync(fp, 'r'); buf = Buffer.alloc(st.size - off); fs.readSync(fd, buf, 0, buf.length, off); fs.closeSync(fd); } catch (_) { continue; }
+    shareOffset[fp] = st.size;
+    for (const line of buf.toString('utf8').split('\n')) {
+      const t = line.trim(); if (!t) continue;
+      let j; try { j = JSON.parse(t); } catch (_) { continue; }
+      if (j.result !== true) continue;
+      const sn = shortName(j.workername); const at = rs[sn]; if (at == null) continue;
+      const ts = shareTs(j); if (ts && ts < at) continue;
+      const sd = Number(j.sdiff) || 0; if (sd > (shareBest[sn] || 0)) shareBest[sn] = sd;
+    }
+  }
+}
+function pruneSharelogs() {
+  if (!logSharesOn()) return;
+  const rs = readResetState();
+  const oldest = Object.values(rs).reduce((m, v) => Math.min(m, Number(v) || Infinity), Infinity);
+  for (const fp of findSharelogs()) {
+    let raw; try { raw = fs.readFileSync(fp, 'utf8'); } catch (_) { continue; }
+    if (!raw) continue;
+    let lines = raw.split('\n').filter(l => l.trim());
+    if (oldest === Infinity) lines = [];
+    else lines = lines.filter(l => { let ts = 0; try { ts = shareTs(JSON.parse(l)); } catch (_) { return true; } return !ts || ts >= oldest - 5; });
+    let data = lines.length ? lines.join('\n') + '\n' : '';
+    if (Buffer.byteLength(data) > SHARELOG_CAP) data = data.slice(-SHARELOG_CAP);
+    try { const tmp = fp + '.tmp'; fs.writeFileSync(tmp, data); fs.renameSync(tmp, fp); shareOffset[fp] = Buffer.byteLength(data); } catch (_) {}
+  }
+}
+setInterval(tailSharelogs, 3000);
+setInterval(pruneSharelogs, 120000);
 function readWorkers() {
   const out = [];
   const dir = path.join(POOL_LOGDIR, 'users');
@@ -138,6 +206,15 @@ function readWorkers() {
     }
     try { fs.writeFileSync(sf, JSON.stringify(next)); } catch (_) {}
   } catch (_) {}
+  const _bl = readBaselines();
+  const _rs = readResetState();
+  const _ls = logSharesOn();
+  for (const w of result) {
+    w.rawBest = w.best;
+    if (_ls && _rs[w.name] != null) w.best = Number(shareBest[w.name]) || 0;
+    else if (w.best <= (Number(_bl[w.name]) || 0)) w.best = 0;
+  }
+  result.sort((a, b) => b.best - a.best);
   return result;
 }
 
@@ -302,6 +379,7 @@ app.get('/api/status', async (_req, res) => {
     const hs = hashToHs(p.hashrate5m || p.hashrate1m);
     out.poolHs = hs;
     out.workerList = readWorkers();
+    out.logShares = logSharesOn();
     out.blocks = Math.max(blockState.blocks.length, countBlocks());
   } catch (_) { /* pool not started yet */ }
 
@@ -396,9 +474,21 @@ app.post('/api/reset', (req, res) => {
   const scope = ((req.body && req.body.scope) || 'all').toString().slice(0, 120);
   if (!/^[A-Za-z0-9:._\-]+$|^all$/.test(scope)) return res.status(400).json({ ok: false, error: 'bad scope' });
   try {
-    fs.mkdirSync(path.join(POOL_DIR, 'config'), { recursive: true });
-    fs.writeFileSync(path.join(POOL_DIR, 'config', 'reset_request'), scope);
-  } catch (e) { return res.status(500).json({ ok: false, error: 'could not request reset' }); }
+    if (scope === 'all') {
+      try { writeBaselines({}); } catch (_) {}
+      try { writeResetState({}); } catch (_) {}
+      fs.mkdirSync(path.join(POOL_DIR, 'config'), { recursive: true });
+      fs.writeFileSync(path.join(POOL_DIR, 'config', 'reset_request'), scope);
+    } else if (logSharesOn()) {
+      const rs = readResetState(); rs[scope] = Math.floor(Date.now() / 1000); writeResetState(rs);
+      shareBest[scope] = 0;
+    } else {
+      const b = readBaselines();
+      const w = readWorkers().find(x => x.name === scope);
+      b[scope] = w ? (Number(w.rawBest) || 0) : (Number(b[scope]) || 0);
+      writeBaselines(b);
+    }
+  } catch (e) { return res.status(500).json({ ok: false, error: 'could not reset' }); }
   res.json({ ok: true, scope });
 });
 
@@ -409,6 +499,13 @@ app.post('/api/address', (req, res) => {
   res.json({ ok: true, address: a });
 });
 
+app.get('/api/logshares', (_req, res) => res.json({ ok: true, on: logSharesOn() }));
+app.post('/api/logshares', (req, res) => {
+  const on = !!(req.body && req.body.on);
+  setLogShares(on);
+  if (!on) { try { writeResetState({}); } catch (_) {} for (const k of Object.keys(shareBest)) delete shareBest[k]; }
+  res.json({ ok: true, on });
+});
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 

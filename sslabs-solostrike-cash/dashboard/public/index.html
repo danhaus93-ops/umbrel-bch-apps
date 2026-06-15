@@ -153,6 +153,7 @@
     </div>
     <div class="foot">network needs <b id="netDiff">—</b> to mine a block</div>
     <button class="copy" id="resetAll" style="margin-top:12px">Reset best</button>
+    <label style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;font-family:var(--fm);font-size:11px;color:var(--dim);cursor:pointer"><input type="checkbox" id="logSharesToggle"/> Live best rebuild <span title="Logs every share to disk so a per-worker reset rebuilds its best from scratch instead of just hiding it. Off = zero disk use." style="opacity:.6">(?)</span></label>
   </section>
 
   <div class="grid">
@@ -375,6 +376,7 @@ async function doReset(scope,btn){
     btn.textContent='Resetting…';setTimeout(tick,8000);}catch{}
 }
 document.getElementById('resetAll').addEventListener('click',e=>doReset('all',e.target));
+(function(){var t=document.getElementById('logSharesToggle');if(!t)return;fetch('/api/logshares').then(function(r){return r.json();}).then(function(d){t.checked=!!d.on;}).catch(function(){});t.addEventListener('change',function(){fetch('/api/logshares',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:t.checked})}).catch(function(){});});})();
 let diffLoaded=false;
 function loadDiff(d){
   if(diffLoaded||!d.diff)return;
