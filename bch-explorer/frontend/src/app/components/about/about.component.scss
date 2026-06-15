@@ -17,12 +17,13 @@
   .intro {
     margin: 25px auto 30px;
     margin-top: 25px;
-    width: 420px;
+    width: 100%;
+    max-width: 420px;
     display: flex;
     flex-direction: column;
     .logo {
-      height: 62.5px;
-      width: 250px;
+      max-width: 100%;
+      height: auto;
       margin: auto;
     }
     .version {

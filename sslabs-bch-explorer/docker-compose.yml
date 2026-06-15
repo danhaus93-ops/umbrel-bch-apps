@@ -33,8 +33,8 @@ services:
       EXPLORER_NETWORK: "mainnet"
       EXPLORER_OFFICIAL: "false"
       EXPLORER_POOLS_SOURCE: "github"
-      EXPLORER_POOLS_JSON_URL: "https://raw.githubusercontent.com/BitcoinCash1/mining-pools/main/pools-v2.json"
-      EXPLORER_POOLS_JSON_TREE_URL: "https://api.github.com/repos/BitcoinCash1/mining-pools/git/trees/main"
+      EXPLORER_POOLS_JSON_URL: "https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/pools-v2.json"
+      EXPLORER_POOLS_JSON_TREE_URL: "https://api.github.com/repos/danhaus93-ops/umbrel-bch-apps/git/trees/master"
       EXPLORER_INDEXING_BLOCKS_AMOUNT: "11000"
       EXPLORER_USE_SECOND_NODE_FOR_MINFEE: "false"
       # Your Bitcoin Cash Node (RPC)

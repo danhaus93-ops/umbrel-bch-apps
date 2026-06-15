@@ -324,7 +324,7 @@
                 href="https://github.com/danhaus93-ops/umbrel-bch-apps#{{
                   frontendGitCommitHash
                 }}"
-                >{{ frontendGitCommitHash }}</a
+                >{{ frontendGitCommitHash | slice: 0 : 8 }}</a
               >]
             </p>
           </ng-template>
@@ -335,7 +335,7 @@
             href="https://github.com/danhaus93-ops/umbrel-bch-apps#{{
               frontendGitCommitHash
             }}"
-            >{{ frontendGitCommitHash }}</a
+            >{{ frontendGitCommitHash | slice: 0 : 8 }}</a
           >]
         </p>
       </div>
