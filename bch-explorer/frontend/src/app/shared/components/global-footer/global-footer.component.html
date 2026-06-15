@@ -6,7 +6,7 @@
           <img
             src="/resources/explorer_bitcoin_cash_logo_banner.png"
             alt="Bitcoin Cash Explorer logo"
-            height="52px"
+            style="width: 100%; height: auto; max-width: 220px"
             class="bch-explorer-logo"
           />
         </div>
@@ -305,7 +305,7 @@
             <span
               >{{ backend.hostname }} (v{{ backend.version }}) [<a
                 target="_blank"
-                href="https://github.com/danhaus93-ops/umbrel-bch-apps/commit/{{
+                href="https://github.com/danhaus93-ops/umbrel-bch-apps#{{
                   backend.gitCommit | slice: 0 : 8
                 }}"
                 >{{ backend.gitCommit | slice: 0 : 8 }}</a
@@ -321,7 +321,7 @@
             <p>
               v{{ packetJsonVersion }} [<a
                 target="_blank"
-                href="https://github.com/danhaus93-ops/umbrel-bch-apps/commit/{{
+                href="https://github.com/danhaus93-ops/umbrel-bch-apps#{{
                   frontendGitCommitHash
                 }}"
                 >{{ frontendGitCommitHash }}</a
@@ -332,7 +332,7 @@
         <p *ngIf="!officialBCHExplorerSite">
           v{{ packetJsonVersion }} [<a
             target="_blank"
-            href="https://github.com/danhaus93-ops/umbrel-bch-apps/commit/{{
+            href="https://github.com/danhaus93-ops/umbrel-bch-apps#{{
               frontendGitCommitHash
             }}"
             >{{ frontendGitCommitHash }}</a
