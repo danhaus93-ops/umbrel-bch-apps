@@ -274,7 +274,7 @@ function render(d){
   const frac=Math.min(1,Math.max((d.netDiff>0&&d.bestShare>0)?d.bestShare/d.netDiff:0,0.004));
   document.getElementById('arc').style.strokeDashoffset=628*(1-frac);
   const lin=(d.netDiff>0&&d.bestShare>0)?(d.bestShare/d.netDiff*100):0;
-  document.getElementById('strikePct').textContent=(lin>=1?lin.toFixed(1):lin>=0.01?lin.toFixed(3):lin>0?lin.toExponential(1):'0')+'% of a block';
+  document.getElementById('strikePct').textContent=(lin>=1?lin.toFixed(1):lin>=0.01?lin.toFixed(3):lin>0?lin.toFixed(Math.min(12,Math.max(4,1-Math.floor(Math.log10(lin))))):'0')+'% of a block';
   document.getElementById('bestShare').textContent=fmtDiff(d.bestShare);
   loadDiff(d);
   if(d.netDiff>0&&d.roundShares!=null){
