@@ -84,9 +84,8 @@ function writeBaselines(b) { try { fs.mkdirSync(path.dirname(BASELINE_FILE), { r
 // ---- SHARELOG_REBUILD: live per-worker best-since-reset from asicseer's -L sharelog ----
 const LOGSHARES_FLAG = path.join(POOL_DIR, 'config', 'logshares');
 const RESET_STATE_FILE = path.join(POOL_DIR, 'config', 'best_resets.json');
-const SHARELOG_CAP = Number(process.env.SHARELOG_CAP_BYTES || 50 * 1024 * 1024);
 const shareBest = {};      // worker -> best sdiff since its reset (in-memory)
-const shareOffset = {};    // sharelog path -> bytes already consumed
+const fileSeen = {};       // sharelog path -> last size consumed (skip unchanged)
 function logSharesOn() { try { return fs.existsSync(LOGSHARES_FLAG); } catch (_) { return false; } }
 function setLogShares(on) { try { fs.mkdirSync(path.dirname(LOGSHARES_FLAG), { recursive: true }); if (on) fs.writeFileSync(LOGSHARES_FLAG, '1'); else fs.rmSync(LOGSHARES_FLAG, { force: true }); } catch (_) {} }
 function readResetState() { try { return JSON.parse(fs.readFileSync(RESET_STATE_FILE, 'utf8')) || {}; } catch (_) { return {}; } }
@@ -95,30 +94,33 @@ function shortName(wn) { wn = String(wn || ''); const p = wn.split('.'); return 
 function findSharelogs() {
   const out = []; const seen = new Set();
   const walk = (d, depth) => {
-    if (depth > 3) return;
+    if (depth > 4) return;
     let ents = []; try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch (_) { return; }
     for (const e of ents) {
       const fp = path.join(d, e.name);
       if (e.isDirectory()) walk(fp, depth + 1);
-      else if (e.name.endsWith('.sharelog') && !seen.has(fp)) { seen.add(fp); out.push(fp); }
+      else if (e.name.endsWith('.sharelog') && !seen.has(fp)) {
+        seen.add(fp);
+        let st; try { st = fs.statSync(fp); } catch (_) { continue; }
+        out.push({ path: fp, mtime: Math.floor(st.mtimeMs / 1000), size: st.size });
+      }
     }
   };
-  for (const r of [POOL_LOGDIR, POOL_DIR]) walk(r, 0);
+  walk(POOL_LOGDIR, 0);
   return out;
 }
 function shareTs(j) { return parseInt(String(j.createdate || '').split(',')[0], 10) || 0; }
 function tailSharelogs() {
   if (!logSharesOn()) return;
-  const rs = readResetState();
-  if (!Object.keys(rs).length) return;
-  for (const fp of findSharelogs()) {
-    let st; try { st = fs.statSync(fp); } catch (_) { continue; }
-    let off = shareOffset[fp] || 0;
-    if (st.size < off) off = 0;
-    if (st.size === off) continue;
-    let buf; try { const fd = fs.openSync(fp, 'r'); buf = Buffer.alloc(st.size - off); fs.readSync(fd, buf, 0, buf.length, off); fs.closeSync(fd); } catch (_) { continue; }
-    shareOffset[fp] = st.size;
-    for (const line of buf.toString('utf8').split('\n')) {
+  const rs = readResetState(); const keys = Object.keys(rs);
+  if (!keys.length) return;
+  const minReset = Math.min.apply(null, keys.map(k => Number(rs[k]) || Infinity));
+  for (const f of findSharelogs()) {
+    if (f.mtime < minReset - 5) continue;
+    if (fileSeen[f.path] === f.size) continue;
+    fileSeen[f.path] = f.size;
+    let raw; try { raw = fs.readFileSync(f.path, 'utf8'); } catch (_) { continue; }
+    for (const line of raw.split('\n')) {
       const t = line.trim(); if (!t) continue;
       let j; try { j = JSON.parse(t); } catch (_) { continue; }
       if (j.result !== true) continue;
@@ -130,19 +132,14 @@ function tailSharelogs() {
 }
 function pruneSharelogs() {
   if (!logSharesOn()) return;
-  const rs = readResetState();
-  const oldest = Object.values(rs).reduce((m, v) => Math.min(m, Number(v) || Infinity), Infinity);
-  for (const fp of findSharelogs()) {
-    let raw; try { raw = fs.readFileSync(fp, 'utf8'); } catch (_) { continue; }
-    if (!raw) continue;
-    let lines = raw.split('\n').filter(l => l.trim());
-    if (oldest === Infinity) lines = [];
-    else lines = lines.filter(l => { let ts = 0; try { ts = shareTs(JSON.parse(l)); } catch (_) { return true; } return !ts || ts >= oldest - 5; });
-    let data = lines.length ? lines.join('\n') + '\n' : '';
-    if (Buffer.byteLength(data) > SHARELOG_CAP) data = data.slice(-SHARELOG_CAP);
-    try { const tmp = fp + '.tmp'; fs.writeFileSync(tmp, data); fs.renameSync(tmp, fp); shareOffset[fp] = Buffer.byteLength(data); } catch (_) {}
+  const rs = readResetState(); const keys = Object.keys(rs);
+  const now = Math.floor(Date.now() / 1000);
+  const cutoff = keys.length ? Math.min.apply(null, keys.map(k => Number(rs[k]) || Infinity)) - 5 : now - 120;
+  for (const f of findSharelogs()) {
+    if (f.mtime < cutoff) { try { fs.rmSync(f.path, { force: true }); delete fileSeen[f.path]; } catch (_) {} }
   }
 }
+function purgeAllSharelogs() { for (const f of findSharelogs()) { try { fs.rmSync(f.path, { force: true }); } catch (_) {} } for (const k of Object.keys(fileSeen)) delete fileSeen[k]; }
 setInterval(tailSharelogs, 3000);
 setInterval(pruneSharelogs, 120000);
 function readWorkers() {
@@ -503,7 +500,7 @@ app.get('/api/logshares', (_req, res) => res.json({ ok: true, on: logSharesOn() 
 app.post('/api/logshares', (req, res) => {
   const on = !!(req.body && req.body.on);
   setLogShares(on);
-  if (!on) { try { writeResetState({}); } catch (_) {} for (const k of Object.keys(shareBest)) delete shareBest[k]; }
+  if (!on) { try { writeResetState({}); } catch (_) {} for (const k of Object.keys(shareBest)) delete shareBest[k]; try { purgeAllSharelogs(); } catch (_) {} }
   res.json({ ok: true, on });
 });
 app.get('/health', (_req, res) => res.json({ ok: true }));
