@@ -229,6 +229,19 @@ function countBlocks() {
 // Pull the real block-solving share diff out of the asicseer-pool log, e.g.
 //   "Solved block 954947 ..."  near  "... solve ... diff 1972695353385 !"
 // Returns 0 if no readable log / no match (caller falls back to the block's net diff).
+// asicseer writes a JSON file per solved block at logdir/pool/blocks/<height>.<state>
+// with "solution_difficulty" = the winning share's diff. That's the real best diff
+// submitted (asicseer's console log isn't written to a findable file, only stdout).
+function solveDiffFromBlocks(height) {
+  for (const ext of ['confirmed', 'unconfirmed', 'orphaned']) {
+    try {
+      const j = JSON.parse(fs.readFileSync(path.join(POOL_LOGDIR, 'pool', 'blocks', height + '.' + ext), 'utf8'));
+      const sd = Number(j.solution_difficulty);
+      if (sd > 0) return Math.round(sd);
+    } catch (_) {}
+  }
+  return 0;
+}
 function solveDiffFromLog(height) {
   const files = [
     path.join(POOL_LOGDIR, 'pool.log'),
@@ -315,7 +328,7 @@ async function scanBlocks() {
       const hash = await rpc('getblockhash', [h]);
       const hit = await coinbasePaysUs(hash, mine);
       if (hit && !blockState.blocks.some(b => b.hash === hash)) {
-        const solveDiff = solveDiffFromLog(h);
+        const solveDiff = solveDiffFromBlocks(h) || solveDiffFromLog(h);
         const bestAtHit = solveDiff || hit.netdiff || lastBestSeen;
         blockState.blocks.push({ height: h, hash, time: hit.time, best: bestAtHit, solveDiff: solveDiff || null, netdiff: hit.netdiff || null, healed: true });
         blockState.acceptedAtLastBlock = lastAcceptedTotal || 0;
@@ -326,15 +339,15 @@ async function scanBlocks() {
     // Heal older entries stamped with the rolling best (e.g. 148G) instead of the
     // real solving diff. Prefer the pool log; fall back to the block's net diff.
     for (const b of blockState.blocks) {
-      if (b.healed) continue;
-      const sd = solveDiffFromLog(b.height);
+      if (b.solveDiff || b.recheck) continue;
+      const sd = solveDiffFromBlocks(b.height) || solveDiffFromLog(b.height);
       let val = sd;
       if (!val && b.hash) {
         try { const blk = await rpc('getblock', [b.hash, 1]); val = Number(blk.difficulty) || 0; } catch (_) {}
       }
       if (val && val > (b.best || 0)) b.best = val;
       if (sd) b.solveDiff = sd;
-      b.healed = true;
+      b.recheck = true;
     }
     saveBlocks();
   } catch (_) { /* node not ready — retry next pass */ }
