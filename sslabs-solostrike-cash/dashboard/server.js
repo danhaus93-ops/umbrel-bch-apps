@@ -520,6 +520,16 @@ app.post('/api/logshares', (req, res) => {
   if (!on) { try { writeResetState({}); } catch (_) {} for (const k of Object.keys(shareBest)) delete shareBest[k]; writeShareBest(); try { purgeAllSharelogs(); } catch (_) {} }
   res.json({ ok: true, on });
 });
+const ELEC_FILE = path.join(POOL_DIR, 'config', 'electricity.json');
+function readElectricity() { try { return JSON.parse(fs.readFileSync(ELEC_FILE, 'utf8')) || {}; } catch (_) { return {}; } }
+function writeElectricity(e) { try { fs.mkdirSync(path.dirname(ELEC_FILE), { recursive: true }); fs.writeFileSync(ELEC_FILE, JSON.stringify(e)); } catch (_) {} }
+app.get('/api/electricity', (_req, res) => res.json({ ok: true, ...readElectricity() }));
+app.post('/api/electricity', (req, res) => {
+  const e = readElectricity(); const b = req.body || {};
+  if (b.rate  != null) e.rate  = Math.max(0, Number(b.rate)  || 0);
+  if (b.watts != null) e.watts = Math.max(0, Number(b.watts) || 0);
+  writeElectricity(e); res.json({ ok: true, ...e });
+});
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
