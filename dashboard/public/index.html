@@ -456,6 +456,9 @@ async function tick(){
   if(fulcrumOff){
     ['walletCard','fulStatus'].forEach(id=>{const e=$(id); if(e) e.style.display='none';});
     const slot=$('cSlot'); if(slot){const card=slot.closest('.card'); if(card) card.style.display='none';}
+    // Fulcrum is a separate app here, so this node can't probe it. Hide the
+    // "wallet server" stat instead of pinning it on a permanent "starting".
+    const fw=$('fullWallets'); if(fw){const w=fw.closest('div'); if(w) w.style.display='none';}
   }
 
   $('rpcEp').textContent = d.connect.rpc;
