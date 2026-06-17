@@ -21,7 +21,7 @@
     --bg-void:#051914; --bg-deep:#08221c; --surface:#0a2e26; --raised:#0d3a30; --elevated:#11473b;
     --line:#11473b; --line2:#18594a;
     --green:#10B981; --mint:#34D399; --gold:#FCD34D; --red:#FB7185; --hot:#FFFFFF;
-    --text:#E6F4EE; --muted:#6E9286; --dim:#3E5F54;
+    --text:#E6F4EE; --muted:#6E9286; --dim:#3E5F54; --blue:#4EA8FF;
     --fd:'Chakra Petch',system-ui,-apple-system,sans-serif;
     --fm:'JetBrains Mono','IBM Plex Mono',ui-monospace,Menlo,monospace;
     --r:3px;
@@ -81,7 +81,10 @@
   .workers{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface)}
   .workers .wh,.workers .wr{display:grid;grid-template-columns:1.5fr 1fr 1fr .9fr 62px;gap:8px;padding:11px 15px;align-items:center}
   .wreset{border:1px solid var(--line2);background:none;color:var(--dim);font-family:var(--fm);font-size:12px;width:26px;height:24px;border-radius:var(--r);cursor:pointer}
-  .wreset:hover{color:var(--red);border-color:var(--red)}
+  .wreset:hover{color:var(--gold);border-color:var(--gold)}
+  .whide{color:var(--red);border-color:rgba(251,113,133,.45);background:rgba(251,113,133,.07)}
+  .whide:hover{color:var(--red);border-color:var(--red);background:rgba(251,113,133,.14)}
+  .whide[data-arm="1"]{background:rgba(251,113,133,.2);border-color:var(--red)}
   .workers .wh{background:var(--raised);font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
   .workers .wr{border-top:1px solid var(--line);font-family:var(--fm);font-size:12px}
   .workers .wr .name{color:var(--text);min-width:0}
@@ -175,7 +178,7 @@
     <div class="hint" id="ttb" style="margin-top:9px">&mdash;</div>
   </div>
 
-  <div class="sec" id="elecHead" style="cursor:pointer;display:flex;align-items:center">Electricity<span id="elecChev" style="margin-left:auto;color:var(--dim);transition:transform .2s">&#9662;</span></div>
+  <div class="sec" id="elecHead" style="cursor:pointer;display:flex;align-items:center;color:var(--blue)">Electricity<span id="elecChev" style="margin-left:auto;color:var(--blue);transition:transform .2s">&#9662;</span></div>
   <div class="addr" id="elecBody">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
       <label style="flex:1;min-width:110px;font-family:var(--fm);font-size:11px;color:var(--dim)">RATE / kWh<input id="elRate" type="number" min="0" step="0.01" inputmode="decimal" style="width:100%;margin-top:5px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:14px;padding:9px 10px"/></label>
