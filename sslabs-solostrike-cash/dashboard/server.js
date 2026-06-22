@@ -284,9 +284,6 @@ function rpc(method, params = []) {
 
 
 // ---- winning-worker lookup (best-effort) -----------------------------------
-// asicseer records the solving worker: log line "Solved block <h> by <workername>",
-// and may also stamp it into the per-block JSON. Same sources as the diff lookup,
-// so reliability matches the "best diff" column; returns null when unavailable.
 function solveWorkerFromBlocks(height) {
   for (const ext of ['confirmed', 'unconfirmed', 'orphaned']) {
     try {
