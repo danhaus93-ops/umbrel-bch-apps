@@ -283,6 +283,29 @@ function rpc(method, params = []) {
 }
 
 
+// ---- winning-worker lookup (best-effort) -----------------------------------
+// asicseer records the solving worker: log line "Solved block <h> by <workername>",
+// and may also stamp it into the per-block JSON. Same sources as the diff lookup,
+// so reliability matches the "best diff" column; returns null when unavailable.
+function solveWorkerFromBlocks(height) {
+  for (const ext of ['confirmed', 'unconfirmed', 'orphaned']) {
+    try {
+      const j = JSON.parse(fs.readFileSync(path.join(POOL_LOGDIR, 'pool', 'blocks', height + '.' + ext), 'utf8'));
+      const w = j.workername || j.worker || j.username;
+      if (w) return shortName(String(w));
+    } catch (_) {}
+  }
+  return null;
+}
+function solveWorkerFromLog(height) {
+  const files = [path.join(POOL_LOGDIR, 'pool.log'), path.join(POOL_LOGDIR, 'pool', 'pool.log'), path.join(POOL_DIR, 'pool.log')];
+  const re = new RegExp('Solved block ' + height + ' by (\\S+)');
+  for (const f of files) {
+    let lines; try { lines = fs.readFileSync(f, 'utf8').split('\n'); } catch (_) { continue; }
+    for (let i = lines.length - 1; i >= 0; i--) { const m = lines[i].match(re); if (m) return shortName(m[1]); }
+  }
+  return null;
+}
 // ---- found-block scanner ---------------------------------------------------
 // Engine-agnostic: watches the chain itself for blocks whose coinbase pays the
 // configured payout address. Persists to /pool/config/blocks.json.
@@ -330,7 +353,7 @@ async function scanBlocks() {
       if (hit && !blockState.blocks.some(b => b.hash === hash)) {
         const solveDiff = solveDiffFromBlocks(h) || solveDiffFromLog(h);
         const bestAtHit = solveDiff || hit.netdiff || lastBestSeen;
-        blockState.blocks.push({ height: h, hash, time: hit.time, best: bestAtHit, solveDiff: solveDiff || null, netdiff: hit.netdiff || null, healed: true });
+        blockState.blocks.push({ height: h, hash, time: hit.time, best: bestAtHit, solveDiff: solveDiff || null, netdiff: hit.netdiff || null, worker: solveWorkerFromBlocks(h) || solveWorkerFromLog(h) || null, healed: true });
         blockState.acceptedAtLastBlock = lastAcceptedTotal || 0;
         console.log(`[SoloStrike Cash] BLOCK FOUND at height ${h} (${hash})`);
       }
@@ -349,6 +372,11 @@ async function scanBlocks() {
       if (sd) b.solveDiff = sd;
       b.recheck = true;
     }
+    for (const b of blockState.blocks) {
+      if (b.worker) continue;
+      const w = solveWorkerFromBlocks(b.height) || solveWorkerFromLog(b.height);
+      if (w) b.worker = w;
+    }
     saveBlocks();
   } catch (_) { /* node not ready — retry next pass */ }
   finally { scanning = false; }
@@ -364,7 +392,7 @@ app.get('/api/status', async (_req, res) => {
     netDiff: 0, height: 0, chain: 'main',
     stratum: `stratum+tcp://${STRATUM_HOST}:${STRATUM_PORT}`,
     workerList: [], version: VERSION, address: readAddress(),
-    blockList: [...blockState.blocks].sort((a, b) => b.height - a.height).slice(0, 25),
+    blockList: [...blockState.blocks].sort((a, b) => b.height - a.height).slice(0, 200),
     diff: (() => { try {
       const [mi, st, mx] = fs.readFileSync(path.join(POOL_DIR, 'config', 'diff'), 'utf8').trim().split(/\s+/).map(Number);
       return { min: mi || 1, start: st || 42, max: mx || 0 };
