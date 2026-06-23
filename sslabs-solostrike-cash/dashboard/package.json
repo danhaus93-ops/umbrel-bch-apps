@@ -2,7 +2,7 @@
   "name": "solostrike-cash-dashboard",
   "version": "1.0.0",
   "private": true,
-  "description": "Dashboard for the SoloStrike Cash BCH solo mining pool",
+  "description": "Dashboard for the LoneStrike Cash BCH solo mining pool",
   "main": "server.js",
   "scripts": { "start": "node server.js" },
   "dependencies": { "express": "^4.19.2" }

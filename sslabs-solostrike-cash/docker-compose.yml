@@ -23,7 +23,7 @@ services:
     volumes:
       - ${APP_DATA_DIR}/data/pool:/pool
     ports:
-      - "3335:3333"   # host 3335 (SoloStrike already owns 3333/3334/4333)
+      - "3335:3333"   # host 3335 (LoneStrike already owns 3333/3334/4333)
 
   dashboard:
     image: ghcr.io/danhaus93-ops/solostrike-cash-dashboard:latest
@@ -36,7 +36,7 @@ services:
       RPC_PORT: "8332"
       RPC_USER: bchn
       RPC_PASS: bchn_local_rpc_pw_2f9c
-      APP_VERSION: v1.4.18
+      APP_VERSION: v1.4.19
     volumes:
       - ${APP_DATA_DIR}/data/pool:/pool
     depends_on:

@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-bch-explorer
 category: networking
 name: Bitcoin Cash Explorer
-version: "3.11.22"
+version: "3.11.23"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bch-explorer/icon.svg
 tagline: A mempool-style block explorer for your own Bitcoin Cash node
 description: >-
@@ -22,9 +22,9 @@ description: >-
 
   Built on the open-source Bitcoin Cash Explorer (a Bitcoin Cash fork of mempool).
 
-  Donations are never expected — but if SoloStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
+  Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
 releaseNotes: ""
-developer: SoloStrike Labs
+developer: LoneStrike Labs
 website: https://bchexplorer.cash
 dependencies:
   - sslabs-bitcoin-cash-node
@@ -34,5 +34,5 @@ support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
 port: 3332
 gallery: []
 path: ""
-submitter: SoloStrike Labs
+submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps

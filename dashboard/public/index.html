@@ -281,7 +281,7 @@
     </div>
     <div class="conn">
       <h3>Node RPC &mdash; for apps</h3>
-      <p>Fulcrum and SoloStrike Cash connect to this node over <span class="brass">JSON-RPC</span> automatically. <b>Miners do not point here</b> &mdash; install SoloStrike Cash and point your ASIC at its stratum port instead.</p>
+      <p>Fulcrum and LoneStrike Cash connect to this node over <span class="brass">JSON-RPC</span> automatically. <b>Miners do not point here</b> &mdash; install LoneStrike Cash and point your ASIC at its stratum port instead.</p>
       <div class="field">
         <label>RPC</label><div class="val" id="rpcEp">—</div>
         <button class="copy" data-copy="rpcEp">Copy</button>
@@ -475,13 +475,13 @@ async function tick(){
   if(d.uptime){$('tUptime').textContent=fmtAge(d.uptime);}
   if(d.dash_version){const dv=$('dashVer'); if(dv) dv.textContent=d.dash_version;}
 
-  // ZMQ hashblock hook (for SoloStrike Cash)
+  // ZMQ hashblock hook (for LoneStrike Cash)
   const zmqEl=$('zmqNote');
   if(zmqEl){
     const hb=(d.zmq||[]).find(z=>/hashblock/i.test(z.type||''));
     if(hb){
       const port=(hb.address||'').split(':').pop();
-      zmqEl.innerHTML='<span class="dot ok"></span>ZMQ hashblock live on :'+port+' — SoloStrike Cash can subscribe.';
+      zmqEl.innerHTML='<span class="dot ok"></span>ZMQ hashblock live on :'+port+' — LoneStrike Cash can subscribe.';
       zmqEl.style.display='';
     }else{ zmqEl.style.display='none'; }
   }

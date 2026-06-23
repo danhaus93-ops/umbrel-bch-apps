@@ -1,5 +1,5 @@
 # Bitcoin Cash Node (node only) for Umbrel
-# Fulcrum is now its own app (sslabs-fulcrum). ZMQ added for SoloStrike Cash.
+# Fulcrum is now its own app (sslabs-fulcrum). ZMQ added for LoneStrike Cash.
 services:
   app_proxy:
     environment:
@@ -41,7 +41,7 @@ services:
       - -maxmempool=300
       - -txindex=1
       - -maxconnections=64
-      - -zmqpubhashblock=tcp://0.0.0.0:28332   # for SoloStrike Cash (lowest-latency)
+      - -zmqpubhashblock=tcp://0.0.0.0:28332   # for LoneStrike Cash (lowest-latency)
     ports:
       - 8335:8335   # BCH P2P — forward this on your router for clearnet inbound peers
 
@@ -55,7 +55,7 @@ services:
       - bitcoind
     environment:
       PORT: 3000
-      APP_VERSION: v29.1.12
+      APP_VERSION: v29.1.13
       TOR_IP: ${APP_SSLABS_BITCOIN_CASH_NODE_TOR_IP}
       RPC_HOST: bitcoind
       RPC_PORT: "8332"

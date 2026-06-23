@@ -1,6 +1,6 @@
 {
-  "name": "SoloStrike Cash",
-  "short_name": "SoloStrike Cash",
+  "name": "LoneStrike Cash",
+  "short_name": "LoneStrike Cash",
   "description": "Zero-fee Bitcoin Cash solo mining pool",
   "start_url": "/",
   "display": "standalone",

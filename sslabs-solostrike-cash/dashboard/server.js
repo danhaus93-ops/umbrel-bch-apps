@@ -1,6 +1,6 @@
 'use strict';
 /*
- * SoloStrike Cash — dashboard API
+ * LoneStrike Cash — dashboard API
  * Reads asicseer-pool (ckpool-lineage) stats from its logdir and queries the
  * backing BCHN node over JSON-RPC. Serves a single /api/status payload to the UI.
  * Degrades gracefully: if the pool hasn't started or the node is unreachable,
@@ -352,7 +352,7 @@ async function scanBlocks() {
         const bestAtHit = solveDiff || hit.netdiff || lastBestSeen;
         blockState.blocks.push({ height: h, hash, time: hit.time, best: bestAtHit, solveDiff: solveDiff || null, netdiff: hit.netdiff || null, worker: solveWorkerFromBlocks(h) || solveWorkerFromLog(h) || null, healed: true });
         blockState.acceptedAtLastBlock = lastAcceptedTotal || 0;
-        console.log(`[SoloStrike Cash] BLOCK FOUND at height ${h} (${hash})`);
+        console.log(`[LoneStrike Cash] BLOCK FOUND at height ${h} (${hash})`);
       }
       blockState.lastScanned = h; h++;
     }
@@ -464,7 +464,7 @@ function surgicalReset(scope) {
         if ('bestshare' in j) j.bestshare = maxBest('bestshare');
         if ('bestever' in j) j.bestever = maxBest('bestever');
         fs.writeFileSync(fp, JSON.stringify(j));
-        console.log(`[SoloStrike Cash] surgical best reset: ${scope} in ${fn}`);
+        console.log(`[LoneStrike Cash] surgical best reset: ${scope} in ${fn}`);
       }
     } catch (_) { /* not JSON or unreadable — skip */ }
   }
@@ -558,4 +558,4 @@ app.post('/api/electricity', (req, res) => {
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.listen(PORT, () => console.log(`SoloStrike Cash dashboard on :${PORT}`));
+app.listen(PORT, () => console.log(`LoneStrike Cash dashboard on :${PORT}`));
