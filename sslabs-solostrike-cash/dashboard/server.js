@@ -576,7 +576,7 @@ app.get('/api/widget/stats', (_req, res) => {
   } catch (_) { /* pool not up yet */ }
   res.json({
     type: 'four-stats',
-    link: '',
+    refresh: '10s',
     items: [
       { title: 'Pool hashrate', text: hashVal, subtext: hashUnit },
       { title: 'Miners', text: String(miners), subtext: 'online' },
