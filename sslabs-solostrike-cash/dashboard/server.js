@@ -558,4 +558,32 @@ app.post('/api/electricity', (req, res) => {
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Umbrel home-screen widget: glanceable solo-mining stats (fetched by umbreld)
+app.get('/api/widget/stats', (_req, res) => {
+  const fmtDiff = (n) => {
+    n = Number(n) || 0;
+    const u = [[1e18,'E'],[1e15,'P'],[1e12,'T'],[1e9,'G'],[1e6,'M'],[1e3,'K']];
+    for (const [v,sfx] of u) if (n >= v) return (n/v).toFixed((n/v) >= 100 ? 0 : 1) + sfx;
+    return String(Math.round(n));
+  };
+  let hashVal = '0', hashUnit = 'H/s', miners = 0, best = 0, blocks = 0;
+  try {
+    const p = readPoolStatus();
+    const h = parseHash(p.hashrate5m || p.hashrate1m); hashVal = h.val; hashUnit = h.unit;
+    best = Number(p.bestshare) || 0;
+    miners = readWorkers().filter(w => !w.idle).length;
+    blocks = Math.max(blockState.blocks.length, countBlocks());
+  } catch (_) { /* pool not up yet */ }
+  res.json({
+    type: 'four-stats',
+    link: '',
+    items: [
+      { title: 'Pool hashrate', text: hashVal, subtext: hashUnit },
+      { title: 'Miners', text: String(miners), subtext: 'online' },
+      { title: 'Best share', text: fmtDiff(best), subtext: 'best diff' },
+      { title: 'Blocks', text: String(blocks), subtext: 'found' },
+    ],
+  });
+});
+
 app.listen(PORT, () => console.log(`LoneStrike Cash dashboard on :${PORT}`));
