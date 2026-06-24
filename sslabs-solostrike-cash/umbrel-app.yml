@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.20"
+version: "1.4.21"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -45,7 +45,7 @@ widgets:
   - id: "stats"
     type: "four-stats"
     refresh: "30s"
-    endpoint: "sslabs-solostrike-cash_dashboard_1:3000/api/widget/stats"
+    endpoint: "app:3000/api/widget/stats"
     link: ""
     example:
       type: "four-stats"
@@ -64,6 +64,6 @@ widgets:
           text: "0"
           subtext: "found"
 
-releaseNotes: Adds an Umbrel home-screen widget (pool hashrate, miners online, best share, blocks) and pins the iOS home-screen name to LoneStrike Cash.
+releaseNotes: Fixes the home-screen widget showing dashes by pointing the widget endpoint at the canonical Umbrel app host.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
