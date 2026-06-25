@@ -36,6 +36,16 @@ write_conf() {
   if [ "$maxd" -gt 0 ] 2>/dev/null; then
     maxline="\"maxdiff\": ${maxd},"
   fi
+  # Idle-client reaping: close TCP-dead / half-open miners so they auto-reconnect
+  # instead of lingering as zombie workers. asicseer-pool's "blocking_timeout" is
+  # the seconds to wait for a client to respond at the TCP level before closing it
+  # (default 60; must stay >= 10). Tunable via /pool/config/blocking_timeout.
+  local btimeout=30
+  if [ -f /pool/config/blocking_timeout ]; then
+    read -r btimeout < /pool/config/blocking_timeout 2>/dev/null || btimeout=30
+    case "$btimeout" in ''|*[!0-9]*) btimeout=30;; esac
+    [ "$btimeout" -lt 10 ] 2>/dev/null && btimeout=10
+  fi
   cat > /pool/asicseer-pool.conf <<JSON
 {
   "btcd": [ ${btcd} ],
@@ -47,6 +57,7 @@ write_conf() {
   "mindiff": ${mind},
   "startdiff": ${startd},
   ${maxline}
+  "blocking_timeout": ${btimeout},
   "logdir": "/pool/logs"
 }
 JSON
