@@ -288,7 +288,7 @@ function solveWorkerFromBlocks(height) {
   for (const ext of ['confirmed', 'unconfirmed', 'orphaned']) {
     try {
       const j = JSON.parse(fs.readFileSync(path.join(POOL_LOGDIR, 'pool', 'blocks', height + '.' + ext), 'utf8'));
-      const w = j.workername || j.worker || j.username;
+      const w = j.solvedby || j.workername || j.worker || j.username;
       if (w) return shortName(String(w));
     } catch (_) {}
   }
