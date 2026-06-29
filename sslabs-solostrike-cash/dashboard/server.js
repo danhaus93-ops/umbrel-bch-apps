@@ -334,6 +334,49 @@ async function coinbasePaysUs(hash, mine) {
 }
 
 let scanning = false;
+// Surface blocks straight from asicseer's own solve files
+// (logdir/pool/blocks/<height>.<state>). These are written ONLY when THIS pool
+// solves a block, so they are authoritative even when the block paid an address
+// other than the one currently configured (a different HD address, or a miner's
+// username such as NiceHash). Without this, such a block is invisible because the
+// chain scanner only matches the configured payout address.
+function healFromBlockFiles() {
+  const dir = path.join(POOL_LOGDIR, 'pool', 'blocks');
+  let files = [];
+  try { files = fs.readdirSync(dir); } catch (_) { return; }
+  for (const f of files) {
+    const m = f.match(/^(\d+)\.(confirmed|unconfirmed|orphaned)$/);
+    if (!m) continue;
+    const h = Number(m[1]);
+    if (!Number.isFinite(h)) continue;
+    let j;
+    try { j = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); } catch (_) { continue; }
+    const sd = Number(j.solution_difficulty) || null;
+    const worker = j.solvedby ? shortName(String(j.solvedby)) : null;
+    const existing = blockState.blocks.find((b) => b.height === h);
+    if (existing) {
+      if (!existing.worker && worker) existing.worker = worker;
+      if (!existing.solveDiff && sd) existing.solveDiff = sd;
+      if (sd && sd > (existing.best || 0)) existing.best = sd;
+      if (!existing.hash && j.hash) existing.hash = j.hash;
+      existing.state = m[2];
+      continue;
+    }
+    blockState.blocks.push({
+      height: h,
+      hash: j.hash || null,
+      time: Number(j.time) || Math.floor(Date.now() / 1000),
+      best: sd || 0,
+      solveDiff: sd,
+      netdiff: Number(j.network_difficulty) || null,
+      worker,
+      state: m[2],
+      healed: true,
+    });
+    console.log(`[LoneStrike Cash] BLOCK from pool file: height ${h} (${m[2]})${worker ? ' by ' + worker : ''}`);
+  }
+}
+
 async function scanBlocks() {
   if (scanning) return;
   scanning = true;
@@ -374,6 +417,7 @@ async function scanBlocks() {
       const w = solveWorkerFromBlocks(b.height) || solveWorkerFromLog(b.height);
       if (w) b.worker = w;
     }
+    healFromBlockFiles();
     saveBlocks();
   } catch (_) { /* node not ready — retry next pass */ }
   finally { scanning = false; }
