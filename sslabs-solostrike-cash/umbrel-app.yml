@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.26"
+version: "1.4.27"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -72,6 +72,6 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: Found-blocks now heals from asicseer solve files, so blocks solved by the pool show up even if paid to a different address.
+releaseNotes: Housekeeping release. Stats tracking writes to disk far less often, sparing your SSD.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps

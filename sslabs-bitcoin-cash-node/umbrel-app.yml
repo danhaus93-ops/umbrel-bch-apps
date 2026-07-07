@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.1.13"
+version: "29.1.14"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
@@ -18,9 +18,8 @@ description: >-
   First sync downloads the full chain, so use an SSD (NVMe strongly recommended).
 
   Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
-releaseNotes: Node now runs more RPC threads so heavy mining (large getblocktemplate load) no longer starves the dashboard or pool connections.
-  Split out from Fulcrum — Fulcrum is now its own app. ZMQ enabled for
-  LoneStrike Cash. Update (don't reinstall) to keep your synced chain.
+releaseNotes: Hardening release. The node's unused built-in wallet is now
+  disabled, and the dashboard no longer caches pages after updates.
 developer: LoneStrike Labs
 website: https://bitcoincashnode.org
 dependencies: []

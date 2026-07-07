@@ -317,7 +317,10 @@ app.get('/api/status', async (_req, res) => {
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
-app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '1h',
+  setHeaders: (res, fp) => { if (fp.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache'); },
+}));
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`bchn-dashboard listening on :${PORT} -> node ${RPC_HOST}:${RPC_PORT}, fulcrum ${FULCRUM_HOST}`);

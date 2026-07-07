@@ -118,6 +118,7 @@ function tailSharelogs() {
   const rs = readResetState(); const keys = Object.keys(rs);
   if (!keys.length) return;
   const minReset = Math.min.apply(null, keys.map(k => Number(rs[k]) || Infinity));
+  let dirty = false;
   for (const f of findSharelogs()) {
     if (f.mtime < minReset - 5) continue;
     if (fileSeen[f.path] === f.size) continue;
@@ -129,9 +130,10 @@ function tailSharelogs() {
       if (j.result !== true) continue;
       const sn = shortName(j.workername); const at = rs[sn]; if (at == null) continue;
       const ts = shareTs(j); if (ts && ts < at) continue;
-      const sd = Number(j.sdiff) || 0; if (sd > (shareBest[sn] || 0)) { shareBest[sn] = sd; writeShareBest(); }
+      const sd = Number(j.sdiff) || 0; if (sd > (shareBest[sn] || 0)) { shareBest[sn] = sd; dirty = true; }
     }
   }
+  if (dirty) writeShareBest();
 }
 function pruneSharelogs() {
   if (!logSharesOn()) return;
@@ -204,7 +206,8 @@ function readWorkers() {
       next[w.name] = started;
       w.uptime = nowS - started;        // seconds connected this session
     }
-    try { fs.writeFileSync(sf, JSON.stringify(next)); } catch (_) {}
+    const nextStr = JSON.stringify(next);
+    try { if (nextStr !== JSON.stringify(sessions)) fs.writeFileSync(sf, nextStr); } catch (_) {}
   } catch (_) {}
   const _bl = readBaselines();
   const _rs = readResetState();

@@ -1,5 +1,3 @@
-version: "3.7"
-
 services:
   app_proxy:
     environment:
@@ -36,7 +34,7 @@ services:
       RPC_PORT: "8332"
       RPC_USER: bchn
       RPC_PASS: bchn_local_rpc_pw_2f9c
-      APP_VERSION: v1.4.26
+      APP_VERSION: v1.4.27
     volumes:
       - ${APP_DATA_DIR}/data/pool:/pool
     depends_on:

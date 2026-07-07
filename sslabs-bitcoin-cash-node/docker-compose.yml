@@ -40,6 +40,7 @@ services:
       - -dbcache=512
       - -maxmempool=300
       - -txindex=1
+      - -disablewallet=1
       - -maxconnections=64
       - -zmqpubhashblock=tcp://0.0.0.0:28332   # for LoneStrike Cash (lowest-latency)
     ports:
@@ -55,7 +56,7 @@ services:
       - bitcoind
     environment:
       PORT: 3000
-      APP_VERSION: v29.1.13
+      APP_VERSION: v29.1.14
       TOR_IP: ${APP_SSLABS_BITCOIN_CASH_NODE_TOR_IP}
       RPC_HOST: bitcoind
       RPC_PORT: "8332"

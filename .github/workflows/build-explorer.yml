@@ -57,7 +57,9 @@ jobs:
           push: true
           build-args: |
             commitHash=${{ github.sha }}
-          tags: ghcr.io/danhaus93-ops/bch-explorer-frontend:latest
+          tags: |
+            ghcr.io/danhaus93-ops/bch-explorer-frontend:latest
+            ghcr.io/danhaus93-ops/bch-explorer-frontend:${{ github.sha }}
 
       - name: Build & push BACKEND (multi-arch, named contexts)
         uses: docker/build-push-action@v5
@@ -71,4 +73,6 @@ jobs:
           push: true
           build-args: |
             commitHash=${{ github.sha }}
-          tags: ghcr.io/danhaus93-ops/bch-explorer-backend:latest
+          tags: |
+            ghcr.io/danhaus93-ops/bch-explorer-backend:latest
+            ghcr.io/danhaus93-ops/bch-explorer-backend:${{ github.sha }}
