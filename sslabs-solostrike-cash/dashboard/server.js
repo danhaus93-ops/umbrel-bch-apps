@@ -26,6 +26,11 @@ const ADDR_FILE = path.join(POOL_DIR, 'config', 'bch_address');
 const SV2_DIR       = process.env.SV2_DIR || '/sv2';
 const SV2_ADDR_FILE = path.join(SV2_DIR, 'payout_address');
 const SV2_PUB_FILE  = path.join(SV2_DIR, 'keys', 'authority.pub');
+const SV2_LOG_FILE  = path.join(SV2_DIR, 'pool_sv2.log');
+const SV2_BLOCKS_FILE = path.join(SV2_DIR, 'sv2_blocks.jsonl');
+function readSv2Address() {
+  try { return fs.readFileSync(SV2_ADDR_FILE, 'utf8').trim(); } catch (_) { return ''; }
+}
 
 function readAddress() {
   try { return fs.readFileSync(ADDR_FILE, 'utf8').trim(); } catch (_) { return ''; }
@@ -65,6 +70,123 @@ function parseHash(s) {
   if (!m) return { val: '0', unit: 'H/s', n: 0 };
   const suf = (m[2] || '').toUpperCase();
   return { val: m[1], unit: UNIT[suf] || 'H/s', n: parseFloat(m[1]) * (SUFFIX[suf] || 1) };
+}
+
+function fmtHs(hs) {
+  hs = Number(hs) || 0;
+  const steps = [[1e18,'EH/s'],[1e15,'PH/s'],[1e12,'TH/s'],[1e9,'GH/s'],[1e6,'MH/s'],[1e3,'KH/s']];
+  for (const [m, u] of steps) if (hs >= m) return { val: (hs / m).toFixed(2), unit: u, n: hs };
+  return { val: hs.toFixed(0), unit: 'H/s', n: hs };
+}
+
+// ---- SV2 telemetry: parse pool_sv2's own log from the shared volume -------
+// Every accepted share logs share_hash (-> difficulty) and share_work
+// (difficulty units credited). Hashrate = sum(share_work in window) * 2^32 / secs.
+const SV2_D1 = 0xffffn << 208n;                    // difficulty-1 target
+const sv2State = {
+  offset: 0, pendingId: '', roundWork: 0, lastBlockCount: -1,
+  channels: {},                                    // cid -> stats
+  shares: [],                                      // [ts_ms, work, cid] rolling window
+};
+const SV2_RE_SHARE = /valid share \| downstream_id: (\d+), channel_id: (\d+), sequence_number: (\d+), share_hash: ([0-9a-fA-F]{64}), share_work: ([0-9.eE+-]+)/;
+const SV2_RE_TS    = /^(\d{4}-\d{2}-\d{2}T[0-9:.]+Z)/;
+const SV2_RE_IDENT = /Open(?:Standard|Extended)MiningChannel\b[^\n]*?user_identity[^"\x27]*["\x27]?([^"\x27,\s)]+)/;
+const SV2_RE_OPENOK = /Open(?:Standard|Extended)MiningChannelSuccess[^\n]*?channel_id[=:\s]+(\d+)/;
+const SV2_RE_BAD   = /(?:invalid share|SubmitSharesError)[^\n]*?channel_id[=:\s]+(\d+)/;
+
+function sv2Chan(cid) {
+  return sv2State.channels[cid] || (sv2State.channels[cid] = {
+    name: 'sv2-ch' + cid, accepted: 0, rejected: 0, best: 0,
+    maxSeq: -1, last: 0, firstSeen: Math.floor(Date.now() / 1000),
+  });
+}
+function sv2Ingest() {
+  let st; try { st = fs.statSync(SV2_LOG_FILE); } catch (_) { return; }
+  if (st.size < sv2State.offset) sv2State.offset = 0;          // rotated
+  if (st.size === sv2State.offset) return;
+  let start = sv2State.offset;
+  if (st.size - start > 4 * 1024 * 1024) start = st.size - 4 * 1024 * 1024;
+  let fd, chunk;
+  try {
+    fd = fs.openSync(SV2_LOG_FILE, 'r');
+    const buf = Buffer.alloc(st.size - start);
+    fs.readSync(fd, buf, 0, buf.length, start);
+    chunk = buf.toString('utf8');
+  } catch (_) { return; } finally { try { if (fd !== undefined) fs.closeSync(fd); } catch (_) {} }
+  sv2State.offset = st.size;
+  const nowS = Math.floor(Date.now() / 1000);
+  for (const line of chunk.split('\n')) {
+    const idm = line.match(SV2_RE_IDENT);
+    if (idm) { sv2State.pendingId = idm[1].slice(0, 64); }
+    const okm = line.match(SV2_RE_OPENOK);
+    if (okm && sv2State.pendingId) {
+      sv2Chan(Number(okm[1])).name = sv2State.pendingId; sv2State.pendingId = '';
+    }
+    const bm = line.match(SV2_RE_BAD);
+    if (bm) { sv2Chan(Number(bm[1])).rejected++; }
+    const m = line.match(SV2_RE_SHARE);
+    if (!m) continue;
+    const cid = Number(m[2]), seq = Number(m[3]);
+    const ch = sv2Chan(cid);
+    if (seq <= ch.maxSeq) continue;                            // replay dedupe
+    ch.maxSeq = seq;
+    const work = parseFloat(m[5]) || 0;
+    let diff = 0;
+    try { diff = Number(SV2_D1 * 1000000n / BigInt('0x' + m[4])) / 1e6; } catch (_) {}
+    const tm = line.match(SV2_RE_TS);
+    const tsMs = tm ? Date.parse(tm[1]) : Date.now();
+    ch.accepted++;
+    if (diff > ch.best) ch.best = diff;
+    ch.last = Math.max(ch.last, Math.floor(tsMs / 1000));
+    sv2State.roundWork += work;
+    sv2State.shares.push([tsMs, work, cid]);
+  }
+  const cut = Date.now() - 600 * 1000;
+  while (sv2State.shares.length && sv2State.shares[0][0] < cut) sv2State.shares.shift();
+  void nowS;
+}
+function sv2Blocks() {
+  let raw; try { raw = fs.readFileSync(SV2_BLOCKS_FILE, 'utf8'); } catch (_) { return []; }
+  const out = [];
+  for (const l of raw.split('\n')) {
+    if (!l.trim()) continue;
+    try { const j = JSON.parse(l); if (j && j.height) out.push(j); } catch (_) {}
+  }
+  return out;
+}
+function sv2Stats() {
+  sv2Ingest();
+  const nowS = Math.floor(Date.now() / 1000);
+  const winMs = 300 * 1000, cutoff = Date.now() - winMs;
+  const TTL = Number(process.env.WORKER_TTL_SEC || 3600);
+  const perChanWork = {};
+  let totWork = 0;
+  for (const [ts, w, cid] of sv2State.shares) {
+    if (ts < cutoff) continue;
+    totWork += w; perChanWork[cid] = (perChanWork[cid] || 0) + w;
+  }
+  const hsOf = (w) => w * 4294967296 / 300;
+  const workerList = [];
+  let best = 0, accepted = 0, rejected = 0;
+  for (const [cid, ch] of Object.entries(sv2State.channels)) {
+    best = Math.max(best, ch.best);
+    if (!ch.last || nowS - ch.last > TTL) continue;
+    accepted += ch.accepted; rejected += ch.rejected;
+    const hr = fmtHs(hsOf(perChanWork[cid] || 0));
+    workerList.push({
+      name: ch.name, proto: 'SV2',
+      hashrate: hr.val + ' ' + hr.unit,
+      trend: [hr.n, hr.n, hr.n, hr.n, hr.n],
+      idle: nowS - ch.last > 300,
+      best: ch.best, last: ch.last,
+      uptime: nowS - ch.firstSeen,
+    });
+  }
+  return {
+    enabled: !!readSv2Address(), workers: workerList.length,
+    hs: hsOf(totWork), accepted, rejected, best,
+    roundWork: sv2State.roundWork, workerList,
+  };
 }
 
 // pool.status is several JSON objects, one per line — merge them all.
@@ -389,14 +511,16 @@ async function scanBlocks() {
   scanning = true;
   try {
     const mine = addrKey(readAddress());
-    if (!mine) return;
+    const sv2Mine = addrKey(readSv2Address());
+    if (!mine && !sv2Mine) return;
     const tip = await rpc('getblockcount', []);
     if (!blockState.lastScanned) blockState.lastScanned = Math.max(0, tip - 200); // first-run backfill
     let h = blockState.lastScanned + 1;
     let budget = 50;                                   // be gentle per pass
     while (h <= tip && budget-- > 0) {
       const hash = await rpc('getblockhash', [h]);
-      const hit = await coinbasePaysUs(hash, mine);
+      const hit = (mine && await coinbasePaysUs(hash, mine)) ||
+                  (sv2Mine && sv2Mine !== mine && await coinbasePaysUs(hash, sv2Mine));
       if (hit && !blockState.blocks.some(b => b.hash === hash)) {
         const solveDiff = solveDiffFromBlocks(h) || solveDiffFromLog(h);
         const bestAtHit = solveDiff || hit.netdiff || lastBestSeen;
@@ -471,6 +595,36 @@ app.get('/api/status', async (_req, res) => {
     out.logShares = logSharesOn();
     out.blocks = Math.max(blockState.blocks.length, countBlocks());
   } catch (_) { /* pool not started yet */ }
+
+  try {
+    const s2 = sv2Stats();
+    const s2blocks = sv2Blocks();
+    for (const rec of s2blocks) {
+      const b = blockState.blocks.find((x) => x.height === rec.height || (rec.hash && x.hash === rec.hash));
+      if (b && !b.worker) b.worker = 'SV2';
+    }
+    out.sv2 = {
+      enabled: s2.enabled, workers: s2.workers,
+      hashrate: (() => { const h = fmtHs(s2.hs); return h.val + ' ' + h.unit; })(),
+      accepted: s2.accepted, rejected: s2.rejected, best: s2.best,
+    };
+    if (s2.enabled || s2.workers) {
+      out.poolUp = out.poolUp || s2.workers > 0;
+      out.workers += s2.workers;
+      if (s2.workers) out.users += 1;
+      out.accepted += s2.accepted; out.rejected += s2.rejected;
+      out.bestShare = Math.max(out.bestShare, s2.best);
+      out.poolHs = (out.poolHs || 0) + s2.hs;
+      const th = fmtHs(out.poolHs);
+      out.hashrate = { val: th.val, unit: th.unit };
+      if (out.blockList.length !== sv2State.lastBlockCount) {
+        if (sv2State.lastBlockCount >= 0) sv2State.roundWork = 0;   // new block anywhere -> new round
+        sv2State.lastBlockCount = out.blockList.length;
+      }
+      out.roundShares = (out.roundShares || 0) + sv2State.roundWork;
+      out.workerList = out.workerList.concat(s2.workerList).sort((a, b) => (b.best || 0) - (a.best || 0));
+    }
+  } catch (_) { /* sv2 telemetry unavailable */ }
 
   try {
     const info = await rpc('getblockchaininfo');

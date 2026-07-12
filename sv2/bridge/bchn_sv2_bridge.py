@@ -147,6 +147,14 @@ class Bridge:
             self.log(f"[bridge] preciousblock set on {bh}")
         except Exception as e:
             self.log(f"[bridge] preciousblock failed (non-fatal): {e}")
+        try:
+            rec = {"height": gbt["height"], "hash": bh,
+                   "time": int(time.time()), "result": res or "accepted"}
+            with open(os.path.join(os.environ.get("SV2_DATA", "/data"),
+                                   "sv2_blocks.jsonl"), "a") as f:
+                f.write(json.dumps(rec) + "\n")
+        except Exception as e:
+            self.log(f"[bridge] block record write failed (non-fatal): {e}")
         return res
 
     async def handle_client(self, reader, writer):

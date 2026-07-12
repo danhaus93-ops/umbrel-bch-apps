@@ -48,5 +48,16 @@ export BRIDGE_ADDR="${BRIDGE_ADDR:-bridge:8443}"
 echo "[entrypoint] starting Noise shim"
 /usr/local/bin/noise-tp-shim &
 sleep 2
+# telemetry: dashboard tails this file from the shared volume
+SV2_LOG="$DATA/pool_sv2.log"
+touch "$SV2_LOG" && chmod 644 "$SV2_LOG"
+touch "$DATA/sv2_blocks.jsonl" && chmod 666 "$DATA/sv2_blocks.jsonl"
+( while sleep 60; do
+    SZ=$(stat -c%s "$SV2_LOG" 2>/dev/null || echo 0)
+    if [ "$SZ" -gt 16777216 ]; then
+        tail -c 8388608 "$SV2_LOG" > "$SV2_LOG.tmp" && mv "$SV2_LOG.tmp" "$SV2_LOG"
+        echo "[entrypoint] rotated pool_sv2.log"
+    fi
+  done ) &
 echo "[entrypoint] starting pool_sv2"
-exec /usr/local/bin/pool_sv2 -c "$POOL_CFG"
+/usr/local/bin/pool_sv2 -c "$POOL_CFG" 2>&1 | tee -a "$SV2_LOG"

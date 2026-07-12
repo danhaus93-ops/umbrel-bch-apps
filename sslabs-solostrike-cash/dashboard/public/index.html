@@ -261,7 +261,7 @@
 
   <footer>
     <span class="badge">solo</span><span class="badge">zero-fee</span><span class="badge">your node</span><br/>
-    LoneStrike Cash <span id="ver">v1.4.28</span> · powered by asicseer-pool<br/><span style="font-size:10px;color:var(--dim)">donations never expected, always fuel: <span style="color:var(--muted)">bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk</span></span>
+    LoneStrike Cash <span id="ver">v1.4.29</span> · powered by asicseer-pool<br/><span style="font-size:10px;color:var(--dim)">donations never expected, always fuel: <span style="color:var(--muted)">bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk</span></span>
   </footer>
 </div>
 
@@ -337,6 +337,7 @@ function render(d){
   document.getElementById('shMeta').textContent=fmtDiff(d.accepted)+' acc / '+(d.rejected||0)+' rej';
   document.getElementById('stratum').textContent=d.stratum;
   document.getElementById('nodeDot').className='dot'+(d.nodeUp?'':' bad');
+  if(d.sv2)renderSv2Status(d.sv2);
   document.getElementById('height').textContent=d.height?d.height.toLocaleString():'—';
   if(d.version)document.getElementById('ver').textContent=d.version;
   const t=document.getElementById('workersTable');
@@ -346,7 +347,7 @@ function render(d){
     emp.style.display='none';
     d.workerList.forEach(w=>{
       const r=document.createElement('div');r.className='wr';
-      r.innerHTML=`<div class="name"><span class="wn">${w.idle?'<span style="color:#FB7185;margin-right:4px" title="no shares in 5+ min">\u25CF</span>':''}${w.name}</span><span class="wup">up ${fmtUp(w.uptime)}</span></div><div class="hr wcol-r">${spark(w.trend)}${w.hashrate}</div><div class="bd wcol-r bd-col">${fmtDiff(w.best)}</div><div class="ls">${ago(w.last)}</div><div style="display:flex;gap:4px;justify-content:flex-end"><button class="wreset" data-w="${w.name}" title="reset this miner's best">⟲</button><button class="wreset whide" data-h="${w.name}" title="remove from list">✕</button></div>`;
+      r.innerHTML=`<div class="name"><span class="wn">${w.idle?'<span style="color:#FB7185;margin-right:4px" title="no shares in 5+ min">\u25CF</span>':''}${w.name}${w.proto==='SV2'?' <span style=\"font-size:9px;color:var(--mint);border:1px solid var(--line2);border-radius:3px;padding:1px 4px;vertical-align:middle\">SV2</span>':''}</span><span class="wup">up ${fmtUp(w.uptime)}</span></div><div class="hr wcol-r">${spark(w.trend)}${w.hashrate}</div><div class="bd wcol-r bd-col">${fmtDiff(w.best)}</div><div class="ls">${ago(w.last)}</div><div style="display:flex;gap:4px;justify-content:flex-end"><button class="wreset" data-w="${w.name}" title="reset this miner's best">⟲</button><button class="wreset whide" data-h="${w.name}" title="remove from list">✕</button></div>`;
       t.appendChild(r);
     });
   }else{emp.style.display='block';}
@@ -395,15 +396,20 @@ document.addEventListener('click',e=>{
 });
 function loadSv2(){
   fetch('/api/sv2').then(r=>r.json()).then(d=>{
-    const st=document.getElementById('sv2status'),dot=document.getElementById('sv2dot'),
-          u=document.getElementById('sv2url'),p=document.getElementById('sv2pub'),
+    const u=document.getElementById('sv2url'),p=document.getElementById('sv2pub'),
           ai=document.getElementById('sv2AddrInput');
-    if(d.enabled){st.textContent='enabled';dot.className='dot';}
-    else{st.textContent='disabled';dot.className='dot bad';}
     u.textContent=d.enabled?('stratum2+tcp://'+d.endpoint):'\u2014';
     p.textContent=d.authorityPub||'\u2014 generated on first enable';
+    renderSv2Status(d.enabled?{enabled:true}:{enabled:false});
     if(ai&&document.activeElement!==ai&&d.address&&ai.value!==d.address)ai.value=d.address;
   }).catch(()=>{});
+}
+function renderSv2Status(s){
+  const st=document.getElementById('sv2status'),dot=document.getElementById('sv2dot');
+  if(!st||!dot)return;
+  if(!s||!s.enabled){st.textContent='disabled';dot.className='dot bad';return;}
+  if(s.workers>0){st.textContent='enabled \u00b7 '+s.workers+' miner'+(s.workers>1?'s':'')+' \u00b7 '+(s.hashrate||'');dot.className='dot';}
+  else{st.textContent='enabled \u00b7 waiting for miners';dot.className='dot';}
 }
 async function saveSv2(){
   const ai=document.getElementById('sv2AddrInput'),msg=document.getElementById('sv2Msg');
@@ -495,7 +501,7 @@ document.getElementById('addrSave').addEventListener('click',saveAddr);
 document.getElementById('addrInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveAddr();});
 const MOCK={poolUp:true,nodeUp:true,bestShare:4.1e6,netDiff:5.75e11,
   hashrate:{val:'92.4',unit:'TH/s'},workers:3,users:1,blocks:0,accepted:18420,rejected:12,
-  stratum:'stratum+tcp://umbrel.local:3335',height:954112,version:'v1.4.28',address:'bitcoincash:qq8e2x9f0n3l7k2m5p4r6t8w1y3u5i7o9a2s4d6f8g',blockList:[],diff:{min:1,start:42,max:0},roundShares:1.64e9,poolHs:8.66e12,
+  stratum:'stratum+tcp://umbrel.local:3335',height:954112,version:'v1.4.29',address:'bitcoincash:qq8e2x9f0n3l7k2m5p4r6t8w1y3u5i7o9a2s4d6f8g',blockList:[],diff:{min:1,start:42,max:0},roundShares:1.64e9,poolHs:8.66e12,
   workerList:[
     {name:'S21XP-board1',hashrate:'90.1 TH/s',best:4.1e6,last:Math.floor(Date.now()/1000)-4,uptime:9240},
     {name:'NerdQAxe++',hashrate:'1.9 TH/s',best:88200,last:Math.floor(Date.now()/1000)-11,uptime:300},
