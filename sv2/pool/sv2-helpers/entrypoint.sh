@@ -20,9 +20,18 @@ fi
 PUB=$(cat "$KEYDIR/authority.pub")
 PRV=$(cat "$KEYDIR/authority.prv")
 
-if [ -z "$PAYOUT_ADDRESS" ]; then
-    echo "[entrypoint] ERROR: PAYOUT_ADDRESS not set"; exit 1
+ADDR_FILE="$DATA/payout_address"
+PAYOUT="${PAYOUT_ADDRESS:-}"
+[ -z "$PAYOUT" ] && [ -f "$ADDR_FILE" ] && PAYOUT=$(tr -d ' \n' < "$ADDR_FILE")
+if [ -z "$PAYOUT" ]; then
+    echo "[entrypoint] SV2 idle: waiting for payout address (dashboard toggle or PAYOUT_ADDRESS env)"
+    while [ -z "$PAYOUT" ]; do
+        sleep 10
+        [ -f "$ADDR_FILE" ] && PAYOUT=$(tr -d ' \n' < "$ADDR_FILE")
+    done
+    echo "[entrypoint] payout address received, starting SV2"
 fi
+PAYOUT_ADDRESS="$PAYOUT"
 PAYOUT_SCRIPT=$(python3 /usr/local/bin/addr_to_script.py "$PAYOUT_ADDRESS")
 if [ -z "$PAYOUT_SCRIPT" ]; then
     echo "[entrypoint] ERROR: bad payout address '$PAYOUT_ADDRESS'"; exit 1

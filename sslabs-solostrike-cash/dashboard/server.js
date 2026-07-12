@@ -23,6 +23,10 @@ const VERSION      = process.env.APP_VERSION  || 'v1.0.0';
 const POOL_DIR  = path.dirname(POOL_LOGDIR);            // /pool
 const ADDR_FILE = path.join(POOL_DIR, 'config', 'bch_address');
 
+const SV2_DIR       = process.env.SV2_DIR || '/sv2';
+const SV2_ADDR_FILE = path.join(SV2_DIR, 'payout_address');
+const SV2_PUB_FILE  = path.join(SV2_DIR, 'keys', 'authority.pub');
+
 function readAddress() {
   try { return fs.readFileSync(ADDR_FILE, 'utf8').trim(); } catch (_) { return ''; }
 }
@@ -602,6 +606,24 @@ app.post('/api/electricity', (req, res) => {
   if (b.watts != null) e.watts = Math.max(0, Number(b.watts) || 0);
   writeElectricity(e); res.json({ ok: true, ...e });
 });
+app.get('/api/sv2', (_req, res) => {
+  let pub = '';  try { pub  = fs.readFileSync(SV2_PUB_FILE,  'utf8').trim(); } catch (_) {}
+  let addr = ''; try { addr = fs.readFileSync(SV2_ADDR_FILE, 'utf8').trim(); } catch (_) {}
+  res.json({ ok: true, enabled: !!addr, address: addr, authorityPub: pub,
+             endpoint: STRATUM_HOST + ':33333' });
+});
+app.post('/api/sv2', (req, res) => {
+  const a = (req.body && req.body.address || '').trim();
+  if (a === '') {
+    try { fs.unlinkSync(SV2_ADDR_FILE); } catch (_) {}
+    return res.json({ ok: true, enabled: false, address: '' });
+  }
+  if (!validAddress(a)) return res.status(400).json({ ok: false, error: 'invalid BCH address' });
+  try { fs.mkdirSync(SV2_DIR, { recursive: true }); fs.writeFileSync(SV2_ADDR_FILE, a); }
+  catch (e) { return res.status(500).json({ ok: false, error: 'could not save' }); }
+  res.json({ ok: true, enabled: true, address: a });
+});
+
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 

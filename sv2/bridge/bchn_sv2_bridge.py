@@ -122,11 +122,31 @@ class Bridge:
         except (ValueError, AssertionError) as e:
             self.log(f"[bridge] !! reconstruction/PoW gate failed: {e}")
             return
+        mintime = gbt.get("mintime")
+        ts = sol["header_timestamp"]
+        if mintime and (ts < int(mintime) or ts > int(time.time()) + 7200):
+            # warn but NEVER self-censor a candidate block; the node decides.
+            self.log(f"[bridge] !! header_timestamp {ts} outside sane range "
+                     f"(mintime={mintime}); submitting anyway")
         res = await self.node.submit_block(block.hex())
+        bh = core.dsha(block[:80])[::-1].hex()
         if res is None:
-            self.log(f"[bridge] ***** BLOCK ACCEPTED at height {gbt['height']} *****")
+            self.log(f"[bridge] ***** BLOCK ACCEPTED at height {gbt['height']} "
+                     f"hash {bh} *****")
+        elif res in ("duplicate", "inconclusive"):
+            # a soft result can still become canonical; do not treat as loss.
+            self.log(f"[bridge] ** submitblock soft result '{res}' at height "
+                     f"{gbt['height']} hash {bh}; block may still win")
         else:
             self.log(f"[bridge] !! submitblock returned: {res}")
+            return res
+        # same-height race protection: force our own node onto our block.
+        # Runs for soft results too; that is exactly the race case.
+        try:
+            await self.node.rpc("preciousblock", [bh])
+            self.log(f"[bridge] preciousblock set on {bh}")
+        except Exception as e:
+            self.log(f"[bridge] preciousblock failed (non-fatal): {e}")
         return res
 
     async def handle_client(self, reader, writer):
@@ -173,6 +193,8 @@ class Bridge:
                     self.log(f"[bridge] ignoring msg_type 0x{mtype:02x}")
         except (asyncio.IncompleteReadError, ConnectionError):
             pass
+        except (ValueError, AssertionError, struct.error) as e:
+            self.log(f"[bridge] !! malformed frame from {peer}; dropping connection: {e}")
         finally:
             self.clients.discard(writer)
             self.log(f"[bridge] pool disconnected {peer}")

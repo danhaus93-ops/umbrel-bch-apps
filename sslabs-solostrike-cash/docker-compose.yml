@@ -34,8 +34,32 @@ services:
       RPC_PORT: "8332"
       RPC_USER: bchn
       RPC_PASS: bchn_local_rpc_pw_2f9c
-      APP_VERSION: v1.4.27
+      APP_VERSION: v1.4.28
     volumes:
       - ${APP_DATA_DIR}/data/pool:/pool
+      - ${APP_DATA_DIR}/data/sv2:/sv2
     depends_on:
       - pool
+
+  sv2-bridge:
+    image: ghcr.io/danhaus93-ops/bchn-sv2-bridge:latest
+    restart: on-failure
+    environment:
+      BCHN_RPC_URL: http://sslabs-bitcoin-cash-node_bitcoind_1:8332
+      BCHN_RPC_USER: bchn
+      BCHN_RPC_PASS: bchn_local_rpc_pw_2f9c
+      TP_PORT: "8443"
+
+  sv2-pool:
+    image: ghcr.io/danhaus93-ops/lonestrike-sv2-pool:latest
+    restart: on-failure
+    environment:
+      # Optional override; normally set via the dashboard's Stratum V2 card.
+      PAYOUT_ADDRESS: ""
+      BRIDGE_ADDR: sv2-bridge:8443
+    volumes:
+      - ${APP_DATA_DIR}/data/sv2:/data
+    ports:
+      - "33333:33333"
+    depends_on:
+      - sv2-bridge
