@@ -139,7 +139,9 @@ function sv2Ingest() {
     if (diff > ch.best) ch.best = diff;
     ch.last = Math.max(ch.last, Math.floor(tsMs / 1000));
     sv2State.roundWork += work;
-    sv2State.shares.push([tsMs, work, cid]);
+    let hbig = 0n;
+    try { hbig = BigInt('0x' + m[4]); } catch (_) {}
+    sv2State.shares.push([tsMs, work, cid, hbig]);
   }
   const cut = Date.now() - 600 * 1000;
   while (sv2State.shares.length && sv2State.shares[0][0] < cut) sv2State.shares.shift();
@@ -159,20 +161,32 @@ function sv2Stats() {
   const nowS = Math.floor(Date.now() / 1000);
   const winMs = 300 * 1000, cutoff = Date.now() - winMs;
   const TTL = Number(process.env.WORKER_TTL_SEC || 3600);
-  const perChanWork = {};
-  let totWork = 0;
-  for (const [ts, w, cid] of sv2State.shares) {
+  const perChan = {};
+  for (const [ts, w, cid, hbig] of sv2State.shares) {
     if (ts < cutoff) continue;
-    totWork += w; perChanWork[cid] = (perChanWork[cid] || 0) + w;
+    const pc = perChan[cid] || (perChan[cid] = { work: 0, n: 0, maxH: 0n });
+    pc.work += w; pc.n++;
+    if (hbig && hbig > pc.maxH) pc.maxH = hbig;
   }
-  const hsOf = (w) => w * 4294967296 / 300;
+  const chanHs = (pc) => {
+    if (!pc) return 0;
+    const workHs = pc.work * 4294967296 / 300;
+    let hashHs = 0;
+    if (pc.n > 0 && pc.maxH > 0n) {
+      const tDiff = Number(SV2_D1 * 1000000n / pc.maxH) / 1e6 * (pc.n / (pc.n + 1));
+      hashHs = pc.n * tDiff * 4294967296 / 300;
+    }
+    return Math.max(workHs, hashHs);
+  };
   const workerList = [];
-  let best = 0, accepted = 0, rejected = 0;
+  let best = 0, accepted = 0, rejected = 0, totHs = 0;
   for (const [cid, ch] of Object.entries(sv2State.channels)) {
     best = Math.max(best, ch.best);
     if (!ch.last || nowS - ch.last > TTL) continue;
     accepted += ch.accepted; rejected += ch.rejected;
-    const hr = fmtHs(hsOf(perChanWork[cid] || 0));
+    const cHs = chanHs(perChan[cid]);
+    totHs += cHs;
+    const hr = fmtHs(cHs);
     workerList.push({
       name: ch.name, proto: 'SV2',
       hashrate: hr.val + ' ' + hr.unit,
@@ -184,7 +198,7 @@ function sv2Stats() {
   }
   return {
     enabled: !!readSv2Address(), workers: workerList.length,
-    hs: hsOf(totWork), accepted, rejected, best,
+    hs: totHs, accepted, rejected, best,
     roundWork: sv2State.roundWork, workerList,
   };
 }
