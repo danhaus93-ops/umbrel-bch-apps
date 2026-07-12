@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.29"
+version: "1.4.30"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -72,10 +72,9 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: Stratum V2 miners now appear on the dashboard with full parity -
-  live hashrate, worker rows, best share feeding the Closest Strike gauge, and
-  SV2-solved blocks in the found-blocks table. Also caps SV2 container logs to
-  protect your SSD.
+releaseNotes: SV2 hashrate now reads correctly even before the pool's vardiff
+  ramps a new miner, using a target estimate from observed share hashes. Builds
+  on 1.4.29's SV2 dashboard parity (workers, best share, found blocks, log caps).
 
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
