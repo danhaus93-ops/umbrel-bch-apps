@@ -1,0 +1,14 @@
+authority_public_key = "__AUTH_PUB__"
+authority_secret_key = "__AUTH_PRV__"
+cert_validity_sec = 3600
+listen_address = "0.0.0.0:33333"
+coinbase_reward_script = "raw(__PAYOUT_SCRIPT__)"
+server_id = 1
+pool_signature = ""
+shares_per_minute = 6.0
+share_batch_size = 10
+monitoring_address = "0.0.0.0:9090"
+monitoring_cache_refresh_secs = 15
+
+[template_provider_type.Sv2Tp]
+address = "127.0.0.1:8442"

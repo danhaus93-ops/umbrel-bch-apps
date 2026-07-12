@@ -1,0 +1,9 @@
+[package]
+name = "sri-keygen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+stratum-apps = { path = "../stratum-apps", features = ["network"] }
+secp256k1 = { version = "0.28.2", features = ["rand", "rand-std", "std"] }
+rand = "0.8.5"

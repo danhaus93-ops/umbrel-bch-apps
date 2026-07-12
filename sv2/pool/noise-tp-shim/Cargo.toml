@@ -1,0 +1,9 @@
+[package]
+name = "noise-tp-shim"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.44", features = ["full"] }
+stratum-apps = { path = "../stratum-apps", features = ["network"] }
+stratum-core = { git = "https://github.com/stratum-mining/stratum", branch = "main" }
