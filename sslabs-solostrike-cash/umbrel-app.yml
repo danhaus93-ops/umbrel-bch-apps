@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.28"
+version: "1.4.29"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -72,9 +72,10 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: Adds a self-hosted Stratum V2 endpoint on port 33333, powered by
-  the first SV2 Template Provider built for Bitcoin Cash Node. Enable it from the
-  new Stratum V2 card in the dashboard by saving a payout address. SV1 mining on
-  port 3335 is unchanged.
+releaseNotes: Stratum V2 miners now appear on the dashboard with full parity -
+  live hashrate, worker rows, best share feeding the Closest Strike gauge, and
+  SV2-solved blocks in the found-blocks table. Also caps SV2 container logs to
+  protect your SSD.
+
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
