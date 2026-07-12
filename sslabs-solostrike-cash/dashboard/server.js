@@ -28,6 +28,26 @@ const SV2_ADDR_FILE = path.join(SV2_DIR, 'payout_address');
 const SV2_PUB_FILE  = path.join(SV2_DIR, 'keys', 'authority.pub');
 const SV2_LOG_FILE  = path.join(SV2_DIR, 'pool_sv2.log');
 const SV2_BLOCKS_FILE = path.join(SV2_DIR, 'sv2_blocks.jsonl');
+const SV2_RESETS_FILE = path.join(SV2_DIR, 'sv2_resets.json');
+const SV2_BEST_FILE   = path.join(SV2_DIR, 'sv2_best.json');
+let sv2Resets = {};  // worker name (or __all__) -> reset ts (sec)
+let sv2BestP  = {};  // worker name -> { best, ts }  (persisted across restarts)
+try { sv2Resets = JSON.parse(fs.readFileSync(SV2_RESETS_FILE, 'utf8')) || {}; } catch (_) {}
+try { sv2BestP  = JSON.parse(fs.readFileSync(SV2_BEST_FILE,   'utf8')) || {}; } catch (_) {}
+function sv2SaveResets() { try { fs.writeFileSync(SV2_RESETS_FILE, JSON.stringify(sv2Resets)); } catch (_) {} }
+function sv2SaveBest()   { try { fs.writeFileSync(SV2_BEST_FILE,   JSON.stringify(sv2BestP));  } catch (_) {} }
+function sv2ResetTs(name) { return Math.max(Number(sv2Resets[name]) || 0, Number(sv2Resets.__all__) || 0); }
+function sv2ApplyReset(scope) {
+  const now = Math.floor(Date.now() / 1000);
+  if (scope === 'all') { sv2Resets.__all__ = now; } else { sv2Resets[scope] = now; }
+  for (const ch of Object.values(sv2State.channels)) {
+    if (scope === 'all' || ch.name === scope) ch.best = 0;
+  }
+  for (const n of Object.keys(sv2BestP)) {
+    if (scope === 'all' || n === scope) delete sv2BestP[n];
+  }
+  sv2SaveResets(); sv2SaveBest();
+}
 function readSv2Address() {
   try { return fs.readFileSync(SV2_ADDR_FILE, 'utf8').trim(); } catch (_) { return ''; }
 }
@@ -116,8 +136,23 @@ function sv2Ingest() {
   sv2State.offset = st.size;
   const nowS = Math.floor(Date.now() / 1000);
   for (const line of chunk.split('\n')) {
-    const idm = line.match(SV2_RE_IDENT);
-    if (idm) { sv2State.pendingId = idm[1].slice(0, 64); }
+    if (/Open(?:Standard|Extended)MiningChannel\b/.test(line) && line.includes('user_identity')) {
+      let ident = '';
+      const q = line.match(/user_identity[^"\x27]*["\x27]([^"\x27]+)["\x27]/);
+      if (q) ident = q[1];
+      if (!ident) {
+        const ba = line.match(/user_identity[^\[]*\[([0-9,\s]+)\]/);
+        if (ba) {
+          try {
+            ident = String.fromCharCode(...ba[1].split(',').map(x => parseInt(x, 10)));
+          } catch (_) { ident = ''; }
+        }
+      }
+      if (!ident) { const pm = line.match(SV2_RE_IDENT); if (pm) ident = pm[1]; }
+      ident = String(ident || '').trim().slice(0, 64);
+      // accept only plausible worker/address names; junk keeps the sv2-chN default
+      if (/^[A-Za-z0-9:._\-]{6,64}$/.test(ident)) sv2State.pendingId = ident;
+    }
     const okm = line.match(SV2_RE_OPENOK);
     if (okm && sv2State.pendingId) {
       sv2Chan(Number(okm[1])).name = sv2State.pendingId; sv2State.pendingId = '';
@@ -136,12 +171,14 @@ function sv2Ingest() {
     const tm = line.match(SV2_RE_TS);
     const tsMs = tm ? Date.parse(tm[1]) : Date.now();
     ch.accepted++;
-    if (diff > ch.best) ch.best = diff;
+    if (tsMs / 1000 > sv2ResetTs(ch.name) && diff > ch.best) {
+      ch.best = diff;
+      const p = sv2BestP[ch.name];
+      if (!p || diff > p.best) { sv2BestP[ch.name] = { best: diff, ts: Math.floor(tsMs / 1000) }; sv2SaveBest(); }
+    }
     ch.last = Math.max(ch.last, Math.floor(tsMs / 1000));
     sv2State.roundWork += work;
-    let hbig = 0n;
-    try { hbig = BigInt('0x' + m[4]); } catch (_) {}
-    sv2State.shares.push([tsMs, work, cid, hbig]);
+    sv2State.shares.push([tsMs, work, cid, diff]);
   }
   const cut = Date.now() - 600 * 1000;
   while (sv2State.shares.length && sv2State.shares[0][0] < cut) sv2State.shares.shift();
@@ -162,27 +199,37 @@ function sv2Stats() {
   const winMs = 300 * 1000, cutoff = Date.now() - winMs;
   const TTL = Number(process.env.WORKER_TTL_SEC || 3600);
   const perChan = {};
-  for (const [ts, w, cid, hbig] of sv2State.shares) {
+  for (const [ts, w, cid, diff] of sv2State.shares) {
     if (ts < cutoff) continue;
-    const pc = perChan[cid] || (perChan[cid] = { work: 0, n: 0, maxH: 0n });
+    const pc = perChan[cid] || (perChan[cid] = { work: 0, n: 0, diffs: [] });
     pc.work += w; pc.n++;
-    if (hbig && hbig > pc.maxH) pc.maxH = hbig;
+    if (diff > 0) pc.diffs.push(diff);
   }
   const chanHs = (pc) => {
     if (!pc) return 0;
     const workHs = pc.work * 4294967296 / 300;
     let hashHs = 0;
-    if (pc.n > 0 && pc.maxH > 0n) {
-      const tDiff = Number(SV2_D1 * 1000000n / pc.maxH) / 1e6 * (pc.n / (pc.n + 1));
-      hashHs = pc.n * tDiff * 4294967296 / 300;
+    if (pc.diffs.length >= 8) {
+      // share hashes are uniform below the submitter's target, so
+      // median(diff) = 2 x target-diff; robust to HW-error junk shares
+      // that a floor-difficulty pool accepts.
+      const d = pc.diffs.slice().sort((a, b) => a - b);
+      const med = d[Math.floor(d.length / 2)];
+      hashHs = pc.n * (med / 2) * 4294967296 / 300;
     }
     return Math.max(workHs, hashHs);
   };
+  let hidden = {};
+  try { hidden = JSON.parse(fs.readFileSync(path.join(POOL_DIR, 'config', 'hidden.json'), 'utf8')) || {}; } catch (_) {}
   const workerList = [];
   let best = 0, accepted = 0, rejected = 0, totHs = 0;
   for (const [cid, ch] of Object.entries(sv2State.channels)) {
+    const pBest = (sv2BestP[ch.name] && sv2BestP[ch.name].ts > sv2ResetTs(ch.name)) ? sv2BestP[ch.name].best : 0;
+    if (pBest > ch.best) ch.best = pBest;
     best = Math.max(best, ch.best);
     if (!ch.last || nowS - ch.last > TTL) continue;
+    const ht = Number(hidden[ch.name]) || 0;
+    if (ht && ch.last <= ht) continue;
     accepted += ch.accepted; rejected += ch.rejected;
     const cHs = chanHs(perChan[cid]);
     totHs += cHs;
@@ -731,6 +778,9 @@ app.post('/api/reset', (req, res) => {
   const scope = ((req.body && req.body.scope) || 'all').toString().slice(0, 120);
   if (!/^[A-Za-z0-9:._\-]+$|^all$/.test(scope)) return res.status(400).json({ ok: false, error: 'bad scope' });
   try {
+    const sv2Names = new Set(Object.values(sv2State.channels).map((c) => c.name));
+    if (scope === 'all' || sv2Names.has(scope)) sv2ApplyReset(scope);
+    if (sv2Names.has(scope) && scope !== 'all') return res.json({ ok: true, scope, sv2: true });
     if (scope === 'all') {
       try { writeBaselines({}); } catch (_) {}
       try { writeResetState({}); } catch (_) {}

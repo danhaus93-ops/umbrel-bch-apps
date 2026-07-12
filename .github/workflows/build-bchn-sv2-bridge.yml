@@ -1,22 +1,15 @@
-name: Build SV2 images
+name: Build bchn-sv2-bridge
 on:
   workflow_dispatch:
   push:
     branches: [ master, main ]
-    paths: [ 'sv2/**', '.github/workflows/build-sv2.yml' ]
+    paths: [ 'sv2/bridge/**', '.github/workflows/build-bchn-sv2-bridge.yml' ]
 permissions:
   contents: read
   packages: write
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - context: ./sv2/bridge
-            image: bchn-sv2-bridge
-          - context: ./sv2/pool
-            image: lonestrike-sv2-pool
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
@@ -28,9 +21,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v5
         with:
-          context: ${{ matrix.context }}
+          context: ./sv2/bridge
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/danhaus93-ops/${{ matrix.image }}:latest
-            ghcr.io/danhaus93-ops/${{ matrix.image }}:${{ github.sha }}
+            ghcr.io/danhaus93-ops/bchn-sv2-bridge:latest
+            ghcr.io/danhaus93-ops/bchn-sv2-bridge:${{ github.sha }}

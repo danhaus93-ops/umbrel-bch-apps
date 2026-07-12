@@ -23,6 +23,44 @@ import sv2_framing as sv2
 TEMPLATE_TTL = 120
 REFRESH_SECS = 30
 POLL_SECS = 2
+POLL_SECS_ZMQ_OK = 15   # relaxed poll while ZMQ notifications are flowing
+
+# --------------------------------------------- minimal ZMTP 3.x SUB client --
+# Stdlib-only ZeroMQ subscriber: just enough to read bitcoind's PUB socket.
+# Lesson from mkpool's zmq_client: notifications are edge-triggered in
+# spirit -- drain every frame available, tolerate partial reads, and
+# reconnect forever with backoff instead of going silent.
+async def zmtp_sub_connect(host, port, topic: bytes):
+    reader, writer = await asyncio.open_connection(host, port)
+    greeting = (b"\xff" + b"\x00" * 8 + b"\x7f" + b"\x03\x01"
+                + b"NULL" + b"\x00" * 16 + b"\x00" + b"\x00" * 31)
+    writer.write(greeting); await writer.drain()
+    peer = await reader.readexactly(64)
+    if peer[:1] != b"\xff" or peer[10:11] != b"\x03":
+        raise RuntimeError("peer is not ZMTP 3.x")
+
+    async def read_frame():
+        flags = (await reader.readexactly(1))[0]
+        if flags & 0x02:
+            ln = int.from_bytes(await reader.readexactly(8), "big")
+        else:
+            ln = (await reader.readexactly(1))[0]
+        return flags, await reader.readexactly(ln)
+
+    def meta(k, v):
+        return bytes([len(k)]) + k + len(v).to_bytes(4, "big") + v
+    ready = b"\x05READY" + meta(b"Socket-Type", b"SUB")
+    writer.write(bytes([0x04, len(ready)]) + ready); await writer.drain()
+    while True:                                   # peer handshake
+        flags, body = await read_frame()
+        if flags & 0x04:
+            if body[:6] == b"\x05READY": break
+            if body[:6] == b"\x05ERROR": raise RuntimeError("ZMTP ERROR from peer")
+        else:
+            break                                 # tolerate eager peers
+    writer.write(bytes([0x00, 1 + len(topic)]) + b"\x01" + topic)
+    await writer.drain()
+    return reader, writer, read_frame
 
 def target_le32_from_nbits(nbits: int) -> bytes:
     return core.target_from_nbits(nbits).to_bytes(32, "little")
@@ -64,6 +102,8 @@ class Bridge:
         self.next_id = int(time.time())
         self.clients = set()
         self.last_prev = None
+        self.last_tip = None         # RPC-form hex; shared by poll + ZMQ watchers
+        self.zmq_ok = False
 
     def map_template(self, gbt, future=False):
         t = core.gbt_to_new_template(gbt)
@@ -218,17 +258,63 @@ class Bridge:
         return ext, mtype, payload
 
     async def tip_watcher(self):
-        best = None
         while True:
             try:
                 cur = await self.node.best_hash()
-                if best is not None and cur != best:
-                    self.log(f"[bridge] new tip {cur[:16]}…")
+                if self.last_tip is not None and cur != self.last_tip:
+                    self.last_tip = cur
+                    self.log(f"[bridge] new tip {cur[:16]}… (poll)")
                     await self.push_template("new-block")
-                best = cur
+                else:
+                    self.last_tip = cur
             except Exception as e:
                 self.log(f"[bridge] tip poll error: {e}")
-            await asyncio.sleep(POLL_SECS)
+            await asyncio.sleep(POLL_SECS_ZMQ_OK if self.zmq_ok else POLL_SECS)
+
+    async def zmq_watcher(self):
+        addr = os.environ.get("ZMQ_ADDR", "")
+        if not addr:
+            self.log("[bridge] ZMQ_ADDR unset; poll-only tip detection")
+            return
+        hp = addr.replace("tcp://", "").rsplit(":", 1)
+        host, port = hp[0], int(hp[1])
+        backoff = 1
+        while True:
+            writer = None
+            try:
+                reader, writer, read_frame = await zmtp_sub_connect(host, port, b"hashblock")
+                self.zmq_ok = True
+                backoff = 1
+                self.log(f"[bridge] ZMQ hashblock subscribed at {host}:{port}")
+                parts = []
+                while True:
+                    flags, body = await read_frame()
+                    if flags & 0x04:
+                        continue                       # command frames: ignore
+                    parts.append(body)
+                    if flags & 0x01:
+                        continue                       # MORE parts coming
+                    if parts and parts[0] == b"hashblock" and len(parts) >= 2:
+                        # bitcoind publishes internal byte order; RPC hex is reversed
+                        h = parts[1][::-1].hex()
+                        if h != self.last_tip:
+                            self.last_tip = h
+                            self.log(f"[bridge] new tip {h[:16]}… (zmq)")
+                            try:
+                                await self.push_template("new-block")
+                            except Exception as e:
+                                self.log(f"[bridge] zmq-triggered push error: {e}")
+                    parts = []
+            except Exception as e:
+                if self.zmq_ok:
+                    self.log(f"[bridge] ZMQ lost ({e}); falling back to 2s poll, reconnecting")
+                self.zmq_ok = False
+                try:
+                    if writer: writer.close()
+                except Exception:
+                    pass
+                await asyncio.sleep(min(backoff, 30))
+                backoff = min(backoff * 2, 30)
 
     async def refresher(self):
         while True:
@@ -242,7 +328,8 @@ class Bridge:
         self.log(f"[bridge] TP listening on {host}:{port}")
         async with server:
             await asyncio.gather(server.serve_forever(),
-                                 self.tip_watcher(), self.refresher())
+                                 self.tip_watcher(), self.refresher(),
+                                 self.zmq_watcher())
 
 if __name__ == "__main__":
     node = RealNode(os.environ.get("BCHN_RPC_URL", "http://127.0.0.1:8332"),
