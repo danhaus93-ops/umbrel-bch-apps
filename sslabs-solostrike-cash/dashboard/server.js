@@ -122,6 +122,23 @@ function sv2Chan(cid) {
 }
 function sv2Ingest() {
   let st; try { st = fs.statSync(SV2_LOG_FILE); } catch (_) { return; }
+  // Rotate in place BEFORE the pool container's own 16MB rotator would fire:
+  // writeFileSync truncates the SAME inode, so the pool's tee (O_APPEND)
+  // keeps writing. A rename-based rotate detaches the writer into an
+  // unlinked inode and blinds telemetry (learned the hard way).
+  if (st.size > 12 * 1024 * 1024) {
+    try {
+      const keep = 6 * 1024 * 1024;
+      const fd = fs.openSync(SV2_LOG_FILE, 'r');
+      const buf = Buffer.alloc(keep);
+      fs.readSync(fd, buf, 0, keep, st.size - keep);
+      fs.closeSync(fd);
+      const nl = buf.indexOf(10) + 1;                 // start at a line boundary
+      fs.writeFileSync(SV2_LOG_FILE, buf.slice(nl));  // truncate same inode
+      st = fs.statSync(SV2_LOG_FILE);
+      sv2State.offset = 0;                            // rescan; seq dedupe absorbs
+    } catch (_) {}
+  }
   if (st.size < sv2State.offset) sv2State.offset = 0;          // rotated
   if (st.size === sv2State.offset) return;
   let start = sv2State.offset;
@@ -187,7 +204,7 @@ function sv2Ingest() {
     }
     ch.last = Math.max(ch.last, Math.floor(tsMs / 1000));
     sv2State.roundWork += work;
-    sv2State.shares.push([tsMs, work, cid, diff]);
+    sv2State.shares.push([tsMs, work, cid, diff, seq]);
   }
   const cut = Date.now() - 600 * 1000;
   while (sv2State.shares.length && sv2State.shares[0][0] < cut) sv2State.shares.shift();
@@ -208,23 +225,37 @@ function sv2Stats() {
   const winMs = 300 * 1000, cutoff = Date.now() - winMs;
   const TTL = Number(process.env.WORKER_TTL_SEC || 3600);
   const perChan = {};
-  for (const [ts, w, cid, diff] of sv2State.shares) {
+  for (const [ts, w, cid, diff, seq] of sv2State.shares) {
     if (ts < cutoff) continue;
-    const pc = perChan[cid] || (perChan[cid] = { work: 0, n: 0, diffs: [] });
+    const pc = perChan[cid] || (perChan[cid] = {
+      work: 0, n: 0, diffs: [], minSeq: Infinity, maxSeq: -1, firstTs: ts, lastTs: ts,
+    });
     pc.work += w; pc.n++;
     if (diff > 0) pc.diffs.push(diff);
+    if (seq >= 0) {
+      if (seq < pc.minSeq) pc.minSeq = seq;
+      if (seq > pc.maxSeq) pc.maxSeq = seq;
+    }
+    if (ts < pc.firstTs) pc.firstTs = ts;
+    if (ts > pc.lastTs) pc.lastTs = ts;
   }
   const chanHs = (pc) => {
     if (!pc) return 0;
-    const workHs = pc.work * 4294967296 / 300;
+    // true share count from sequence numbers: immune to the log lines the
+    // pool replaces with batched SubmitSharesSuccess acks (~every 10th)
+    const nSeq = (pc.maxSeq >= pc.minSeq) ? (pc.maxSeq - pc.minSeq + 1) : pc.n;
+    const n = Math.max(pc.n, Math.min(nSeq, pc.n * 3));
+    // divide by the span the shares actually cover, not a fixed window:
+    // correct during warmup, right after restarts, and under replay caps
+    const dt = Math.max((pc.lastTs - pc.firstTs) / 1000, 30);
+    const workHs = pc.work * 4294967296 / dt;
     let hashHs = 0;
     if (pc.diffs.length >= 8) {
-      // share hashes are uniform below the submitter's target, so
-      // median(diff) = 2 x target-diff; robust to HW-error junk shares
-      // that a floor-difficulty pool accepts.
+      // hashes are uniform below the submitter's target: median(diff) =
+      // 2 x target-diff; robust to HW-error junk a floor pool accepts.
       const d = pc.diffs.slice().sort((a, b) => a - b);
       const med = d[Math.floor(d.length / 2)];
-      hashHs = pc.n * (med / 2) * 4294967296 / 300;
+      hashHs = (n - 1) * (med / 2) * 4294967296 / dt;
     }
     return Math.max(workHs, hashHs);
   };
