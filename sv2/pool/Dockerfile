@@ -3,6 +3,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends git capnproto l
 WORKDIR /src
 RUN git clone https://github.com/stratum-mining/sv2-apps.git /src/sv2-apps \
     && cd /src/sv2-apps && git checkout 26e4bbaa790d0bd58bd8b69696f4aaa44de44a9a
+COPY patches /patches
+RUN cd /src/sv2-apps && git apply /patches/0001-vardiff-zero-floor.patch \
+    && grep -q "LoneStrike patch" pool-apps/pool/src/lib/channel_manager/mining_message_handler.rs
 COPY noise-tp-shim /src/sv2-apps/noise-tp-shim
 COPY sri-keygen /src/sv2-apps/sri-keygen
 RUN cd /src/sv2-apps/pool-apps && cargo build --release -p pool_sv2

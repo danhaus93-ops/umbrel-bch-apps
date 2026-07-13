@@ -1,0 +1,53 @@
+--- a/pool-apps/pool/src/lib/channel_manager/mining_message_handler.rs
++++ b/pool-apps/pool/src/lib/channel_manager/mining_message_handler.rs
+@@ -173,7 +173,15 @@
+                     .set(Some(payout_mode))
+                     .map_err(PoolError::shutdown)?;
+ 
+-                let nominal_hash_rate = msg.nominal_hash_rate;
++                let nominal_hash_rate = { // LoneStrike patch: zero-declared hashrate falls into a NaN trap in
++                // vardiff (delta/0 -> NaN, all threshold checks false, channel stuck
++                // at max target forever). Clamp to a 1 TH/s floor so vardiff can
++                // engage and converge to the miner's true rate within minutes.
++                let declared = msg.nominal_hash_rate;
++                if declared > 0.0 { declared } else {
++                    tracing::warn!("channel declared nominal_hash_rate=0; clamping to 1 TH/s floor for vardiff");
++                    1.0e12_f32
++                } };
+                 let requested_max_target = Target::from_le_bytes(msg.max_target.to_array());
+                 let extranonce_prefix = self
+                     .extranonce_allocator
+@@ -339,7 +347,15 @@
+             client_id.expect("client_id must be present for downstream_id extraction");
+         info!("Received OpenExtendedMiningChannel: {}", msg);
+ 
+-        let nominal_hash_rate = msg.nominal_hash_rate;
++        let nominal_hash_rate = { // LoneStrike patch: zero-declared hashrate falls into a NaN trap in
++                // vardiff (delta/0 -> NaN, all threshold checks false, channel stuck
++                // at max target forever). Clamp to a 1 TH/s floor so vardiff can
++                // engage and converge to the miner's true rate within minutes.
++                let declared = msg.nominal_hash_rate;
++                if declared > 0.0 { declared } else {
++                    tracing::warn!("channel declared nominal_hash_rate=0; clamping to 1 TH/s floor for vardiff");
++                    1.0e12_f32
++                } };
+         let requested_max_target = Target::from_le_bytes(msg.max_target.to_array());
+         let requested_min_rollable_extranonce_size = msg.min_extranonce_size;
+ 
+@@ -1132,7 +1148,15 @@
+         let downstream_id =
+             client_id.expect("client_id must be present for downstream_id extraction");
+         let channel_id = msg.channel_id;
+-        let new_nominal_hash_rate = msg.nominal_hash_rate;
++        let new_nominal_hash_rate = { // LoneStrike patch: zero-declared hashrate falls into a NaN trap in
++                // vardiff (delta/0 -> NaN, all threshold checks false, channel stuck
++                // at max target forever). Clamp to a 1 TH/s floor so vardiff can
++                // engage and converge to the miner's true rate within minutes.
++                let declared = msg.nominal_hash_rate;
++                if declared > 0.0 { declared } else {
++                    tracing::warn!("channel declared nominal_hash_rate=0; clamping to 1 TH/s floor for vardiff");
++                    1.0e12_f32
++                } };
+         let requested_maximum_target = Target::from_le_bytes(msg.maximum_target.to_array());
+         let messages = self.with_registered_downstream(downstream_id, |downstream| {
+             let mut messages: Vec<RouteMessageTo> = Vec::new();
