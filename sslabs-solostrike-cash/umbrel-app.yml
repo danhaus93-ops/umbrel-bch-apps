@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.37"
+version: "1.4.38"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -72,9 +72,9 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: SV2 hashrate can no longer over-read after a miner reconnect
-  resets its share sequence mid-window, and a debug view exposes the live
-  estimator internals for instant diagnosis.
+releaseNotes: Overnight reliability - SV2 telemetry can no longer go blind
+  when the dashboard is unwatched. Log rotation now truncates in place on both
+  sides, and stats ingest runs continuously instead of only on page views.
 
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
