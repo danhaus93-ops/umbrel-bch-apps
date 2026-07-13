@@ -220,6 +220,8 @@ function sv2Ingest() {
   while (sv2State.shares.length && sv2State.shares[0][0] < cut) sv2State.shares.shift();
   void nowS;
 }
+setInterval(() => { try { sv2Ingest(); } catch (_) {} }, 30000);
+
 function sv2Blocks() {
   let raw; try { raw = fs.readFileSync(SV2_BLOCKS_FILE, 'utf8'); } catch (_) { return []; }
   const out = [];

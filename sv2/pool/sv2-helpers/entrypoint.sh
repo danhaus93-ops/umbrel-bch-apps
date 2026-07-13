@@ -55,8 +55,13 @@ touch "$DATA/sv2_blocks.jsonl" && chmod 666 "$DATA/sv2_blocks.jsonl"
 ( while sleep 60; do
     SZ=$(stat -c%s "$SV2_LOG" 2>/dev/null || echo 0)
     if [ "$SZ" -gt 16777216 ]; then
-        tail -c 8388608 "$SV2_LOG" > "$SV2_LOG.tmp" && mv "$SV2_LOG.tmp" "$SV2_LOG"
-        echo "[entrypoint] rotated pool_sv2.log"
+        # truncate IN PLACE: cat > keeps the same inode, so tee's append
+        # handle stays attached. mv would strand the writer on a deleted
+        # inode and blind the dashboard (learned overnight, the hard way).
+        tail -c 8388608 "$SV2_LOG" > "$SV2_LOG.tmp" \
+            && cat "$SV2_LOG.tmp" > "$SV2_LOG" \
+            && rm -f "$SV2_LOG.tmp"
+        echo "[entrypoint] rotated pool_sv2.log in place"
     fi
   done ) &
 echo "[entrypoint] starting pool_sv2"
