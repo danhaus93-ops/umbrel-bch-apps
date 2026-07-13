@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.38"
+version: "1.4.39"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -72,9 +72,11 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: Overnight reliability - SV2 telemetry can no longer go blind
-  when the dashboard is unwatched. Log rotation now truncates in place on both
-  sides, and stats ingest runs continuously instead of only on page views.
+releaseNotes: SV2 grows up - worker stats now come straight from the pool's
+  built-in monitoring API (names, rejects with reasons, best share), a new
+  shares-per-minute vardiff knob, per-worker reject counts, a warning badge for
+  miners that declare zero hashrate, the SV1 difficulty panel is labeled to
+  avoid confusion, and the pool build is pinned to an exact upstream commit.
 
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
