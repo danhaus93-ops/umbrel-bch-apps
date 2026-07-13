@@ -2,19 +2,22 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.39"
-tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
+version: "1.4.40"
+tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
-  LoneStrike Cash is a self-hosted solo mining pool for Bitcoin Cash, powered by
-  the asicseer-pool engine (a BCH-native ckpool fork) and wrapped in a real-time
-  dashboard that matches your Bitcoin Cash Node.
+  LoneStrike Cash is a self-hosted solo mining pool for Bitcoin Cash with dual
+  protocol support: classic Stratum V1 (asicseer-pool, a BCH-native ckpool fork)
+  and the first self-hosted Stratum V2 endpoint on Bitcoin Cash — a complete,
+  Noise-encrypted SV2 stack (Template Provider bridged to your own node plus an
+  SRI pool) with automatic per-miner difficulty.
 
 
   Point your ASICs at your own pool, backed by your own BCHN node, and keep 100%
-  of every block you find — no pool fees, no custody, no middleman. If you solve
-  a block, the full reward pays straight to the BCH address your miner connects
-  with.
+  of every block you find — no pool fees, no custody, no middleman. Native SV2
+  miners and SV1 fleets behind the SRI Translator both work; one dashboard shows
+  every worker, live hashrate, best shares, and found blocks across both
+  protocols. Proven in production with multi-petahash mixed-vendor fleets.
 
 
   Requires the Bitcoin Cash Node app to be installed and synced.
@@ -72,11 +75,10 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: SV2 grows up - worker stats now come straight from the pool's
-  built-in monitoring API (names, rejects with reasons, best share), a new
-  shares-per-minute vardiff knob, per-worker reject counts, a warning badge for
-  miners that declare zero hashrate, the SV1 difficulty panel is labeled to
-  avoid confusion, and the pool build is pinned to an exact upstream commit.
+releaseNotes: Miners that declare zero hashrate (a firmware bug on some SV2
+  clients) no longer get stuck at accept-everything difficulty - the pool now
+  floors the declaration so automatic difficulty can engage and converge to the
+  miner's real rate within minutes. Ends share spray from affected firmware.
 
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
