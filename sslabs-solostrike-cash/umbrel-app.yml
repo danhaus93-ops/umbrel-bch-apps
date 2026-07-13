@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.31"
+version: "1.4.32"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -72,10 +72,9 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: SV2 upgrades - instant new-block detection via ZMQ (with automatic
-  fallback to polling), hashrate estimator immune to hardware-error junk shares,
-  reset-best and hide now work on SV2 workers, best share survives restarts, and
-  worker names are validated instead of trusting raw log tokens.
+releaseNotes: SV2 worker names now resolve correctly (including TNA-OS style
+  address.worker identities), miners are tracked per-connection so two miners
+  can never merge into one row, and bridge logs stream live.
 
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
