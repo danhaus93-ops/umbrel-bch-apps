@@ -239,25 +239,42 @@ function sv2Stats() {
     if (ts < pc.firstTs) pc.firstTs = ts;
     if (ts > pc.lastTs) pc.lastTs = ts;
   }
-  const chanHs = (pc) => {
-    if (!pc) return 0;
-    // true share count from sequence numbers: immune to the log lines the
-    // pool replaces with batched SubmitSharesSuccess acks (~every 10th)
-    const nSeq = (pc.maxSeq >= pc.minSeq) ? (pc.maxSeq - pc.minSeq + 1) : pc.n;
-    const n = Math.max(pc.n, Math.min(nSeq, pc.n * 3));
-    // divide by the span the shares actually cover, not a fixed window:
-    // correct during warmup, right after restarts, and under replay caps
-    const dt = Math.max((pc.lastTs - pc.firstTs) / 1000, 30);
-    const workHs = pc.work * 4294967296 / dt;
-    let hashHs = 0;
-    if (pc.diffs.length >= 8) {
-      // hashes are uniform below the submitter's target: median(diff) =
-      // 2 x target-diff; robust to HW-error junk a floor pool accepts.
-      const d = pc.diffs.slice().sort((a, b) => a - b);
-      const med = d[Math.floor(d.length / 2)];
-      hashHs = (n - 1) * (med / 2) * 4294967296 / dt;
+  const chanBuckets = (cid) => {
+    // five 1-minute buckets ending now; per-bucket median handles the
+    // submitter's threshold shifting mid-window (mixed populations would
+    // bias a single global median)
+    const nowMs = Date.now();
+    const B = 5, W = 60 * 1000;
+    const bk = Array.from({ length: B }, () => ({ n: 0, work: 0, diffs: [], minSeq: Infinity, maxSeq: -1 }));
+    for (const [ts, w, c, diff, seq] of sv2State.shares) {
+      if (c !== cid) continue;
+      const idx = Math.floor((nowMs - ts) / W);
+      if (idx < 0 || idx >= B) continue;
+      const b = bk[B - 1 - idx];
+      b.n++; b.work += w;
+      if (diff > 0) b.diffs.push(diff);
+      if (seq >= 0) { if (seq < b.minSeq) b.minSeq = seq; if (seq > b.maxSeq) b.maxSeq = seq; }
     }
-    return Math.max(workHs, hashHs);
+    return bk.map((b) => {
+      if (b.n < 5) return 0;   // sparse edge bucket: no vote
+      const nSeq = (b.maxSeq >= b.minSeq) ? (b.maxSeq - b.minSeq + 1) : b.n;
+      const n = Math.max(b.n, Math.min(nSeq, b.n * 3));
+      const workHs = b.work * 4294967296 / 60;
+      let hashHs = 0;
+      if (b.diffs.length >= 8) {
+        // hashes are uniform below the submitter's target within a bucket:
+        // median(diff) = 2 x target-diff; robust to HW-error junk shares
+        const d = b.diffs.sort((a, b2) => a - b2);
+        const med = d[Math.floor(d.length / 2)];
+        hashHs = n * (med / 2) * 4294967296 / 60;
+      }
+      return Math.max(workHs, hashHs);
+    });
+  };
+  const chanHs = (buckets) => {
+    const live = buckets.filter((v) => v > 0);
+    if (!live.length) return 0;
+    return live.reduce((a, v) => a + v, 0) / live.length;
   };
   let hidden = {};
   try { hidden = JSON.parse(fs.readFileSync(path.join(POOL_DIR, 'config', 'hidden.json'), 'utf8')) || {}; } catch (_) {}
@@ -271,13 +288,14 @@ function sv2Stats() {
     const ht = Number(hidden[ch.name]) || 0;
     if (ht && ch.last <= ht) continue;
     accepted += ch.accepted; rejected += ch.rejected;
-    const cHs = chanHs(perChan[cid]);
+    const buckets = chanBuckets(cid);
+    const cHs = chanHs(buckets);
     totHs += cHs;
     const hr = fmtHs(cHs);
     workerList.push({
       name: ch.name, proto: 'SV2',
       hashrate: hr.val + ' ' + hr.unit,
-      trend: [hr.n, hr.n, hr.n, hr.n, hr.n],
+      trend: buckets,
       idle: nowS - ch.last > 300,
       best: ch.best, last: ch.last,
       uptime: nowS - ch.firstSeen,
