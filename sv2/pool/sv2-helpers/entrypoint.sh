@@ -38,9 +38,19 @@ if [ -z "$PAYOUT_SCRIPT" ]; then
 fi
 echo "[entrypoint] payout script: raw($PAYOUT_SCRIPT)"
 
+SPM="6.0"
+if [ -f "$DATA/shares_per_minute" ]; then
+    CAND=$(tr -cd '0-9.' < "$DATA/shares_per_minute")
+    case "$CAND" in
+        ''|*..*) : ;;
+        *) SPM="$CAND" ;;
+    esac
+fi
+echo "[entrypoint] shares_per_minute=$SPM"
 sed -e "s|__AUTH_PUB__|$PUB|" \
     -e "s|__AUTH_PRV__|$PRV|" \
     -e "s|__PAYOUT_SCRIPT__|$PAYOUT_SCRIPT|" \
+    -e "s|__SHARES_PER_MINUTE__|$SPM|" \
     "$POOL_CFG_TEMPLATE" > "$POOL_CFG"
 
 export SHIM_AUTH_PUB="$PUB" SHIM_AUTH_PRV="$PRV"

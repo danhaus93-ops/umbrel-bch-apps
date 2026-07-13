@@ -29,6 +29,36 @@ const SV2_PUB_FILE  = path.join(SV2_DIR, 'keys', 'authority.pub');
 const SV2_LOG_FILE  = path.join(SV2_DIR, 'pool_sv2.log');
 const SV2_BLOCKS_FILE = path.join(SV2_DIR, 'sv2_blocks.jsonl');
 const SV2_RESETS_FILE = path.join(SV2_DIR, 'sv2_resets.json');
+const SV2_SPM_FILE    = path.join(SV2_DIR, 'shares_per_minute');
+const SV2_MON_URL = process.env.SV2_MON_URL || 'http://sslabs-solostrike-cash_sv2-pool_1:9090';
+// SRI monitoring API poller: authoritative names/counts/rejects/best/declared.
+// The log-parsed estimator stays authoritative for delivered hashrate + trend
+// (the API cannot rate floor channels that declare nominal_hash_rate 0).
+const sv2Api = { at: 0, channels: {} };
+async function sv2ApiPoll() {
+  if (Date.now() - sv2Api.at < 5000) return;
+  sv2Api.at = Date.now();
+  try {
+    const cl = await (await fetch(SV2_MON_URL + '/api/v1/clients?limit=50', { signal: AbortSignal.timeout(1500) })).json();
+    const next = {};
+    for (const c of (cl.items || [])) {
+      try {
+        const ch = await (await fetch(SV2_MON_URL + '/api/v1/clients/' + c.client_id + '/channels?limit=50', { signal: AbortSignal.timeout(1500) })).json();
+        for (const e of (ch.extended_channels || []).concat(ch.standard_channels || [])) {
+          next[c.client_id + ':' + e.channel_id] = {
+            identity: e.user_identity || '', nominal: Number(e.nominal_hashrate) || 0,
+            accepted: Number(e.shares_accepted) || 0, rejected: Number(e.shares_rejected) || 0,
+            reasons: e.shares_rejected_by_reason || {},
+            best: Number(e.best_diff) || 0, blocks: Number(e.blocks_found) || 0,
+            targetHex: e.target_hex || '', spm: Number(e.expected_shares_per_minute) || 0,
+          };
+        }
+      } catch (_) {}
+    }
+    if (Object.keys(next).length) sv2Api.channels = next;
+  } catch (_) { /* API unavailable: log-parsed telemetry carries on alone */ }
+}
+setInterval(() => { sv2ApiPoll().catch(() => {}); }, 10000);
 const SV2_BEST_FILE   = path.join(SV2_DIR, 'sv2_best.json');
 let sv2Resets = {};  // worker name (or __all__) -> reset ts (sec)
 let sv2BestP  = {};  // worker name -> { best, ts }  (persisted across restarts)
@@ -315,6 +345,18 @@ function sv2Stats() {
     if (fresher) continue;
     accepted += ch.accepted; rejected += ch.rejected;
     const buckets = chanBuckets(cid);
+    const api = sv2Api.channels[cid];
+    if (api) {
+      if (api.identity) {
+        const dot = api.identity.lastIndexOf('.');
+        ch.name = (dot > 0 && dot < api.identity.length - 1) ? api.identity.slice(dot + 1) : api.identity;
+      }
+      if (api.accepted > ch.accepted) ch.accepted = api.accepted;
+      if (api.rejected > ch.rejected) ch.rejected = api.rejected;
+      if (api.best > ch.best && api.best > sv2ResetTs(ch.name) * 0) {
+        if (ch.last * 1000 > sv2ResetTs(ch.name) * 1000) ch.best = Math.max(ch.best, api.best);
+      }
+    }
     const cHs = chanHs(buckets);
     totHs += cHs;
     // credit newly seen shares at estimated target diff (SV1 semantics)
@@ -332,6 +374,9 @@ function sv2Stats() {
     const hr = fmtHs(cHs);
     workerList.push({
       name: ch.name, proto: 'SV2',
+      declared: api ? api.nominal : null,
+      rejected: ch.rejected,
+      rejectReasons: api ? api.reasons : null,
       hashrate: hr.val + ' ' + hr.unit,
       trend: buckets,
       idle: nowS - ch.last > 300,
@@ -961,6 +1006,10 @@ app.post('/api/sv2', (req, res) => {
   if (!validAddress(a)) return res.status(400).json({ ok: false, error: 'invalid BCH address' });
   try { fs.mkdirSync(SV2_DIR, { recursive: true }); fs.writeFileSync(SV2_ADDR_FILE, a); }
   catch (e) { return res.status(500).json({ ok: false, error: 'could not save' }); }
+  const spm = Number(req.body && req.body.sharesPerMinute);
+  if (spm && spm >= 0.5 && spm <= 600) {
+    try { fs.writeFileSync(SV2_SPM_FILE, String(spm)); } catch (_) {}
+  }
   res.json({ ok: true, enabled: true, address: a });
 });
 

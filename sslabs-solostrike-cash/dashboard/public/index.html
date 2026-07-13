@@ -220,14 +220,14 @@
   </div>
   <div class="addr">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <input id="sv2AddrInput" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="BCH payout address to enable SV2" style="flex:1;min-width:220px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:13px;padding:10px 12px"/>
+      <input id="sv2SpmInput" inputmode="decimal" placeholder="6" title="target shares per minute per miner (vardiff); applies after app restart" style="width:64px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:13px;padding:10px 8px"/><input id="sv2AddrInput" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="BCH payout address to enable SV2" style="flex:1;min-width:220px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:13px;padding:10px 12px"/>
       <button class="copy" id="sv2Save" style="padding:10px 16px">Save</button>
       <div id="sv2Msg" style="flex-basis:100%;font-family:var(--fm);font-size:11px;color:var(--muted);min-height:14px"></div>
     </div>
     <div class="hint" style="margin-top:9px">Saving an address enables the SV2 endpoint within ~10s (authority key is generated on first enable). To change or disable, save again and restart the app. SV1 mining above is unaffected.</div>
   </div>
 
-  <div class="sec">Pool difficulty</div>
+  <div class="sec">Pool difficulty &middot; SV1</div>
   <div class="addr">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
       <label style="flex:1;min-width:90px;font-family:var(--fm);font-size:11px;color:var(--dim)">MIN<input id="diffMin" type="number" min="1" style="width:100%;margin-top:5px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:14px;padding:9px 10px"/></label>
@@ -261,7 +261,7 @@
 
   <footer>
     <span class="badge">solo</span><span class="badge">zero-fee</span><span class="badge">your node</span><br/>
-    LoneStrike Cash <span id="ver">v1.4.38</span> · powered by asicseer-pool<br/><span style="font-size:10px;color:var(--dim)">donations never expected, always fuel: <span style="color:var(--muted)">bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk</span></span>
+    LoneStrike Cash <span id="ver">v1.4.39</span> · powered by asicseer-pool<br/><span style="font-size:10px;color:var(--dim)">donations never expected, always fuel: <span style="color:var(--muted)">bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk</span></span>
   </footer>
 </div>
 
@@ -347,7 +347,7 @@ function render(d){
     emp.style.display='none';
     d.workerList.forEach(w=>{
       const r=document.createElement('div');r.className='wr';
-      r.innerHTML=`<div class="name"><span class="wn">${w.idle?'<span style="color:#FB7185;margin-right:4px" title="no shares in 5+ min">\u25CF</span>':''}${w.name}${w.proto==='SV2'?' <span style=\"font-size:9px;color:var(--mint);border:1px solid var(--line2);border-radius:3px;padding:1px 4px;vertical-align:middle\">SV2</span>':''}</span><span class="wup">up ${fmtUp(w.uptime)}</span></div><div class="hr wcol-r">${spark(w.trend)}${w.hashrate}</div><div class="bd wcol-r bd-col">${fmtDiff(w.best)}</div><div class="ls">${ago(w.last)}</div><div style="display:flex;gap:4px;justify-content:flex-end"><button class="wreset" data-w="${w.name}" title="reset this miner's best">⟲</button><button class="wreset whide" data-h="${w.name}" title="remove from list">✕</button></div>`;
+      r.innerHTML=`<div class="name"><span class="wn">${w.idle?'<span style="color:#FB7185;margin-right:4px" title="no shares in 5+ min">\u25CF</span>':''}${w.name}${w.proto==='SV2'&&w.declared===0?' <span title=\"miner declares 0 hashrate - vardiff cannot engage\" style=\"font-size:9px;color:#FB7185\">decl:0</span>':''}${(w.rejected||0)>0?` <span style=\"font-size:9px;color:var(--dim)\" title=\"rejected shares\">${w.rejected}✕</span>`:''}${w.proto==='SV2'?' <span style=\"font-size:9px;color:var(--mint);border:1px solid var(--line2);border-radius:3px;padding:1px 4px;vertical-align:middle\">SV2</span>':''}</span><span class="wup">up ${fmtUp(w.uptime)}</span></div><div class="hr wcol-r">${spark(w.trend)}${w.hashrate}</div><div class="bd wcol-r bd-col">${fmtDiff(w.best)}</div><div class="ls">${ago(w.last)}</div><div style="display:flex;gap:4px;justify-content:flex-end"><button class="wreset" data-w="${w.name}" title="reset this miner's best">⟲</button><button class="wreset whide" data-h="${w.name}" title="remove from list">✕</button></div>`;
       t.appendChild(r);
     });
   }else{emp.style.display='block';}
@@ -415,7 +415,7 @@ async function saveSv2(){
   const ai=document.getElementById('sv2AddrInput'),msg=document.getElementById('sv2Msg');
   const a=ai.value.trim();
   try{
-    const r=await fetch('/api/sv2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:a})});
+    const r=await fetch('/api/sv2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:a,sharesPerMinute:parseFloat(document.getElementById('sv2SpmInput').value)||undefined})});
     const j=await r.json();
     if(j.ok){msg.style.color='var(--mint)';msg.textContent=j.enabled?'SV2 enabled \u2014 endpoint live in ~10s':'SV2 disabled (restart the app to stop the pool)';loadSv2();}
     else{msg.style.color='var(--red)';msg.textContent=j.error||'invalid address';}
@@ -501,7 +501,7 @@ document.getElementById('addrSave').addEventListener('click',saveAddr);
 document.getElementById('addrInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveAddr();});
 const MOCK={poolUp:true,nodeUp:true,bestShare:4.1e6,netDiff:5.75e11,
   hashrate:{val:'92.4',unit:'TH/s'},workers:3,users:1,blocks:0,accepted:18420,rejected:12,
-  stratum:'stratum+tcp://umbrel.local:3335',height:954112,version:'v1.4.38',address:'bitcoincash:qq8e2x9f0n3l7k2m5p4r6t8w1y3u5i7o9a2s4d6f8g',blockList:[],diff:{min:1,start:42,max:0},roundShares:1.64e9,poolHs:8.66e12,
+  stratum:'stratum+tcp://umbrel.local:3335',height:954112,version:'v1.4.39',address:'bitcoincash:qq8e2x9f0n3l7k2m5p4r6t8w1y3u5i7o9a2s4d6f8g',blockList:[],diff:{min:1,start:42,max:0},roundShares:1.64e9,poolHs:8.66e12,
   workerList:[
     {name:'S21XP-board1',hashrate:'90.1 TH/s',best:4.1e6,last:Math.floor(Date.now()/1000)-4,uptime:9240},
     {name:'NerdQAxe++',hashrate:'1.9 TH/s',best:88200,last:Math.floor(Date.now()/1000)-11,uptime:300},

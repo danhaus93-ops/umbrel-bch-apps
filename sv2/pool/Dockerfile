@@ -1,7 +1,8 @@
 FROM rust:1.88-bookworm AS build
 RUN apt-get update && apt-get install -y --no-install-recommends git capnproto libcapnp-dev pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
-RUN git clone --depth 1 https://github.com/stratum-mining/sv2-apps.git
+RUN git clone https://github.com/stratum-mining/sv2-apps.git /src/sv2-apps \
+    && cd /src/sv2-apps && git checkout 26e4bbaa790d0bd58bd8b69696f4aaa44de44a9a
 COPY noise-tp-shim /src/sv2-apps/noise-tp-shim
 COPY sri-keygen /src/sv2-apps/sri-keygen
 RUN cd /src/sv2-apps/pool-apps && cargo build --release -p pool_sv2
