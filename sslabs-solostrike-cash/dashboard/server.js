@@ -188,7 +188,12 @@ function sv2Ingest() {
     if (/invalid share|SubmitSharesError/.test(line)) {
       const dm = line.match(/downstream_id[=:\s]+(\d+)/);
       const cm = line.match(/channel_id[=:\s]+(\d+)/);
-      if (dm && cm) sv2Chan(dm[1] + ':' + cm[1]).rejected++;
+      if (dm && cm) {
+        const ch2 = sv2Chan(dm[1] + ':' + cm[1]);
+        ch2.rejected++;
+        const rm = line.match(/error_code[=:\s]+([a-zA-Z-]+)/);
+        ch2.lastReject = (rm ? rm[1] : 'invalid') + ' @ ' + line.slice(0, 19);
+      }
     }
     const m = line.match(SV2_RE_SHARE);
     if (!m) continue;
@@ -263,7 +268,7 @@ function sv2Stats() {
     return bk.map((b) => {
       if (b.n < 5) return 0;   // sparse edge bucket: no vote
       const nSeq = (b.maxSeq >= b.minSeq) ? (b.maxSeq - b.minSeq + 1) : b.n;
-      const n = Math.max(b.n, Math.min(nSeq, b.n * 3));
+      const n = Math.max(b.n, Math.min(nSeq, Math.ceil(b.n * 1.25)));
       const workHs = b.work * 4294967296 / 60;
       if (b.work / b.n >= 1) return workHs;   // vardiff live: credited work is authoritative
       let hashHs = 0;
@@ -913,11 +918,37 @@ app.post('/api/electricity', (req, res) => {
   if (b.watts != null) e.watts = Math.max(0, Number(b.watts) || 0);
   writeElectricity(e); res.json({ ok: true, ...e });
 });
-app.get('/api/sv2', (_req, res) => {
+app.get('/api/sv2', (req, res) => {
   let pub = '';  try { pub  = fs.readFileSync(SV2_PUB_FILE,  'utf8').trim(); } catch (_) {}
   let addr = ''; try { addr = fs.readFileSync(SV2_ADDR_FILE, 'utf8').trim(); } catch (_) {}
-  res.json({ ok: true, enabled: !!addr, address: addr, authorityPub: pub,
-             endpoint: STRATUM_HOST + ':33333' });
+  const out = { ok: true, enabled: !!addr, address: addr, authorityPub: pub,
+                endpoint: STRATUM_HOST + ':33333' };
+  if (req.query && req.query.debug) {
+    try {
+      sv2Ingest();
+      out.debug = {};
+      const nowMs = Date.now(), B = 5, W = 60 * 1000;
+      for (const [cid, ch] of Object.entries(sv2State.channels)) {
+        const bk = Array.from({ length: B }, () => ({ n: 0, work: 0, minSeq: Infinity, maxSeq: -1, diffs: [] }));
+        for (const [ts, w, c, diff, seq] of sv2State.shares) {
+          if (c !== cid) continue;
+          const idx = Math.floor((nowMs - ts) / W);
+          if (idx < 0 || idx >= B) continue;
+          const b = bk[B - 1 - idx];
+          b.n++; b.work += w;
+          if (diff > 0) b.diffs.push(diff);
+          if (seq >= 0) { if (seq < b.minSeq) b.minSeq = seq; if (seq > b.maxSeq) b.maxSeq = seq; }
+        }
+        out.debug[cid] = { name: ch.name, rejected: ch.rejected, lastReject: ch.lastReject || null, buckets: bk.map((b) => {
+          const d = b.diffs.slice().sort((x, y) => x - y);
+          return { n: b.n, span: b.maxSeq >= b.minSeq ? b.maxSeq - b.minSeq + 1 : 0,
+                   workPerShare: b.n ? +(b.work / b.n).toExponential(2) : 0,
+                   tDiffQ: d.length >= 8 ? Math.round(d[Math.floor(d.length * 0.15)] * 0.85) : 0 };
+        }) };
+      }
+    } catch (e) { out.debugError = String(e); }
+  }
+  res.json(out);
 });
 app.post('/api/sv2', (req, res) => {
   const a = (req.body && req.body.address || '').trim();
