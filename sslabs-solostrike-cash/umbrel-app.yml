@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.34"
+version: "1.4.36"
 tagline: Zero-fee Bitcoin Cash solo mining pool, pointed at your own node
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -72,9 +72,10 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: SV2 worker rows now show a real hashrate trend sparkline built
-  from per-minute buckets, and the rate tracks miner firmware through vardiff
-  and threshold changes instead of lagging behind them.
+releaseNotes: Multi-miner SV2 fixes from community fleet testing - accurate
+  hashrates for miners with working vardiff, worker names no longer cross-assign
+  when several miners connect at once, reconnected miners no longer leave ghost
+  rows, and difficulty-too-low rejects are counted on the right miner.
 
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
