@@ -104,7 +104,8 @@ function fmtHs(hs) {
 // (difficulty units credited). Hashrate = sum(share_work in window) * 2^32 / secs.
 const SV2_D1 = 0xffffn << 208n;                    // difficulty-1 target
 const sv2State = {
-  offset: 0, pendingId: '', roundWork: 0, lastBlockCount: -1,
+  offset: 0, pendingId: '', pendingAge: 99, roundWork: 0, lastBlockCount: -1,
+  roundDiff: 0, allDiff: 0,          // difficulty-weighted share accounting
   channels: {},                                    // cid -> stats
   shares: [],                                      // [ts_ms, work, cid] rolling window
 };
@@ -170,6 +171,7 @@ function sv2Ingest() {
       if (!ident) { const pm = line.match(SV2_RE_IDENT); if (pm) ident = pm[1]; }
       ident = String(ident || '').trim().slice(0, 64);
       // accept only plausible worker/address names; junk keeps the sv2-chN default
+      sv2State.pendingAge = 0;
       if (/^[A-Za-z0-9:._\-]{4,64}$/.test(ident)) {
         // pool convention: payout-address.workername -> show the worker part
         const dot = ident.lastIndexOf('.');
@@ -178,13 +180,16 @@ function sv2Ingest() {
     }
     const okm = line.match(/downstream_id[=:\s]+(\d+)[^\n]*?Open(?:Standard|Extended)MiningChannelSuccess[^\n]*?channel_id[=:\s]+(\d+)/) ||
                 line.match(SV2_RE_OPENOK);
-    if (okm && sv2State.pendingId) {
+    if (okm && sv2State.pendingId && sv2State.pendingAge <= 3) {
       const key = okm[2] !== undefined ? okm[1] + ':' + okm[2] : okm[1];
       sv2Chan(key).name = sv2State.pendingId; sv2State.pendingId = '';
     }
-    const bm = line.match(/downstream_id[=:\s]+(\d+)[^\n]*?(?:invalid share|SubmitSharesError)[^\n]*?channel_id[=:\s]+(\d+)/) ||
-               line.match(SV2_RE_BAD);
-    if (bm) { sv2Chan(bm[2] !== undefined ? bm[1] + ':' + bm[2] : bm[1]).rejected++; }
+    sv2State.pendingAge++;
+    if (/invalid share|SubmitSharesError/.test(line)) {
+      const dm = line.match(/downstream_id[=:\s]+(\d+)/);
+      const cm = line.match(/channel_id[=:\s]+(\d+)/);
+      if (dm && cm) sv2Chan(dm[1] + ':' + cm[1]).rejected++;
+    }
     const m = line.match(SV2_RE_SHARE);
     if (!m) continue;
     const cid = m[1] + ':' + m[2], seq = Number(m[3]);
@@ -260,13 +265,15 @@ function sv2Stats() {
       const nSeq = (b.maxSeq >= b.minSeq) ? (b.maxSeq - b.minSeq + 1) : b.n;
       const n = Math.max(b.n, Math.min(nSeq, b.n * 3));
       const workHs = b.work * 4294967296 / 60;
+      if (b.work / b.n >= 1) return workHs;   // vardiff live: credited work is authoritative
       let hashHs = 0;
       if (b.diffs.length >= 8) {
-        // hashes are uniform below the submitter's target within a bucket:
-        // median(diff) = 2 x target-diff; robust to HW-error junk shares
+        // floor-target rescue only: hashes are uniform below the
+        // submitter's own threshold. Estimate it from the 85th-percentile
+        // hash: junk-immune like a median, half the variance.
         const d = b.diffs.sort((a, b2) => a - b2);
-        const med = d[Math.floor(d.length / 2)];
-        hashHs = n * (med / 2) * 4294967296 / 60;
+        const tDiff = d[Math.floor(d.length * 0.15)] * 0.85;
+        hashHs = n * tDiff * 4294967296 / 60;
       }
       return Math.max(workHs, hashHs);
     });
@@ -278,6 +285,11 @@ function sv2Stats() {
   };
   let hidden = {};
   try { hidden = JSON.parse(fs.readFileSync(path.join(POOL_DIR, 'config', 'hidden.json'), 'utf8')) || {}; } catch (_) {}
+  const winDiffs = {};
+  for (const [ts, w, c, diff] of sv2State.shares) {
+    if (ts < cutoff || !(diff > 0)) continue;
+    (winDiffs[c] || (winDiffs[c] = [])).push(diff);
+  }
   const workerList = [];
   let best = 0, accepted = 0, rejected = 0, totHs = 0;
   for (const [cid, ch] of Object.entries(sv2State.channels)) {
@@ -287,10 +299,29 @@ function sv2Stats() {
     if (!ch.last || nowS - ch.last > TTL) continue;
     const ht = Number(hidden[ch.name]) || 0;
     if (ht && ch.last <= ht) continue;
+    // a reconnected miner opens a new channel: retire the stale twin
+    let fresher = false;
+    for (const [ocid, och] of Object.entries(sv2State.channels)) {
+      if (ocid !== cid && och.name === ch.name && (och.last > ch.last ||
+          (och.last === ch.last && och.firstSeen > ch.firstSeen))) { fresher = true; break; }
+    }
+    if (fresher) continue;
     accepted += ch.accepted; rejected += ch.rejected;
     const buckets = chanBuckets(cid);
     const cHs = chanHs(buckets);
     totHs += cHs;
+    // credit newly seen shares at estimated target diff (SV1 semantics)
+    const wd = winDiffs[cid];
+    if (wd && wd.length >= 8) {
+      const sorted = wd.slice().sort((a, b) => a - b);
+      const tDiff = sorted[Math.floor(sorted.length * 0.15)] * 0.85;
+      const delta = ch.accepted - (ch.accounted || 0);
+      if (delta > 0 && tDiff > 0) {
+        ch.accounted = ch.accepted;
+        sv2State.roundDiff += delta * tDiff;
+        sv2State.allDiff += delta * tDiff;
+      }
+    }
     const hr = fmtHs(cHs);
     workerList.push({
       name: ch.name, proto: 'SV2',
@@ -731,16 +762,16 @@ app.get('/api/status', async (_req, res) => {
       out.poolUp = out.poolUp || s2.workers > 0;
       out.workers += s2.workers;
       if (s2.workers) out.users += 1;
-      out.accepted += s2.accepted; out.rejected += s2.rejected;
+      out.accepted += Math.round(sv2State.allDiff); out.rejected += s2.rejected;
       out.bestShare = Math.max(out.bestShare, s2.best);
       out.poolHs = (out.poolHs || 0) + s2.hs;
       const th = fmtHs(out.poolHs);
       out.hashrate = { val: th.val, unit: th.unit };
       if (out.blockList.length !== sv2State.lastBlockCount) {
-        if (sv2State.lastBlockCount >= 0) sv2State.roundWork = 0;   // new block anywhere -> new round
+        if (sv2State.lastBlockCount >= 0) { sv2State.roundWork = 0; sv2State.roundDiff = 0; }
         sv2State.lastBlockCount = out.blockList.length;
       }
-      out.roundShares = (out.roundShares || 0) + sv2State.roundWork;
+      out.roundShares = (out.roundShares || 0) + Math.max(sv2State.roundWork, sv2State.roundDiff);
       out.workerList = out.workerList.concat(s2.workerList).sort((a, b) => (b.best || 0) - (a.best || 0));
     }
   } catch (_) { /* sv2 telemetry unavailable */ }
@@ -914,10 +945,17 @@ app.get('/api/widget/stats', (_req, res) => {
   let hashVal = '0', hashUnit = 'H/s', miners = 0, best = 0, blocks = 0;
   try {
     const p = readPoolStatus();
-    const h = parseHash(p.hashrate5m || p.hashrate1m); hashVal = h.val; hashUnit = h.unit;
+    let hs = hashToHs(p.hashrate5m || p.hashrate1m) || 0;
     best = Number(p.bestshare) || 0;
     miners = readWorkers().filter(w => !w.idle).length;
     blocks = Math.max(blockState.blocks.length, countBlocks());
+    try {
+      const s2 = sv2Stats();
+      hs += s2.hs || 0;
+      miners += s2.workers || 0;
+      best = Math.max(best, s2.best || 0);
+    } catch (_) { /* sv2 telemetry unavailable */ }
+    const h = fmtHs(hs); hashVal = h.val; hashUnit = h.unit;
   } catch (_) { /* pool not up yet */ }
   res.json({
     type: 'four-stats',
