@@ -333,7 +333,13 @@ function sv2Stats() {
     const pBest = (sv2BestP[ch.name] && sv2BestP[ch.name].ts > sv2ResetTs(ch.name)) ? sv2BestP[ch.name].best : 0;
     if (pBest > ch.best) ch.best = pBest;
     best = Math.max(best, ch.best);
-    if (!ch.last || nowS - ch.last > TTL) continue;
+    // rental/proxy churn: a connection that died before ever earning a
+    // real name (API identity) is disposable - retire it in 5 minutes.
+    // Named miners keep the full TTL so a real rig going offline stays
+    // visible for an hour.
+    const isFallbackName = /^sv2-\d+\.\d+$/.test(ch.name);
+    const ttlEff = isFallbackName ? Math.min(TTL, 300) : TTL;
+    if (!ch.last || nowS - ch.last > ttlEff) continue;
     const ht = Number(hidden[ch.name]) || 0;
     if (ht && ch.last <= ht) continue;
     // a reconnected miner opens a new channel: retire the stale twin
@@ -968,7 +974,12 @@ app.post('/api/electricity', (req, res) => {
 app.get('/api/sv2', (req, res) => {
   let pub = '';  try { pub  = fs.readFileSync(SV2_PUB_FILE,  'utf8').trim(); } catch (_) {}
   let addr = ''; try { addr = fs.readFileSync(SV2_ADDR_FILE, 'utf8').trim(); } catch (_) {}
+  let savedSpm = 6;
+  try { const v = parseFloat(fs.readFileSync(SV2_SPM_FILE, 'utf8')); if (v > 0) savedSpm = v; } catch (_) {}
+  let activeSpm = 0;
+  for (const c of Object.values(sv2Api.channels)) { if (c.spm > 0) { activeSpm = c.spm; break; } }
   const out = { ok: true, enabled: !!addr, address: addr, authorityPub: pub,
+                savedSpm, activeSpm,
                 endpoint: STRATUM_HOST + ':33333' };
   if (req.query && req.query.debug) {
     try {
