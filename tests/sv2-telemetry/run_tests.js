@@ -41,4 +41,5 @@ function scenario(name, logfile, fakeNowIso, truthHs, lo, hi) {
 scenario('threshold shift + batch acks', 'threshold_shift.log', '2026-01-01T00:04:00Z', 44.12e12, 0.85, 1.15);
 scenario('mid-bucket sequence reset',    'seq_reset.log',       '2026-01-01T00:05:00Z', 34.0*256*2**32, 0.85, 1.15);
 scenario('junk shares on floor channel', 'junk_floor.log',      '2026-01-01T00:05:00Z', 2.0*280*2**32,  0.70, 1.35);
+scenario('vardiff credited work + acks',  'vardiff_credited.log','2026-01-01T00:05:00Z', 0.62*16507*2**32, 0.90, 1.10);
 process.exit(failures ? 1 : 0);

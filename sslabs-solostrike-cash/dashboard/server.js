@@ -250,7 +250,7 @@ function sv2Ingest() {
   while (sv2State.shares.length && sv2State.shares[0][0] < cut) sv2State.shares.shift();
   void nowS;
 }
-setInterval(() => { try { sv2Ingest(); } catch (_) {} }, 30000);
+setInterval(() => { try { sv2Ingest(); } catch (_) {} }, 10000);
 
 function sv2Blocks() {
   let raw; try { raw = fs.readFileSync(SV2_BLOCKS_FILE, 'utf8'); } catch (_) { return []; }
@@ -301,7 +301,10 @@ function sv2Stats() {
       if (b.n < 5) return 0;   // sparse edge bucket: no vote
       const nSeq = (b.maxSeq >= b.minSeq) ? (b.maxSeq - b.minSeq + 1) : b.n;
       const n = Math.max(b.n, Math.min(nSeq, Math.ceil(b.n * 1.25)));
-      const workHs = b.work * 4294967296 / 60;
+      // every 10th share is batch-acked without a valid-share line: the
+      // sequence span recovers its COUNT, this ratio recovers its CREDIT
+      const workAdj = b.work * (n / b.n);
+      const workHs = workAdj * 4294967296 / 60;
       if (b.work / b.n >= 1) return workHs;   // vardiff live: credited work is authoritative
       let hashHs = 0;
       if (b.diffs.length >= 8) {
@@ -316,7 +319,9 @@ function sv2Stats() {
     });
   };
   const chanHs = (buckets) => {
-    const live = buckets.filter((v) => v > 0);
+    const completed = buckets.slice(0, -1).filter((v) => v > 0);
+    if (completed.length) return completed.reduce((a, v) => a + v, 0) / completed.length;
+    const live = buckets.filter((v) => v > 0);           // warmup: newest is all we have
     if (!live.length) return 0;
     return live.reduce((a, v) => a + v, 0) / live.length;
   };
