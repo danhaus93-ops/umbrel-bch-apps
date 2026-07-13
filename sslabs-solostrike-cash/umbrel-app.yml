@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.40"
+version: "1.4.41"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -75,10 +75,9 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: Miners that declare zero hashrate (a firmware bug on some SV2
-  clients) no longer get stuck at accept-everything difficulty - the pool now
-  floors the declaration so automatic difficulty can engage and converge to the
-  miner's real rate within minutes. Ends share spray from affected firmware.
+releaseNotes: SV2 hashrate display now matches miner firmware for vardiff
+  channels - batch-acknowledged share credit is fully counted and the rate is
+  computed over completed minutes only.
 
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
