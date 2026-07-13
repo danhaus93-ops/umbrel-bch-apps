@@ -34,7 +34,7 @@ services:
       RPC_PORT: "8332"
       RPC_USER: bchn
       RPC_PASS: bchn_local_rpc_pw_2f9c
-      APP_VERSION: v1.4.31
+      APP_VERSION: v1.4.32
     volumes:
       - ${APP_DATA_DIR}/data/pool:/pool
       - ${APP_DATA_DIR}/data/sv2:/sv2
@@ -51,6 +51,7 @@ services:
       TP_PORT: "8443"
       SV2_DATA: /data
       ZMQ_ADDR: tcp://sslabs-bitcoin-cash-node_bitcoind_1:28332
+      PYTHONUNBUFFERED: "1"
     volumes:
       - ${APP_DATA_DIR}/data/sv2:/data
     logging:

@@ -116,7 +116,7 @@ const SV2_RE_BAD   = /(?:invalid share|SubmitSharesError)[^\n]*?channel_id[=:\s]
 
 function sv2Chan(cid) {
   return sv2State.channels[cid] || (sv2State.channels[cid] = {
-    name: 'sv2-ch' + cid, accepted: 0, rejected: 0, best: 0,
+    name: 'sv2-' + String(cid).replace(':', '.'), accepted: 0, rejected: 0, best: 0,
     maxSeq: -1, last: 0, firstSeen: Math.floor(Date.now() / 1000),
   });
 }
@@ -138,7 +138,9 @@ function sv2Ingest() {
   for (const line of chunk.split('\n')) {
     if (/Open(?:Standard|Extended)MiningChannel\b/.test(line) && line.includes('user_identity')) {
       let ident = '';
-      const q = line.match(/user_identity[^"\x27]*["\x27]([^"\x27]+)["\x27]/);
+      const plain = line.match(/user_identity[=:\s]+([^\s,"\x27)]+)/);
+      if (plain) ident = plain[1];
+      const q = !ident && line.match(/user_identity[^"\x27]*["\x27]([^"\x27]+)["\x27]/);
       if (q) ident = q[1];
       if (!ident) {
         const ba = line.match(/user_identity[^\[]*\[([0-9,\s]+)\]/);
@@ -151,17 +153,24 @@ function sv2Ingest() {
       if (!ident) { const pm = line.match(SV2_RE_IDENT); if (pm) ident = pm[1]; }
       ident = String(ident || '').trim().slice(0, 64);
       // accept only plausible worker/address names; junk keeps the sv2-chN default
-      if (/^[A-Za-z0-9:._\-]{6,64}$/.test(ident)) sv2State.pendingId = ident;
+      if (/^[A-Za-z0-9:._\-]{4,64}$/.test(ident)) {
+        // pool convention: payout-address.workername -> show the worker part
+        const dot = ident.lastIndexOf('.');
+        sv2State.pendingId = (dot > 0 && dot < ident.length - 1) ? ident.slice(dot + 1) : ident;
+      }
     }
-    const okm = line.match(SV2_RE_OPENOK);
+    const okm = line.match(/downstream_id[=:\s]+(\d+)[^\n]*?Open(?:Standard|Extended)MiningChannelSuccess[^\n]*?channel_id[=:\s]+(\d+)/) ||
+                line.match(SV2_RE_OPENOK);
     if (okm && sv2State.pendingId) {
-      sv2Chan(Number(okm[1])).name = sv2State.pendingId; sv2State.pendingId = '';
+      const key = okm[2] !== undefined ? okm[1] + ':' + okm[2] : okm[1];
+      sv2Chan(key).name = sv2State.pendingId; sv2State.pendingId = '';
     }
-    const bm = line.match(SV2_RE_BAD);
-    if (bm) { sv2Chan(Number(bm[1])).rejected++; }
+    const bm = line.match(/downstream_id[=:\s]+(\d+)[^\n]*?(?:invalid share|SubmitSharesError)[^\n]*?channel_id[=:\s]+(\d+)/) ||
+               line.match(SV2_RE_BAD);
+    if (bm) { sv2Chan(bm[2] !== undefined ? bm[1] + ':' + bm[2] : bm[1]).rejected++; }
     const m = line.match(SV2_RE_SHARE);
     if (!m) continue;
-    const cid = Number(m[2]), seq = Number(m[3]);
+    const cid = m[1] + ':' + m[2], seq = Number(m[3]);
     const ch = sv2Chan(cid);
     if (seq <= ch.maxSeq) continue;                            // replay dedupe
     ch.maxSeq = seq;
