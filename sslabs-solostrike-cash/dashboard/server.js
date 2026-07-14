@@ -39,7 +39,13 @@ async function sv2ApiPoll() {
   if (Date.now() - sv2Api.at < 5000) return;
   sv2Api.at = Date.now();
   try {
-    const cl = await (await fetch(SV2_MON_URL + '/api/v1/clients?limit=50', { signal: AbortSignal.timeout(1500) })).json();
+    let items = [];
+    for (let off = 0; off < 1000; off += 100) {
+      const pg = await (await fetch(SV2_MON_URL + '/api/v1/clients?limit=100&offset=' + off, { signal: AbortSignal.timeout(1500) })).json();
+      items = items.concat(pg.items || []);
+      if (!pg.items || pg.items.length < 100) break;
+    }
+    const cl = { items };
     const next = {};
     for (const c of (cl.items || [])) {
       try {
@@ -298,7 +304,15 @@ function sv2Stats() {
       if (seq >= 0) { if (seq < b.minSeq) b.minSeq = seq; if (seq > b.maxSeq) b.maxSeq = seq; }
     }
     return bk.map((b) => {
-      if (b.n < 5) return 0;   // sparse edge bucket: no vote
+      if (b.work / b.n >= 1) {
+        // vardiff-credited: exact at any sample size (a single diff-500K
+        // share is known work) - rental fleets fan out across many
+        // sparse channels and zeroing them hid hundreds of TH
+        const nS = (b.maxSeq >= b.minSeq) ? (b.maxSeq - b.minSeq + 1) : b.n;
+        const nA = Math.max(b.n, Math.min(nS, Math.ceil(b.n * 1.25)));
+        return b.work * (nA / b.n) * 4294967296 / 60;
+      }
+      if (b.n < 5) return 0;   // sparse guard: statistical path only
       const nSeq = (b.maxSeq >= b.minSeq) ? (b.maxSeq - b.minSeq + 1) : b.n;
       const n = Math.max(b.n, Math.min(nSeq, Math.ceil(b.n * 1.25)));
       // every 10th share is batch-acked without a valid-share line: the
