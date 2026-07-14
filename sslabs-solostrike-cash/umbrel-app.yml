@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.47"
+version: "1.4.48"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -75,10 +75,10 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: Short-lived rental connections that disconnect before being
-  identified now aggregate into a single fleet-churn row, so large rentals
-  display their full hashrate instead of scattering it across dozens of
-  briefly-lived entries.
+releaseNotes: Disconnected miners now fully clean themselves up - expired
+  connections leave the worker list automatically (5 minutes for unnamed
+  rental churn, 1 hour for named miners) and are pruned from memory, so
+  nothing ever needs manual removal.
 
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
