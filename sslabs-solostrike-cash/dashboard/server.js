@@ -849,7 +849,32 @@ app.get('/api/status', async (_req, res) => {
         sv2State.lastBlockCount = out.blockList.length;
       }
       out.roundShares = (out.roundShares || 0) + Math.max(sv2State.roundWork, sv2State.roundDiff);
-      out.workerList = out.workerList.concat(s2.workerList).sort((a, b) => (b.best || 0) - (a.best || 0));
+      // aggregate: rental/proxy fleets fan one identity across many channels;
+    // collapse same-name SV2 rows into a single row (sum hs+shares, max best,
+    // freshest last, count connections) so 132 Braiins channels read as one
+    const merged = {};
+    const passthrough = [];
+    for (const w of s2.workerList) {
+      if (w.proto !== 'SV2') { passthrough.push(w); continue; }
+      const k = w.name;
+      if (!merged[k]) { merged[k] = Object.assign({}, w, { conns: 1, _hs: hashToHs(w.hashrate) || 0 }); }
+      else {
+        const m = merged[k];
+        m.conns++;
+        m._hs += hashToHs(w.hashrate) || 0;
+        m.best = Math.max(m.best || 0, w.best || 0);
+        m.last = Math.max(m.last || 0, w.last || 0);
+        m.rejected = (m.rejected || 0) + (w.rejected || 0);
+        m.uptime = Math.max(m.uptime || 0, w.uptime || 0);
+        m.idle = m.idle && w.idle;
+        if (w.declared === 0) m.declared = 0;
+      }
+    }
+    const aggregated = Object.values(merged).map((m) => {
+      if (m.conns > 1) { const h = fmtHs(m._hs); m.hashrate = h.val + ' ' + h.unit; m.trend = [m._hs,m._hs,m._hs,m._hs,m._hs]; }
+      return m;
+    });
+    out.workerList = out.workerList.concat(passthrough, aggregated).sort((a, b) => (b.best || 0) - (a.best || 0));
     }
   } catch (_) { /* sv2 telemetry unavailable */ }
 
