@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.43"
+version: "1.4.44"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -75,9 +75,8 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: Long worker names no longer hide the SV2 badge and reject count
-  on small screens, and miners with broken hashrate declarations now converge
-  to their real difficulty with far fewer startup rejects.
+releaseNotes: Worker names always display in full - badges wrap to a second
+  line on narrow screens instead of squeezing the name.
 
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
