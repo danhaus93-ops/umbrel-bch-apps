@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.48"
+version: "1.4.49"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -75,10 +75,11 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: Disconnected miners now fully clean themselves up - expired
-  connections leave the worker list automatically (5 minutes for unnamed
-  rental churn, 1 hour for named miners) and are pruned from memory, so
-  nothing ever needs manual removal.
+releaseNotes: Stratum V2 reliability hardening — a found block can no
+  longer be lost to a transient hiccup. Every SV2 solution is now saved to
+  disk before submission, submitted with automatic retries, and re-submitted
+  after restarts until your node has definitively judged it. Local sanity
+  checks warn instead of blocking, so the node always gets the final say.
 
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
