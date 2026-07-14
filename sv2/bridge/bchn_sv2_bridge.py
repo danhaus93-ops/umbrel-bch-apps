@@ -12,7 +12,9 @@ Usage on the box (env or args):
 Design notes:
   - CTOR: full-template-push only. Every refresh is a complete NewTemplate.
   - Template cache keyed by template_id, retained TEMPLATE_TTL seconds.
-  - SubmitSolution: reconstruct via bch_tp_core, local PoW gate, submitblock.
+  - SubmitSolution: reconstruct via bch_tp_core, persist-to-disk FIRST, then
+    submitblock with retry; local checks warn but never block submission,
+    and unjudged blocks are resubmitted after restarts (never lose a block).
   - v1 scope: one downstream connection class, plaintext framing, no JD.
 """
 import asyncio, base64, json, os, struct, time, urllib.request
@@ -144,11 +146,101 @@ class Bridge:
                  f"-> {len(self.clients)} client(s)")
         return tid, nt, pv
 
+    # ---- NEVER-LOSE-A-BLOCK submit path -----------------------------------
+    # Contract: once a solution arrives, the candidate block hex is persisted
+    # to disk BEFORE the first submit attempt; local reconstruction checks are
+    # logged as warnings but never block submission; submitblock is retried
+    # with backoff; anything the node never judged survives restarts and is
+    # resubmitted until the node gives a definitive answer.
+    def _pending_dir(self):
+        d = os.path.join(os.environ.get("SV2_DATA", "/data"), "pending_blocks")
+        os.makedirs(d, exist_ok=True)
+        return d
+
+    def _persist_pending(self, height, bh, block_hex):
+        p = os.path.join(self._pending_dir(), f"{height}_{bh}.hex")
+        tmp = p + ".tmp"
+        with open(tmp, "w") as f:
+            f.write(block_hex)
+            f.flush(); os.fsync(f.fileno())
+        os.replace(tmp, p)
+        return p
+
+    async def _submit_with_retry(self, block_hex, bh, height):
+        """Returns (judged, result). judged=True means the node saw the block
+        and answered (incl. rejection strings) — resubmitting cannot help.
+        judged=False means transport failure; the pending file stays."""
+        delays = (0, 0.5, 1, 2, 4, 8, 15, 30)
+        last = None
+        for i, d in enumerate(delays):
+            if d:
+                await asyncio.sleep(d)
+            try:
+                res = await self.node.submit_block(block_hex)
+                return True, res
+            except Exception as e:
+                last = e
+                self.log(f"[bridge] !! submitblock attempt {i+1}/{len(delays)} "
+                         f"failed for {bh} (h{height}): {e}")
+        self.log(f"[bridge] !!!! ALL submit attempts failed for h{height} {bh}; "
+                 f"block persisted for resubmission: {last}")
+        return False, None
+
+    def _record_block(self, height, bh, res):
+        try:
+            rec = {"height": height, "hash": bh,
+                   "time": int(time.time()), "result": res or "accepted"}
+            with open(os.path.join(os.environ.get("SV2_DATA", "/data"),
+                                   "sv2_blocks.jsonl"), "a") as f:
+                f.write(json.dumps(rec) + "\n")
+        except Exception as e:
+            self.log(f"[bridge] block record write failed (non-fatal): {e}")
+
+    async def _judge_and_finish(self, block_hex, bh, height, pending_path):
+        judged, res = await self._submit_with_retry(block_hex, bh, height)
+        if not judged:
+            return None                      # pending file remains on disk
+        if res is None:
+            self.log(f"[bridge] ***** BLOCK ACCEPTED at height {height} "
+                     f"hash {bh} *****")
+        elif res in ("duplicate", "inconclusive"):
+            # a soft result can still become canonical; do not treat as loss.
+            self.log(f"[bridge] ** submitblock soft result '{res}' at height "
+                     f"{height} hash {bh}; block may still win")
+        else:
+            self.log(f"[bridge] !! submitblock returned: {res} "
+                     f"(h{height} {bh})")
+        if res is None or res in ("duplicate", "inconclusive"):
+            # same-height race protection: force our own node onto our block.
+            # Runs for soft results too; that is exactly the race case.
+            try:
+                await self.node.rpc("preciousblock", [bh])
+                self.log(f"[bridge] preciousblock set on {bh}")
+            except Exception as e:
+                self.log(f"[bridge] preciousblock failed (non-fatal): {e}")
+        self._record_block(height, bh, res)
+        if pending_path:
+            try:
+                os.unlink(pending_path)
+            except Exception:
+                pass
+        return res
+
     async def handle_submit_solution(self, sol):
+        try:
+            return await self._handle_submit_solution(sol)
+        except Exception as e:
+            # A submit-path bug must never take the pool connection down.
+            self.log(f"[bridge] !!!! unexpected error in submit path "
+                     f"(connection preserved): {type(e).__name__}: {e}")
+
+    async def _handle_submit_solution(self, sol):
         tid = sol["template_id"]
         entry = self.templates.get(tid)
         if entry is None:
-            self.log(f"[bridge] !! solution for unknown/expired template {tid}")
+            self.log(f"[bridge] !!!! solution for unknown/expired template {tid} "
+                     f"— cannot reconstruct. Raw solution logged for forensics: "
+                     f"{json.dumps({k: (v.hex() if isinstance(v, (bytes, bytearray)) else v) for k, v in sol.items()})}")
             return
         _, t, gbt = entry
         cb = sol["coinbase_tx"]
@@ -156,46 +248,58 @@ class Bridge:
                  f"nonce={sol['header_nonce']} ts={sol['header_timestamp']} "
                  f"cb={len(cb)}B")
         try:
-            block = core.reconstruct_block_from_coinbase(
+            block, warns = core.reconstruct_block_from_coinbase(
                 t, cb, sol["version"],
                 sol["header_timestamp"], sol["header_nonce"])
         except (ValueError, AssertionError) as e:
-            self.log(f"[bridge] !! reconstruction/PoW gate failed: {e}")
+            self.log(f"[bridge] !!!! coinbase unparseable, no block can be "
+                     f"built: {e}; raw cb={cb.hex()}")
             return
+        for w in warns:
+            self.log(f"[bridge] !! reconstruction warning (submitting anyway): {w}")
         mintime = gbt.get("mintime")
         ts = sol["header_timestamp"]
         if mintime and (ts < int(mintime) or ts > int(time.time()) + 7200):
             # warn but NEVER self-censor a candidate block; the node decides.
             self.log(f"[bridge] !! header_timestamp {ts} outside sane range "
                      f"(mintime={mintime}); submitting anyway")
-        res = await self.node.submit_block(block.hex())
         bh = core.dsha(block[:80])[::-1].hex()
-        if res is None:
-            self.log(f"[bridge] ***** BLOCK ACCEPTED at height {gbt['height']} "
-                     f"hash {bh} *****")
-        elif res in ("duplicate", "inconclusive"):
-            # a soft result can still become canonical; do not treat as loss.
-            self.log(f"[bridge] ** submitblock soft result '{res}' at height "
-                     f"{gbt['height']} hash {bh}; block may still win")
-        else:
-            self.log(f"[bridge] !! submitblock returned: {res}")
-            return res
-        # same-height race protection: force our own node onto our block.
-        # Runs for soft results too; that is exactly the race case.
+        block_hex = block.hex()
+        pending_path = None
         try:
-            await self.node.rpc("preciousblock", [bh])
-            self.log(f"[bridge] preciousblock set on {bh}")
+            pending_path = self._persist_pending(gbt["height"], bh, block_hex)
         except Exception as e:
-            self.log(f"[bridge] preciousblock failed (non-fatal): {e}")
-        try:
-            rec = {"height": gbt["height"], "hash": bh,
-                   "time": int(time.time()), "result": res or "accepted"}
-            with open(os.path.join(os.environ.get("SV2_DATA", "/data"),
-                                   "sv2_blocks.jsonl"), "a") as f:
-                f.write(json.dumps(rec) + "\n")
-        except Exception as e:
-            self.log(f"[bridge] block record write failed (non-fatal): {e}")
-        return res
+            self.log(f"[bridge] !! could not persist pending block "
+                     f"(continuing to submit): {e}")
+        return await self._judge_and_finish(block_hex, bh, gbt["height"],
+                                            pending_path)
+
+    async def pending_resubmitter(self):
+        """On startup and every 60s: resubmit any block the node never judged.
+        submitblock of an already-known block returns 'duplicate' — harmless."""
+        while True:
+            try:
+                d = self._pending_dir()
+                for fn in sorted(os.listdir(d)):
+                    if not fn.endswith(".hex"):
+                        continue
+                    p = os.path.join(d, fn)
+                    stem = fn[:-4]
+                    height, _, bh = stem.partition("_")
+                    try:
+                        with open(p) as f:
+                            block_hex = f.read().strip()
+                    except Exception:
+                        continue
+                    if not block_hex:
+                        os.unlink(p)
+                        continue
+                    self.log(f"[bridge] resubmitting persisted block h{height} {bh}")
+                    await self._judge_and_finish(block_hex, bh,
+                                                 int(height or 0), p)
+            except Exception as e:
+                self.log(f"[bridge] pending resubmitter error: {e}")
+            await asyncio.sleep(60)
 
     async def handle_client(self, reader, writer):
         peer = writer.get_extra_info("peername")
@@ -329,7 +433,8 @@ class Bridge:
         async with server:
             await asyncio.gather(server.serve_forever(),
                                  self.tip_watcher(), self.refresher(),
-                                 self.zmq_watcher())
+                                 self.zmq_watcher(),
+                                 self.pending_resubmitter())
 
 if __name__ == "__main__":
     node = RealNode(os.environ.get("BCHN_RPC_URL", "http://127.0.0.1:8332"),

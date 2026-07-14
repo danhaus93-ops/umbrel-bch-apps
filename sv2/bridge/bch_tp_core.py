@@ -128,10 +128,12 @@ def gbt_to_new_template(gbt: dict, extranonce_len: int = 8) -> dict:
     - value_remaining = full coinbasevalue (client spends it in its outputs).
     BCH deltas: no witness commitment allowed; txids verbatim; CTOR order kept.
     """
-    assert "default_witness_commitment" not in gbt, \
-        "witness commitment present: this is not a BCH template"
+    # Explicit raises, not asserts: consensus guards must survive python -O.
+    if "default_witness_commitment" in gbt:
+        raise ValueError("witness commitment present: this is not a BCH template")
     prefix = bip34_height_push(gbt["height"])
-    assert len(prefix) <= 8, "coinbase_prefix exceeds spec 8-byte guidance"
+    if len(prefix) > 8:
+        raise ValueError("coinbase_prefix exceeds spec 8-byte guidance")
     txids_le = [h2b_le(tx["txid"]) for tx in gbt["transactions"]]
     return {
         "template_id": None,
@@ -166,27 +168,37 @@ def strip_segwit_coinbase(cb: bytes) -> bytes:
 
 def reconstruct_block_from_coinbase(tmpl: dict, coinbase_tx: bytes,
                                     version: int, ntime: int,
-                                    nonce: int) -> bytes:
+                                    nonce: int):
     """SubmitSolution hot path, SPEC SEMANTICS: the wire carries the FULL
-    client-built coinbase. Validate its scriptSig begins with our prefix,
-    then merkle + header + PoW gate + body."""
+    client-built coinbase. Reconstruct merkle + header + body.
+
+    NEVER-LOSE-A-BLOCK CONTRACT: local checks (prefix, scriptSig size, PoW)
+    are DIAGNOSTICS, not gates. A false negative in our own reconstruction
+    must not discard a block the network would accept — the node is the
+    only arbiter. Returns (block_bytes, warnings). Raises ValueError only
+    when the coinbase is unparseable and no block can be built at all.
+    """
+    warnings = []
     coinbase_tx = strip_segwit_coinbase(coinbase_tx)
     off = 4 + 1 + 32 + 4                     # version, incount, prevout
+    if len(coinbase_tx) < off + 1:
+        raise ValueError("coinbase too short to parse")
     sslen = coinbase_tx[off]; off += 1
-    assert sslen <= 100, "coinbase scriptSig exceeds 100 bytes"
+    if sslen > 100:
+        warnings.append(f"coinbase scriptSig {sslen}B exceeds 100B consensus limit")
     # scriptSig begins with the BIP34 height push: length byte + prefix bytes
     pre = tmpl["coinbase_prefix"]
-    assert coinbase_tx[off:off+len(pre)] == pre, \
-        "coinbase scriptSig does not begin with template prefix"
+    if coinbase_tx[off:off+len(pre)] != pre:
+        warnings.append("coinbase scriptSig does not begin with template prefix")
     cb_txid_le = dsha(coinbase_tx)
     root = merkle_root([cb_txid_le] + tmpl["_txids_le"])
     hdr = serialize_header(version, tmpl["prev_hash"], root,
                            ntime, tmpl["nbits"], nonce)
     if not pow_ok(hdr, tmpl["nbits"]):
-        raise ValueError("solution does not meet target: refusing to submit")
+        warnings.append("local PoW check failed (submitting anyway; node decides)")
     body = varint(1 + len(tmpl["_tx_hex"])) + coinbase_tx + b"".join(
         bytes.fromhex(t) for t in tmpl["_tx_hex"])
-    return hdr + body
+    return hdr + body, warnings
 
 # ------------------------------------------------------------------- tests --
 def test_genesis_golden():
@@ -251,10 +263,13 @@ def test_gbt_mapping_and_reconstruction():
     t = gbt_to_new_template(gbt)
     assert t["coinbase_tx_outputs"] == b"" and t["coinbase_tx_outputs_count"] == 0
     assert len(t["coinbase_prefix"]) <= 8
-    # POOL-SIDE coinbase build (what SRI does): prefix + own extranonce bytes
-    # in scriptSig, own payout outputs, template outputs appended (empty)
+    # POOL-SIDE coinbase build, verified against SRI channels-sv2 job
+    # factory: script_sig = coinbase_prefix (VERBATIM — it already contains
+    # the BIP34 push opcode) ++ OP_PUSHBYTES_X ++ extranonce.
+    # (The previous version of this test wrongly prepended an extra length
+    # byte before the prefix, which made the suite fail at HEAD.)
     en = bytes(range(8))
-    ssig = bytes([len(t["coinbase_prefix"])]) + t["coinbase_prefix"] + en
+    ssig = t["coinbase_prefix"] + bytes([len(en)]) + en
     outs = varint(1) + struct.pack("<q", t["coinbase_tx_value_remaining"]) \
            + varint(1) + b"\x51"
     cb = (struct.pack("<i", t["coinbase_tx_version"]) + varint(1)
@@ -264,12 +279,11 @@ def test_gbt_mapping_and_reconstruction():
           + struct.pack("<I", t["coinbase_tx_locktime"]))
     blk = None
     for nonce in range(200000):
-        try:
-            blk = reconstruct_block_from_coinbase(
-                t, cb, gbt["version"], gbt["curtime"], nonce)
+        cand, warns = reconstruct_block_from_coinbase(
+            t, cb, gbt["version"], gbt["curtime"], nonce)
+        if not warns:
+            blk = cand
             break
-        except ValueError:
-            continue
     assert blk is not None, "no nonce met regtest target"
     hdr = blk[:80]
     assert pow_ok(hdr, t["nbits"])
@@ -277,23 +291,27 @@ def test_gbt_mapping_and_reconstruction():
     cb_rt = blk[81:cb_end]
     assert cb_rt == cb, "coinbase not carried verbatim"
     assert merkle_root([dsha(cb), h2b_le(txid1)]) == hdr[36:68]
-    # prefix guard: coinbase whose scriptSig lacks the height push is refused
-    _pfx = bytes([len(t["coinbase_prefix"])]) + t["coinbase_prefix"]
-    bad = cb.replace(_pfx, bytes([len(t["coinbase_prefix"])]) + b"\x00"*len(t["coinbase_prefix"]), 1)
-    try:
-        reconstruct_block_from_coinbase(t, bad, gbt["version"],
-                                        gbt["curtime"], 0)
-        raise SystemExit("prefix guard did not fire")
-    except AssertionError:
-        pass
-    # witness guard
+    # NEVER-LOSE-A-BLOCK: a prefix-mismatched coinbase must still produce a
+    # submittable block, flagged by a warning — never a refusal.
+    _pfx = t["coinbase_prefix"]
+    bad = cb.replace(_pfx, b"\x00" * len(_pfx), 1)
+    blk2, warns2 = reconstruct_block_from_coinbase(t, bad, gbt["version"],
+                                                   gbt["curtime"], 0)
+    assert blk2 is not None and len(blk2) > 80, "prefix mismatch must not block reconstruction"
+    assert any("template prefix" in w for w in warns2), "prefix warning missing"
+    # PoW-failing nonce must also still reconstruct, with a warning
+    blk3, warns3 = reconstruct_block_from_coinbase(t, cb, gbt["version"],
+                                                   gbt["curtime"], 0xdeadbeef)
+    ok3 = pow_ok(blk3[:80], t["nbits"])
+    assert ok3 or any("PoW" in w for w in warns3), "PoW warning missing"
+    # witness guard (template mapping still hard-fails: wrong-chain template)
     try:
         gbt_to_new_template({**gbt, "default_witness_commitment": "6a24aa21"})
         raise SystemExit("witness guard did not fire")
-    except AssertionError:
+    except ValueError:
         pass
     print("  ok: SPEC-SEMANTICS: pool-built coinbase -> mined -> reconstructed, "
-          "verbatim carry, prefix guard, witness guard")
+          "verbatim carry, warn-not-refuse on prefix/PoW, witness guard")
 
 if __name__ == "__main__":
     print("bch_tp_core self-tests:")

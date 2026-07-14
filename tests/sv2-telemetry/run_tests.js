@@ -8,8 +8,28 @@ const src = fs.readFileSync(SERVER, 'utf8');
 const start = src.indexOf('const SV2_RESETS_FILE');
 const end = src.indexOf('// pool.status is several JSON objects');
 if (start < 0 || end < 0) { console.error('engine markers not found'); process.exit(2); }
-let core = src.slice(start, end)
-  .split('\n').filter((l) => !l.trim().startsWith('setInterval(')).join('\n'); // no timers in tests
+// no timers in tests: strip setInterval blocks, including MULTI-LINE bodies
+// (the 1.4.48 channel-pruning timer spans 16 lines; the old line filter left
+// its dangling body behind and broke the sandbox with a SyntaxError)
+let core = (() => {
+  const lines = src.slice(start, end).split('\n');
+  const out = [];
+  let depth = 0;
+  for (const l of lines) {
+    if (depth === 0 && l.trim().startsWith('setInterval(')) {
+      depth = (l.match(/\(/g) || []).length - (l.match(/\)/g) || []).length;
+      if (depth <= 0) depth = 0;             // single-line call: done
+      continue;
+    }
+    if (depth > 0) {
+      depth += (l.match(/\(/g) || []).length - (l.match(/\)/g) || []).length;
+      if (depth < 0) depth = 0;
+      continue;
+    }
+    out.push(l);
+  }
+  return out.join('\n');
+})();
 let failures = 0;
 function scenario(name, logfile, fakeNowIso, truthHs, lo, hi) {
   const dir = fs.mkdtempSync('/tmp/sv2t-');

@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [ master, main ]
-    paths: [ 'sslabs-solostrike-cash/dashboard/**', 'tests/sv2-telemetry/**' ]
+    paths: [ 'sslabs-solostrike-cash/dashboard/**', 'tests/sv2-telemetry/**', 'sv2/bridge/**' ]
 jobs:
   test:
     runs-on: ubuntu-latest
