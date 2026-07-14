@@ -258,6 +258,23 @@ function sv2Ingest() {
 }
 setInterval(() => { try { sv2Ingest(); } catch (_) {} }, 10000);
 
+setInterval(() => {
+  try {
+    const nowS = Math.floor(Date.now() / 1000);
+    const TTL = Number(process.env.WORKER_TTL_SEC || 3600);
+    let dirty = false;
+    for (const [cid, ch] of Object.entries(sv2State.channels)) {
+      const fb = /^sv2-\d+\.\d+$/.test(ch.name);
+      const ttl = fb ? Math.min(TTL, 300) : TTL;
+      if (!ch.last || nowS - ch.last > ttl + 600) {
+        delete sv2State.channels[cid];
+        if (fb && sv2BestP[ch.name]) { delete sv2BestP[ch.name]; dirty = true; }
+      }
+    }
+    if (dirty) sv2SaveBest();
+  } catch (_) {}
+}, 120000);
+
 function sv2Blocks() {
   let raw; try { raw = fs.readFileSync(SV2_BLOCKS_FILE, 'utf8'); } catch (_) { return []; }
   const out = [];
@@ -856,11 +873,7 @@ app.get('/api/status', async (_req, res) => {
     const passthrough = [];
     for (const w of s2.workerList) {
       if (w.proto !== 'SV2') { passthrough.push(w); continue; }
-      // channels that died before the API could name them (rental churn)
-      // fold into one aggregate row instead of confetti
-      const isChurn = /^sv2-\d+\.\d+$/.test(w.name);
-      const k = isChurn ? '\u26a1 fleet churn' : w.name;
-      if (isChurn) w = Object.assign({}, w, { name: k });
+      const k = w.name;
       if (!merged[k]) { merged[k] = Object.assign({}, w, { conns: 1, _hs: hashToHs(w.hashrate) || 0 }); }
       else {
         const m = merged[k];
