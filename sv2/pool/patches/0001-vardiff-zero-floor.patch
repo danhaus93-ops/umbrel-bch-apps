@@ -11,8 +11,8 @@
 +                // engage and converge to the miner's true rate within minutes.
 +                let declared = msg.nominal_hash_rate;
 +                if declared > 0.0 { declared } else {
-+                    tracing::warn!("channel declared nominal_hash_rate=0; clamping to 1 TH/s floor for vardiff");
-+                    1.0e12_f32
++                    tracing::warn!("channel declared nominal_hash_rate=0; clamping to 10 TH/s floor for vardiff");
++                    1.0e13_f32
 +                } };
                  let requested_max_target = Target::from_le_bytes(msg.max_target.to_array());
                  let extranonce_prefix = self
@@ -28,8 +28,8 @@
 +                // engage and converge to the miner's true rate within minutes.
 +                let declared = msg.nominal_hash_rate;
 +                if declared > 0.0 { declared } else {
-+                    tracing::warn!("channel declared nominal_hash_rate=0; clamping to 1 TH/s floor for vardiff");
-+                    1.0e12_f32
++                    tracing::warn!("channel declared nominal_hash_rate=0; clamping to 10 TH/s floor for vardiff");
++                    1.0e13_f32
 +                } };
          let requested_max_target = Target::from_le_bytes(msg.max_target.to_array());
          let requested_min_rollable_extranonce_size = msg.min_extranonce_size;
@@ -45,8 +45,8 @@
 +                // engage and converge to the miner's true rate within minutes.
 +                let declared = msg.nominal_hash_rate;
 +                if declared > 0.0 { declared } else {
-+                    tracing::warn!("channel declared nominal_hash_rate=0; clamping to 1 TH/s floor for vardiff");
-+                    1.0e12_f32
++                    tracing::warn!("channel declared nominal_hash_rate=0; clamping to 10 TH/s floor for vardiff");
++                    1.0e13_f32
 +                } };
          let requested_maximum_target = Target::from_le_bytes(msg.maximum_target.to_array());
          let messages = self.with_registered_downstream(downstream_id, |downstream| {
