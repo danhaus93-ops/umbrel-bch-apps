@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.41"
+version: "1.4.42"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -75,9 +75,9 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: SV2 hashrate display now matches miner firmware for vardiff
-  channels - batch-acknowledged share credit is fully counted and the rate is
-  computed over completed minutes only.
+releaseNotes: Long worker names no longer hide the SV2 badge and reject count
+  on small screens, and miners with broken hashrate declarations now converge
+  to their real difficulty with far fewer startup rejects.
 
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
