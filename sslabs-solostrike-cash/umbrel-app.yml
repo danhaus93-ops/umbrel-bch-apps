@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.52"
+version: "1.4.53"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -76,13 +76,12 @@ widgets:
           text: "0"
           subtext: "found"
 releaseNotes: >-
-  The miner list now works the same way for Stratum V1 and V2. Every worker
-  shows accepted and rejected shares, and hashrate is reported over matching
-  1m / 5m / 1h / 1d windows for both protocols - previously the two were
-  measured differently and drawn on the same chart. Resetting a miner now
-  clears its share counts as well as its best, finding a block clears the best
-  for your whole fleet rather than just one protocol, and V2 share counts now
-  survive a restart. The Stratum V2 settings are labelled, and extranonce2
-  size is now adjustable.
+  Extranonce2 size is now adjustable from the Stratum V2 card. This is the
+  space each miner rolls through while searching, and until now it was fixed
+  at 16 bytes with no way to change it - useful if your miners or a rental
+  service want more or less room. Valid range is 4 to 32 bytes; the default of
+  16 behaves exactly as before, so leaving it alone changes nothing. The
+  footer now credits both pools: SV1 runs on asicseer-pool, SV2 on the
+  from-scratch LoneStrike Cash-Pool.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
