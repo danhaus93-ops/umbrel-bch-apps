@@ -1,5 +1,15 @@
 name: Build app images
 
+# Only rebuild the images whose OWN context changed.
+#
+# The previous matrix had no per-leg filtering: any push touching any trigger
+# path rebuilt ALL FOUR images. On 2026-07-15 a BCHN dashboard change
+# republished asicseer-pool:latest under a new digest (sha256:f987621d... tagged
+# 436dc29) from byte-identical source. Compose then sees a changed image on the
+# next Cash app update and recreates the SV1 pool container, dropping live miner
+# connections for no reason -- breaking the rule that UI-only releases must
+# never restart the pool.
+
 on:
   workflow_dispatch:
   push:
@@ -16,19 +26,58 @@ permissions:
   packages: write
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      any: ${{ steps.plan.outputs.any }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            bchn_dashboard:
+              - 'dashboard/**'
+            cash_dashboard:
+              - 'sslabs-solostrike-cash/dashboard/**'
+            asicseer_pool:
+              - 'sslabs-solostrike-cash/pool/**'
+            fulcrum_info:
+              - 'sslabs-fulcrum/web/**'
+            workflow:
+              - '.github/workflows/build-images.yml'
+      - id: plan
+        env:
+          FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.workflow == 'true' }}
+          BCHN: ${{ steps.filter.outputs.bchn_dashboard }}
+          CASH: ${{ steps.filter.outputs.cash_dashboard }}
+          ASICSEER: ${{ steps.filter.outputs.asicseer_pool }}
+          FULCRUM: ${{ steps.filter.outputs.fulcrum_info }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          force = os.environ["FORCE_ALL"] == "true"
+          legs = [
+              ("BCHN",     "./dashboard",                        "bchn-dashboard"),
+              ("CASH",     "./sslabs-solostrike-cash/dashboard", "solostrike-cash-dashboard"),
+              ("ASICSEER", "./sslabs-solostrike-cash/pool",      "asicseer-pool"),
+              ("FULCRUM",  "./sslabs-fulcrum/web",               "fulcrum-info"),
+          ]
+          inc = [{"context": c, "image": i}
+                 for k, c, i in legs if force or os.environ.get(k) == "true"]
+          print("matrix=" + json.dumps({"include": inc}))
+          print("any=" + ("true" if inc else "false"))
+          PY
+          cat "$GITHUB_OUTPUT"
+
   build:
+    needs: plan
+    if: needs.plan.outputs.any == 'true'
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        include:
-          - context: ./dashboard
-            image: bchn-dashboard
-          - context: ./sslabs-solostrike-cash/dashboard
-            image: solostrike-cash-dashboard
-          - context: ./sslabs-solostrike-cash/pool
-            image: asicseer-pool
-          - context: ./sslabs-fulcrum/web
-            image: fulcrum-info
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
