@@ -30,6 +30,18 @@ const SV2_LOG_FILE  = path.join(SV2_DIR, 'pool_sv2.log');
 const SV2_BLOCKS_FILE = path.join(SV2_DIR, 'sv2_blocks.jsonl');
 const SV2_RESETS_FILE = path.join(SV2_DIR, 'sv2_resets.json');
 const SV2_SPM_FILE    = path.join(SV2_DIR, 'shares_per_minute');
+// Miner-rollable extranonce2 space in bytes. SRI hardcodes this as
+// CLIENT_SEARCH_SPACE_BYTES = 16; the pool patch reads this file to make it
+// tunable. Bounds: <4 starves SV1-via-translator miners, >32 eats the
+// coinbase scriptSig budget (100B total, ~44B used today).
+const SV2_XN_FILE     = path.join(SV2_DIR, 'extranonce2_bytes');
+const SV2_XN_DEFAULT  = 16;
+function readSv2Xn() {
+  try {
+    const n = parseInt(fs.readFileSync(SV2_XN_FILE, 'utf8').trim(), 10);
+    return (n >= 4 && n <= 32) ? n : SV2_XN_DEFAULT;
+  } catch (_) { return SV2_XN_DEFAULT; }
+}
 const SV2_MON_URL = process.env.SV2_MON_URL || 'http://sslabs-solostrike-cash_sv2-pool_1:9090';
 // SRI monitoring API poller: authoritative names/counts/rejects/best/declared.
 // The log-parsed estimator stays authoritative for delivered hashrate + trend
@@ -66,13 +78,132 @@ async function sv2ApiPoll() {
 }
 setInterval(() => { sv2ApiPoll().catch(() => {}); }, 10000);
 const SV2_BEST_FILE   = path.join(SV2_DIR, 'sv2_best.json');
+// ---- UNIFIED WORKER MODEL -------------------------------------------------
+// One schema for both protocols. Before this, an SV1 row's `trend` was
+// [1m,5m,1hr,1d,7d] window averages while an SV2 row's `trend` was five
+// 1-minute buckets -- different meanings in the same UI field -- and SV2 rows
+// carried no `accepted` at all, so per-worker accept/reject was impossible.
+//
+// Hashrate windows come from per-minute rings keyed by minute-epoch. SV2 feeds
+// them with the existing per-minute bucket estimator (unchanged: that math is
+// hard-won and must not regress); SV1 feeds them from asicseer's own
+// hashrate1m. Rings are the ONLY way to reach 1h/1d for SV2, because
+// sv2State.shares is pruned at 600s.
+const WORKERS_STATE_FILE = path.join(SV2_DIR, 'workers_state.json');
+const MINS_KEEP = 1440;                       // 24h of 1-minute samples
+const workerMins = {};                        // "SV1:name" | "SV2:cid" -> {minute: hs}
+function ringKey(proto, id) { return proto + ':' + id; }
+function ringPut(key, hs) {
+  if (!(hs > 0)) return;
+  const m = workerMins[key] || (workerMins[key] = {});
+  m[Math.floor(Date.now() / 60000)] = hs;     // idempotent per minute
+}
+function ringPutAt(key, minute, hs) {
+  if (!(hs > 0)) return;
+  const m = workerMins[key] || (workerMins[key] = {});
+  m[minute] = hs;
+}
+function ringPrune() {
+  const cut = Math.floor(Date.now() / 60000) - MINS_KEEP;
+  for (const k of Object.keys(workerMins)) {
+    const m = workerMins[k];
+    for (const min of Object.keys(m)) if (Number(min) < cut) delete m[min];
+    if (!Object.keys(m).length) delete workerMins[k];
+  }
+}
+// Average over the last n COMPLETED minutes (the current minute is partial and
+// would read low). Absent minutes are gaps, not zeroes: averaging over present
+// samples keeps an idle-then-active miner honest instead of diluting it.
+function ringWin(key, n) {
+  const m = workerMins[key];
+  if (!m) return 0;
+  const now = Math.floor(Date.now() / 60000);
+  let sum = 0, cnt = 0;
+  for (let i = 1; i <= n; i++) {
+    const v = m[now - i];
+    if (v > 0) { sum += v; cnt++; }
+  }
+  return cnt ? sum / cnt : 0;
+}
+function ringTrend(key) {
+  const now = Math.floor(Date.now() / 60000);
+  const m = workerMins[key] || {};
+  return [5, 4, 3, 2, 1].map((i) => Number(m[now - i]) || 0);
+}
+function unifiedHashrate(key) {
+  return { '1m': ringWin(key, 1), '5m': ringWin(key, 5),
+           '1h': ringWin(key, 60), '1d': ringWin(key, 1440) };
+}
+
 let sv2Resets = {};  // worker name (or __all__) -> reset ts (sec)
 let sv2BestP  = {};  // worker name -> { best, ts }  (persisted across restarts)
 try { sv2Resets = JSON.parse(fs.readFileSync(SV2_RESETS_FILE, 'utf8')) || {}; } catch (_) {}
 try { sv2BestP  = JSON.parse(fs.readFileSync(SV2_BEST_FILE,   'utf8')) || {}; } catch (_) {}
+// SV2 counters live in memory and were lost on every restart (the log tail
+// re-scan only reaches back ~4MB). Snapshot channels + rings so a dashboard
+// restart no longer zeroes a fleet's accepted/rejected/best.
+function workersSave() {
+  try {
+    const chans = {};
+    for (const [cid, ch] of Object.entries(sv2State.channels)) {
+      chans[cid] = { name: ch.name, accepted: ch.accepted, rejected: ch.rejected,
+                     best: ch.best, last: ch.last, firstSeen: ch.firstSeen,
+                     maxSeq: ch.maxSeq, accounted: ch.accounted || 0 };
+    }
+    ringPrune();
+    const tmp = WORKERS_STATE_FILE + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify({ v: 1, at: Date.now(),
+                                           channels: chans, mins: workerMins }));
+    fs.renameSync(tmp, WORKERS_STATE_FILE);
+  } catch (_) {}
+}
+function workersLoad() {
+  try {
+    const j = JSON.parse(fs.readFileSync(WORKERS_STATE_FILE, 'utf8'));
+    if (!j || j.v !== 1) return;
+    for (const [cid, c] of Object.entries(j.channels || {})) {
+      sv2State.channels[cid] = {
+        name: c.name, accepted: Number(c.accepted) || 0,
+        rejected: Number(c.rejected) || 0, best: Number(c.best) || 0,
+        maxSeq: Number(c.maxSeq) >= 0 ? Number(c.maxSeq) : -1,
+        last: Number(c.last) || 0,
+        firstSeen: Number(c.firstSeen) || Math.floor(Date.now() / 1000),
+        accounted: Number(c.accounted) || 0,
+      };
+    }
+    for (const [k, m] of Object.entries(j.mins || {})) workerMins[k] = m;
+    ringPrune();
+  } catch (_) {}
+}
 function sv2SaveResets() { try { fs.writeFileSync(SV2_RESETS_FILE, JSON.stringify(sv2Resets)); } catch (_) {} }
 function sv2SaveBest()   { try { fs.writeFileSync(SV2_BEST_FILE,   JSON.stringify(sv2BestP));  } catch (_) {} }
 function sv2ResetTs(name) { return Math.max(Number(sv2Resets[name]) || 0, Number(sv2Resets.__all__) || 0); }
+// Chris #1: an individual reset must also clear that worker's displayed
+// accepted/rejected. Counters are cumulative since the channel opened, so a
+// reset stores a baseline and rows report the delta.
+const SV2_CNT_BASE_FILE = path.join(SV2_DIR, 'sv2_count_base.json');
+let sv2CntBase = (() => {            // initialise AT declaration: loading
+  try { return JSON.parse(fs.readFileSync(SV2_CNT_BASE_FILE, 'utf8')) || {}; }  // it earlier hit the TDZ
+  catch (_) { return {}; }           // and crashed the dashboard at boot
+})();
+function sv2SaveCntBase() { try { fs.writeFileSync(SV2_CNT_BASE_FILE, JSON.stringify(sv2CntBase)); } catch (_) {} }
+function sv2ApplyCountReset(scope) {
+  for (const ch of Object.values(sv2State.channels)) {
+    if (scope === 'all' || ch.name === scope) {
+      sv2CntBase[ch.name] = { accepted: ch.accepted || 0, rejected: ch.rejected || 0 };
+    }
+  }
+  if (scope === 'all') {
+    for (const k of Object.keys(workerMins)) if (k.startsWith('SV2:')) delete workerMins[k];
+  }
+  sv2SaveCntBase();
+  try { workersSave(); } catch (_) {}
+}
+function sv2CntFor(ch) {
+  const b = sv2CntBase[ch.name] || { accepted: 0, rejected: 0 };
+  return { accepted: Math.max(0, (ch.accepted || 0) - (b.accepted || 0)),
+           rejected: Math.max(0, (ch.rejected || 0) - (b.rejected || 0)) };
+}
 function sv2ApplyReset(scope) {
   const now = Math.floor(Date.now() / 1000);
   if (scope === 'all') { sv2Resets.__all__ = now; } else { sv2Resets[scope] = now; }
@@ -262,6 +393,7 @@ function sv2Ingest() {
   void nowS;
 }
 setInterval(() => { try { sv2Ingest(); } catch (_) {} }, 10000);
+setInterval(() => { try { workersSave(); } catch (_) {} }, 60000);
 
 setInterval(() => {
   try {
@@ -404,6 +536,13 @@ function sv2Stats() {
         if (ch.last * 1000 > sv2ResetTs(ch.name) * 1000) ch.best = Math.max(ch.best, api.best);
       }
     }
+    // Feed the unified rings from the existing per-minute estimator. buckets
+    // are [t-5min .. t-1min]; index 4 is the current partial minute, so only
+    // 0..3 are complete. Writing them keyed by minute-epoch is idempotent
+    // across the many /api/status polls per minute.
+    const rk = ringKey('SV2', cid);
+    const nowMin = Math.floor(Date.now() / 60000);
+    for (let i = 0; i < 4; i++) ringPutAt(rk, nowMin - (4 - i), buckets[i]);
     const cHs = chanHs(buckets);
     totHs += cHs;
     // credit newly seen shares at estimated target diff (SV1 semantics)
@@ -419,15 +558,20 @@ function sv2Stats() {
       }
     }
     const hr = fmtHs(cHs);
+    // UNIFIED SCHEMA -- identical field set to the SV1 rows in readWorkers().
     workerList.push({
       name: ch.name, proto: 'SV2',
+      conns: 1,
       declared: api ? api.nominal : null,
-      rejected: ch.rejected,
+      accepted: sv2CntFor(ch).accepted,
+      rejected: sv2CntFor(ch).rejected,
       rejectReasons: api ? api.reasons : null,
-      hashrate: hr.val + ' ' + hr.unit,
-      trend: buckets,
+      hashrate: hr.val + ' ' + hr.unit,       // display string (unchanged)
+      hs: unifiedHashrate(rk),                // {1m,5m,1h,1d} in H/s
+      trend: ringTrend(rk),                   // last 5 COMPLETE minutes, H/s
       idle: nowS - ch.last > 300,
       best: ch.best, last: ch.last,
+      firstSeen: ch.firstSeen,
       uptime: nowS - ch.firstSeen,
     });
   }
@@ -533,13 +677,36 @@ function readWorkers() {
     const ws = Array.isArray(u.worker) ? u.worker : [];
     for (const w of ws) {
       const wn = (w.workername || name).split('.').slice(1).join('.') || (w.workername || name);
+      // UNIFIED SCHEMA -- identical field set to the SV2 rows in sv2Stats().
+      // Previously `trend` here was [1m,5m,1hr,1d,7d] window averages, which
+      // the UI drew as if it were a time series next to SV2's real 1-minute
+      // buckets. Now both feed the same per-minute rings.
+      const rk = ringKey('SV1', wn);
+      ringPut(rk, hashToHs(w.hashrate1m));
+      const winFromPool = {
+        '1m': hashToHs(w.hashrate1m), '5m': hashToHs(w.hashrate5m),
+        '1h': hashToHs(w.hashrate1hr), '1d': hashToHs(w.hashrate1d),
+      };
       out.push({
-        name: wn,
+        name: wn, proto: 'SV1',
+        conns: 1,
+        declared: null,
+        // asicseer's per-user file carries an accepted counter but no
+        // per-worker reject counter. Report null rather than a fake 0: a
+        // dash tells the truth, a zero claims a fact we do not have.
+        accepted: ('shares' in w) ? (Number(w.shares) || 0) : null,
+        rejected: ('rejects' in w) ? (Number(w.rejects) || 0)
+                : ('rejected' in w) ? (Number(w.rejected) || 0) : null,
+        rejectReasons: null,
         hashrate: (() => { const h = parseHash(w.hashrate5m || w.hashrate1m); return h.val + ' ' + h.unit; })(),
-        trend: [w.hashrate1m, w.hashrate5m, w.hashrate1hr, w.hashrate1d, w.hashrate7d].map(hashToHs),
+        // asicseer's own windows are authoritative for SV1; rings only supply
+        // the sparkline, so a fresh dashboard is not blind for an hour.
+        hs: winFromPool,
+        trend: ringTrend(rk),
         idle: (Math.floor(Date.now() / 1000) - (Number(w.lastshare) || 0)) > 300,
         best: Number(w.bestshare) || 0,
         last: Number(w.lastshare) || 0,
+        firstSeen: 0,
       });
     }
   }
@@ -853,7 +1020,7 @@ app.get('/api/status', async (_req, res) => {
       if (b && !b.worker) b.worker = 'SV2';
     }
     out.sv2 = {
-      enabled: s2.enabled, workers: s2.workers,
+      enabled: s2.enabled, workers: s2.workers, xn: readSv2Xn(),
       hashrate: (() => { const h = fmtHs(s2.hs); return h.val + ' ' + h.unit; })(),
       accepted: s2.accepted, rejected: s2.rejected, best: s2.best,
     };
@@ -867,7 +1034,18 @@ app.get('/api/status', async (_req, res) => {
       const th = fmtHs(out.poolHs);
       out.hashrate = { val: th.val, unit: th.unit };
       if (out.blockList.length !== sv2State.lastBlockCount) {
-        if (sv2State.lastBlockCount >= 0) { sv2State.roundWork = 0; sv2State.roundDiff = 0; }
+        if (sv2State.lastBlockCount >= 0) {
+          sv2State.roundWork = 0; sv2State.roundDiff = 0;
+          // Chris #2: a block is a FLEET event. asicseer clears SV1's best
+          // itself when SV1 solves, but SV2's best survived, so the combined
+          // "best diff" stayed pinned to a stale SV2 value and never dropped
+          // for the new round. Whichever protocol solved, clear both.
+          try { sv2ApplyReset('all'); } catch (_) {}
+          try {
+            fs.mkdirSync(path.join(POOL_DIR, 'config'), { recursive: true });
+            fs.writeFileSync(path.join(POOL_DIR, 'config', 'reset_request'), 'all');
+          } catch (_) {}
+        }
         sv2State.lastBlockCount = out.blockList.length;
       }
       out.roundShares = (out.roundShares || 0) + Math.max(sv2State.roundWork, sv2State.roundDiff);
@@ -885,6 +1063,12 @@ app.get('/api/status', async (_req, res) => {
         m.conns++;
         m._hs += hashToHs(w.hashrate) || 0;
         m.best = Math.max(m.best || 0, w.best || 0);
+        // unified counters/windows aggregate across a fleet's many channels
+        if (typeof w.accepted === 'number') m.accepted = (m.accepted || 0) + w.accepted;
+        if (typeof w.rejected === 'number') m.rejected = (m.rejected || 0) + w.rejected;
+        if (w.hs && m.hs) for (const k2 of ['1m', '5m', '1h', '1d']) m.hs[k2] = (m.hs[k2] || 0) + (w.hs[k2] || 0);
+        if (Array.isArray(w.trend) && Array.isArray(m.trend)) m.trend = m.trend.map((v, i) => (v || 0) + (w.trend[i] || 0));
+        if (w.firstSeen && (!m.firstSeen || w.firstSeen < m.firstSeen)) m.firstSeen = w.firstSeen;
         m.last = Math.max(m.last || 0, w.last || 0);
         m.rejected = (m.rejected || 0) + (w.rejected || 0);
         m.uptime = Math.max(m.uptime || 0, w.uptime || 0);
@@ -992,7 +1176,7 @@ app.post('/api/reset', (req, res) => {
   if (!/^[A-Za-z0-9:._\-]+$|^all$/.test(scope)) return res.status(400).json({ ok: false, error: 'bad scope' });
   try {
     const sv2Names = new Set(Object.values(sv2State.channels).map((c) => c.name));
-    if (scope === 'all' || sv2Names.has(scope)) sv2ApplyReset(scope);
+    if (scope === 'all' || sv2Names.has(scope)) { sv2ApplyReset(scope); sv2ApplyCountReset(scope); }
     if (sv2Names.has(scope) && scope !== 'all') return res.json({ ok: true, scope, sv2: true });
     if (scope === 'all') {
       try { writeBaselines({}); } catch (_) {}
@@ -1086,6 +1270,13 @@ app.post('/api/sv2', (req, res) => {
   const spm = Number(req.body && req.body.sharesPerMinute);
   if (spm && spm >= 0.5 && spm <= 600) {
     try { fs.writeFileSync(SV2_SPM_FILE, String(spm)); } catch (_) {}
+  }
+  const xn = Number(req.body && req.body.extranonce2Bytes);
+  if (xn) {
+    if (!Number.isInteger(xn) || xn < 4 || xn > 32) {
+      return res.status(400).json({ ok: false, error: 'extranonce2 bytes must be a whole number from 4 to 32' });
+    }
+    try { fs.writeFileSync(SV2_XN_FILE, String(xn)); } catch (_) {}
   }
   res.json({ ok: true, enabled: true, address: a });
 });
