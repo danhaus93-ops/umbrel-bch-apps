@@ -1197,6 +1197,52 @@ app.post('/api/reset', (req, res) => {
   res.json({ ok: true, scope });
 });
 
+// ---- SV2 log download ----------------------------------------------------
+// Redacted by DEFAULT. The point of this button is pasting the log into
+// Discord for support, and pool_sv2.log carries the payout address, worker
+// identities and miner IPs -- publishing a rental fleet's layout to get help
+// with a warning is a bad trade. ?raw=1 is opt-in and labelled as such.
+function sv2Redact(text) {
+  let out = text;
+  try {
+    const addr = readAddress && readAddress();
+    if (addr && addr.length > 8) out = out.split(addr).join('[payout-address]');
+  } catch (_) {}
+  out = out.replace(/\b(?:bitcoincash:|bchtest:|bchreg:)?[qp][0-9a-z]{41}\b/gi, '[bch-address]');
+  out = out.replace(/\b(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?\b/g, (m) =>
+    (m.startsWith('127.0.0.1') || m.startsWith('0.0.0.0')) ? m : '[ip]');
+  out = out.replace(/\b(?:[0-9a-f]{1,4}:){4,7}[0-9a-f]{1,4}\b/gi, '[ipv6]');
+  out = out.replace(/(user_identity[=:\s"']*)([^"'\s,)]+)/gi, '$1[worker]');
+  return out;
+}
+app.get('/api/sv2/log', (req, res) => {
+  const raw = req.query && String(req.query.raw) === '1';
+  const tail = Math.min(Math.max(parseInt((req.query && req.query.tail) || '4000', 10) || 4000, 100), 50000);
+  let text = '';
+  try {
+    const fd = fs.openSync(SV2_LOG_FILE, 'r');
+    const size = fs.fstatSync(fd).size;
+    const want = Math.min(size, 4 * 1024 * 1024);   // cap the read, not just the lines
+    const buf = Buffer.alloc(want);
+    fs.readSync(fd, buf, 0, want, size - want);
+    fs.closeSync(fd);
+    text = buf.toString('utf8');
+    if (size > want) text = '[... earlier lines omitted ...]\n' + text.slice(text.indexOf('\n') + 1);
+  } catch (e) {
+    return res.status(404).type('text/plain').send('no SV2 log yet (is SV2 enabled?)');
+  }
+  const lines = text.split('\n');
+  text = lines.slice(Math.max(0, lines.length - tail)).join('\n');
+  if (!raw) text = sv2Redact(text);
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  res.set('Content-Disposition',
+          'attachment; filename="sv2-log-' + stamp + (raw ? '-RAW' : '-redacted') + '.txt"');
+  res.type('text/plain').send(
+    '# LoneStrike Cash SV2 log' + (raw ? ' (RAW - contains your payout address, worker names and miner IPs)'
+                                       : ' (redacted: address/worker/IP removed)') +
+    '\n# last ' + tail + ' lines\n\n' + text);
+});
+
 app.post('/api/address', (req, res) => {
   const a = (req.body && req.body.address || '').trim();
   if (!validAddress(a)) return res.status(400).json({ ok: false, error: 'invalid BCH address' });

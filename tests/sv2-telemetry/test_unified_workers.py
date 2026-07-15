@@ -211,6 +211,37 @@ def test_ui_is_labelled():
           "typeof w.accepted" in html and "typeof w.rejected" in html)
 
 
+def test_sv2_log_download():
+    """The log download exists to be pasted into Discord for support, so the
+    default MUST be redacted: pool_sv2.log carries the payout address, worker
+    identities and miner IPs."""
+    check("log endpoint exists", "app.get('/api/sv2/log'" in SRC)
+    check("redaction helper exists", "function sv2Redact(" in SRC)
+    i = SRC.index("app.get('/api/sv2/log'")
+    blk = SRC[i:i + 1600]
+    check("redacted is the DEFAULT (raw is opt-in)",
+          "String(req.query.raw) === '1'" in blk and "if (!raw) text = sv2Redact(text)" in blk)
+    check("tail is bounded", "Math.min(Math.max(" in blk)
+    check("read size is capped, not just line count", "4 * 1024 * 1024" in blk)
+    check("served as a download", "Content-Disposition" in blk
+          and "attachment; filename=" in blk)
+    check("filename marks whether it is raw", "'-RAW' : '-redacted'" in blk)
+    check("header warns what a raw log contains", "contains your payout address" in blk)
+    r = SRC[SRC.index("function sv2Redact("):SRC.index("app.get('/api/sv2/log'")]
+    check("redacts the configured payout address", "[payout-address]" in r)
+    check("redacts any BCH address", "[bch-address]" in r)
+    check("redacts miner IPs", "'[ip]'" in r)
+    check("keeps loopback/bind addresses (needed for debugging)",
+          "127.0.0.1" in r and "0.0.0.0" in r)
+    check("redacts worker identities", "[worker]" in r)
+    html = open(os.path.join(ROOT, "sslabs-solostrike-cash", "dashboard",
+                             "public", "index.html")).read()
+    check("UI has a download button", 'id="sv2LogDl"' in html)
+    check("download button says it is safe to share", "safe to paste" in html)
+    check("raw link is present but de-emphasised", 'id="sv2LogRaw"' in html
+          and "Only share privately" in html)
+
+
 if __name__ == "__main__":
     print("unified worker schema regression tests:")
     test_both_protocols_emit_one_schema()
@@ -225,6 +256,7 @@ if __name__ == "__main__":
     test_no_temporal_dead_zone()
     test_extranonce2_setting()
     test_ui_is_labelled()
+    test_sv2_log_download()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)
