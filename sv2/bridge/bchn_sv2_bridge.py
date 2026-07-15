@@ -11,7 +11,8 @@ Usage on the box (env or args):
 
 Design notes:
   - CTOR: full-template-push only. Every refresh is a complete NewTemplate.
-  - Template cache keyed by template_id, retained TEMPLATE_TTL seconds.
+  - Template cache keyed by template_id, retained by prevhash generation
+    (current tip + one generation back), capped at MAX_TEMPLATES.
   - SubmitSolution: reconstruct via bch_tp_core, persist-to-disk FIRST, then
     submitblock with retry; local checks warn but never block submission,
     and unjudged blocks are resubmitted after restarts (never lose a block).
@@ -22,7 +23,7 @@ import asyncio, base64, json, os, struct, time, urllib.request
 import bch_tp_core as core
 import sv2_framing as sv2
 
-TEMPLATE_TTL = 120
+MAX_TEMPLATES = 64   # ~30 min of refreshes across two prevhash generations
 REFRESH_SECS = 30
 POLL_SECS = 2
 POLL_SECS_ZMQ_OK = 15   # relaxed poll while ZMQ notifications are flowing
@@ -104,6 +105,7 @@ class Bridge:
         self.next_id = int(time.time())
         self.clients = set()
         self.last_prev = None
+        self.prev_prev = None
         self.last_tip = None         # RPC-form hex; shared by poll + ZMQ watchers
         self.zmq_ok = False
 
@@ -116,16 +118,33 @@ class Bridge:
     async def push_template(self, reason):
         """SPEC FLOW: reasons 'constraints' and 'new-block' send
         NewTemplate(future=True) THEN SetNewPrevHash; 'mempool-refresh'
-        sends NewTemplate(future=False) only (relates to last prevhash)."""
+        sends NewTemplate(future=False) only (relates to last prevhash).
+
+        RETENTION: templates are kept by PREVHASH GENERATION, not wall clock.
+        Everything built on the current tip stays valid until the tip moves;
+        the full previous generation is kept one block longer so a solution
+        racing a new-block push (or competing at the same height) can still
+        be reconstructed and submitted. The old 120s TTL could prune a
+        template a slow miner was still working — a lost block."""
         with_prevhash = reason in ("constraints", "new-block")
         gbt = await self.node.get_template()
         t = self.map_template(gbt, future=with_prevhash)
         tid = t["template_id"]
         self.templates[tid] = (time.time(), t, gbt)
-        cutoff = time.time() - TEMPLATE_TTL
-        for k in [k for k, v in self.templates.items() if v[0] < cutoff]:
+        new_prev = gbt["previousblockhash"]
+        if new_prev != self.last_prev:
+            self.prev_prev = self.last_prev
+            self.last_prev = new_prev
+        keep = {self.last_prev, self.prev_prev}
+        for k in [k for k, v in self.templates.items()
+                  if v[2]["previousblockhash"] not in keep]:
             del self.templates[k]
-        self.last_prev = gbt["previousblockhash"]
+        # absolute memory cap (full tx hex is retained per template): evict
+        # oldest first, but never the template we just created
+        while len(self.templates) > MAX_TEMPLATES:
+            oldest = min((k for k in self.templates if k != tid),
+                         key=lambda k: self.templates[k][0])
+            del self.templates[oldest]
         nt = sv2.build_new_template(t)
         pv = sv2.build_set_new_prev_hash(
             tid, core.h2b_le(gbt["previousblockhash"]), gbt["curtime"],
@@ -154,8 +173,25 @@ class Bridge:
     # resubmitted until the node gives a definitive answer.
     def _pending_dir(self):
         d = os.path.join(os.environ.get("SV2_DATA", "/data"), "pending_blocks")
-        os.makedirs(d, exist_ok=True)
-        return d
+        try:
+            os.makedirs(d, exist_ok=True)
+            probe = os.path.join(d, ".w")
+            with open(probe, "w") as f:
+                f.write("1")
+            os.unlink(probe)
+            return d
+        except OSError as e:
+            # volume unwritable for our uid: degrade to a container-local dir
+            # (survives restarts, NOT container recreation) and say so loudly
+            # ONCE per boot rather than erroring every resubmitter pass.
+            fb = "/tmp/pending_blocks"
+            os.makedirs(fb, exist_ok=True)
+            if not getattr(self, "_pending_warned", False):
+                self._pending_warned = True
+                self.log(f"[bridge] !!!! {d} not writable ({e}); pending "
+                         f"blocks persisting to {fb} (container-local — "
+                         f"update the sv2-pool image to fix permissions)")
+            return fb
 
     def _persist_pending(self, height, bh, block_hex):
         p = os.path.join(self._pending_dir(), f"{height}_{bh}.hex")
@@ -274,29 +310,42 @@ class Bridge:
         return await self._judge_and_finish(block_hex, bh, gbt["height"],
                                             pending_path)
 
+    def _pending_dirs_all(self):
+        """Every location a block may have been persisted to, including the
+        container-local fallback used while the volume was unwritable. Scanned
+        on every pass so a stranded block heals itself once perms are fixed."""
+        dirs = []
+        for d in (os.path.join(os.environ.get("SV2_DATA", "/data"),
+                               "pending_blocks"), "/tmp/pending_blocks"):
+            if os.path.isdir(d) and d not in dirs:
+                dirs.append(d)
+        return dirs
+
     async def pending_resubmitter(self):
         """On startup and every 60s: resubmit any block the node never judged.
         submitblock of an already-known block returns 'duplicate' — harmless."""
         while True:
             try:
-                d = self._pending_dir()
-                for fn in sorted(os.listdir(d)):
-                    if not fn.endswith(".hex"):
-                        continue
-                    p = os.path.join(d, fn)
-                    stem = fn[:-4]
-                    height, _, bh = stem.partition("_")
-                    try:
-                        with open(p) as f:
-                            block_hex = f.read().strip()
-                    except Exception:
-                        continue
-                    if not block_hex:
-                        os.unlink(p)
-                        continue
-                    self.log(f"[bridge] resubmitting persisted block h{height} {bh}")
-                    await self._judge_and_finish(block_hex, bh,
-                                                 int(height or 0), p)
+                self._pending_dir()          # heal/probe the primary location
+                for d in self._pending_dirs_all():
+                    for fn in sorted(os.listdir(d)):
+                        if not fn.endswith(".hex"):
+                            continue
+                        p = os.path.join(d, fn)
+                        stem = fn[:-4]
+                        height, _, bh = stem.partition("_")
+                        try:
+                            with open(p) as f:
+                                block_hex = f.read().strip()
+                        except Exception:
+                            continue
+                        if not block_hex:
+                            os.unlink(p)
+                            continue
+                        self.log(f"[bridge] resubmitting persisted block "
+                                 f"h{height} {bh} (from {d})")
+                        await self._judge_and_finish(block_hex, bh,
+                                                     int(height or 0), p)
             except Exception as e:
                 self.log(f"[bridge] pending resubmitter error: {e}")
             await asyncio.sleep(60)

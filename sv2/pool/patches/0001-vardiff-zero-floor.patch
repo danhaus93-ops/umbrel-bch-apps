@@ -7,7 +7,7 @@
 -                let nominal_hash_rate = msg.nominal_hash_rate;
 +                let nominal_hash_rate = { // LoneStrike patch: zero-declared hashrate falls into a NaN trap in
 +                // vardiff (delta/0 -> NaN, all threshold checks false, channel stuck
-+                // at max target forever). Clamp to a 1 TH/s floor so vardiff can
++                // at max target forever). Clamp to a 10 TH/s floor so vardiff can
 +                // engage and converge to the miner's true rate within minutes.
 +                let declared = msg.nominal_hash_rate;
 +                if declared > 0.0 { declared } else {
@@ -24,7 +24,7 @@
 -        let nominal_hash_rate = msg.nominal_hash_rate;
 +        let nominal_hash_rate = { // LoneStrike patch: zero-declared hashrate falls into a NaN trap in
 +                // vardiff (delta/0 -> NaN, all threshold checks false, channel stuck
-+                // at max target forever). Clamp to a 1 TH/s floor so vardiff can
++                // at max target forever). Clamp to a 10 TH/s floor so vardiff can
 +                // engage and converge to the miner's true rate within minutes.
 +                let declared = msg.nominal_hash_rate;
 +                if declared > 0.0 { declared } else {
@@ -41,7 +41,7 @@
 -        let new_nominal_hash_rate = msg.nominal_hash_rate;
 +        let new_nominal_hash_rate = { // LoneStrike patch: zero-declared hashrate falls into a NaN trap in
 +                // vardiff (delta/0 -> NaN, all threshold checks false, channel stuck
-+                // at max target forever). Clamp to a 1 TH/s floor so vardiff can
++                // at max target forever). Clamp to a 10 TH/s floor so vardiff can
 +                // engage and converge to the miner's true rate within minutes.
 +                let declared = msg.nominal_hash_rate;
 +                if declared > 0.0 { declared } else {

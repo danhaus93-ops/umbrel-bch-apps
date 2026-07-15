@@ -221,6 +221,148 @@ def scenario_node_down_persist_and_resubmit():
         check("restart resubmit: pending cleaned", pending_files(dd) == [])
 
 
+def scenario_generation_retention():
+    """A solution for an OLD template under the same/previous prevhash must
+    still reconstruct and submit — regardless of wall-clock age. Only a
+    template two generations back may expire."""
+    class TemplNode(FakeNode):
+        def __init__(self):
+            super().__init__()
+            self.gbts = []
+
+        async def get_template(self):
+            return self.gbts.pop(0)
+
+    def gbt_for(prev, height, curtime):
+        fake_tx = ("010000000100000000000000000000000000000000000000000000000000"
+                   "00000000000000ffffffff0451515151ffffffff0100f2052a0100000004"
+                   "5151515100000000")
+        txid = core.b2h_be(core.dsha(bytes.fromhex(fake_tx)))
+        return {"version": 0x20000000, "height": height,
+                "previousblockhash": prev, "curtime": curtime,
+                "bits": "207fffff", "coinbasevalue": 312501000,
+                "transactions": [{"txid": txid, "data": fake_tx}]}
+
+    with tempfile.TemporaryDirectory() as dd:
+        node = TemplNode()
+        b, logs = make_bridge(node, dd)
+        # generation X: one 'constraints' push + two mempool refreshes
+        node.gbts = [gbt_for("aa" * 32, 100, 1000),
+                     gbt_for("aa" * 32, 100, 1030),
+                     gbt_for("aa" * 32, 100, 1060)]
+        run(b.push_template("constraints"))
+        tid_x0 = min(b.templates)              # oldest template of gen X
+        run(b.push_template("mempool-refresh"))
+        run(b.push_template("mempool-refresh"))
+        # generation Y arrives (new block)
+        node.gbts = [gbt_for("bb" * 32, 101, 1600)]
+        run(b.push_template("new-block"))
+        check("gen retention: previous-generation template survives new block",
+              tid_x0 in b.templates)
+        # mine a solution against the surviving gen-X template and submit it
+        _, t_x, gbt_x = b.templates[tid_x0]
+        en = bytes(range(8))
+        ssig = t_x["coinbase_prefix"] + bytes([len(en)]) + en
+        outs = varint(1) + struct.pack("<q", t_x["coinbase_tx_value_remaining"]) \
+            + varint(1) + b"\x51"
+        cb = (struct.pack("<i", t_x["coinbase_tx_version"]) + varint(1)
+              + b"\x00" * 32 + b"\xff" * 4 + varint(len(ssig)) + ssig
+              + struct.pack("<I", t_x["coinbase_tx_input_sequence"])
+              + outs + t_x["coinbase_tx_outputs"]
+              + struct.pack("<I", t_x["coinbase_tx_locktime"]))
+        nonce = 0
+        for n in range(500000):
+            blk, warns = core.reconstruct_block_from_coinbase(
+                t_x, cb, gbt_x["version"], gbt_x["curtime"], n)
+            if not warns:
+                nonce = n
+                break
+        run(b.handle_submit_solution({
+            "template_id": tid_x0, "version": gbt_x["version"],
+            "header_timestamp": gbt_x["curtime"], "header_nonce": nonce,
+            "coinbase_tx": cb}))
+        check("gen retention: stale-generation solution submitted",
+              len(node.submits) == 1, f"submits={len(node.submits)}")
+        # generation Z: gen X (two back) is finally pruned, gen Y kept
+        gen_y_tids = [k for k, v in b.templates.items()
+                      if v[2]["previousblockhash"] == "bb" * 32]
+        node.gbts = [gbt_for("cc" * 32, 102, 2200)]
+        run(b.push_template("new-block"))
+        check("gen retention: two-generations-back pruned",
+              tid_x0 not in b.templates)
+        check("gen retention: previous generation (Y) kept after Z",
+              all(t in b.templates for t in gen_y_tids))
+        # memory cap: flood refreshes on the same tip, cap must hold and the
+        # newest template must always survive its own insertion
+        node.gbts = [gbt_for("cc" * 32, 102, 2200 + i) for i in range(80)]
+        for _ in range(80):
+            run(b.push_template("mempool-refresh"))
+        check("gen retention: MAX_TEMPLATES cap enforced",
+              len(b.templates) <= bridge_mod.MAX_TEMPLATES,
+              f"len={len(b.templates)}")
+        newest = max(b.templates, key=lambda k: b.templates[k][0])
+        check("gen retention: newest template retained under cap pressure",
+              b.templates[newest][2]["curtime"] == 2200 + 79)
+
+
+def scenario_pending_dir_selfheal():
+    """The live 1.4.49 bug: /data is root-owned, the bridge runs as uid 1000,
+    so pending_blocks could not be created and persistence was silently off.
+    A block found during that window must persist to the fallback, and must be
+    picked up and submitted once the volume is healed."""
+    import shutil
+    shutil.rmtree("/tmp/pending_blocks", ignore_errors=True)
+    gbt, t, sol = make_template_and_solution(mine_valid=True)
+    with tempfile.TemporaryDirectory() as dd:
+        # make the primary location unusable (a FILE where a dir must be):
+        # deterministic across uids, unlike chmod when tests run as root
+        open(os.path.join(dd, "pending_blocks"), "w").write("blocked")
+        down = FakeNode(hard_down=True)
+        b, logs = make_bridge(down, dd)
+
+        async def fast(block_hex, bh, height):
+            try:
+                await down.submit_block(block_hex)
+                return True, None
+            except Exception:
+                return False, None
+        b._submit_with_retry = fast
+        b.templates[7] = (0, t, gbt)
+        run(b.handle_submit_solution(sol))
+        fb = [f for f in os.listdir("/tmp/pending_blocks") if f.endswith(".hex")]
+        check("unwritable volume: block persisted to fallback", len(fb) == 1, fb)
+        check("unwritable volume: warned exactly once",
+              sum(1 for l in logs if "not writable" in l) == 1)
+
+        # --- heal: the sv2-pool entrypoint now creates the dir root-side ---
+        os.unlink(os.path.join(dd, "pending_blocks"))
+        os.makedirs(os.path.join(dd, "pending_blocks"))
+        node2 = FakeNode()
+        b2, logs2 = make_bridge(node2, dd)
+        check("after heal: primary dir is used again",
+              b2._pending_dir() == os.path.join(dd, "pending_blocks"))
+        check("after heal: fallback still scanned",
+              "/tmp/pending_blocks" in b2._pending_dirs_all())
+
+        async def one_pass():
+            for d in b2._pending_dirs_all():
+                for fn in sorted(os.listdir(d)):
+                    if not fn.endswith(".hex"):
+                        continue
+                    p = os.path.join(d, fn)
+                    height, _, bh = fn[:-4].partition("_")
+                    with open(p) as f:
+                        block_hex = f.read().strip()
+                    await b2._judge_and_finish(block_hex, bh, int(height), p)
+        run(one_pass())
+        check("after heal: stranded block submitted to node",
+              len(node2.submits) == 1, f"submits={len(node2.submits)}")
+        check("after heal: fallback drained",
+              not [f for f in os.listdir("/tmp/pending_blocks")
+                   if f.endswith(".hex")])
+    shutil.rmtree("/tmp/pending_blocks", ignore_errors=True)
+
+
 def scenario_unknown_template_forensics():
     gbt, t, sol = make_template_and_solution(mine_valid=True)
     with tempfile.TemporaryDirectory() as dd:
@@ -245,6 +387,8 @@ if __name__ == "__main__":
     scenario_warn_not_refuse_pow()
     scenario_retry_then_success()
     scenario_node_down_persist_and_resubmit()
+    scenario_generation_retention()
+    scenario_pending_dir_selfheal()
     scenario_unknown_template_forensics()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
