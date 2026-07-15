@@ -47,6 +47,26 @@ def test_tor_image_pinned_and_current():
           ver >= [0, 4, 8], m.group(2))
 
 
+def test_tor_runs_as_root_on_an_existing_data_dir():
+    """Do NOT add `user:` to the tor service. torrc sets DataDirectory /data,
+    and existing installs' data/tor is root-owned (created by a root tor
+    container years ago). A uid means tor cannot write its own lock/state, so
+    the container crash-loops under restart: on-failure -- and because nothing
+    depends_on tor, the app still starts and the breakage is silent. That was
+    shipped in 29.1.15/16 and removed in 29.1.17."""
+    import yaml as _y
+    c = _y.safe_load(open(COMPOSE))
+    tor = c["services"]["tor"]
+    check("tor has no `user:` (would break existing root-owned data/tor)",
+          "user" not in tor, tor.get("user"))
+    check("nothing depends_on tor (so a tor failure is quiet, not fatal)",
+          all("tor" not in (s.get("depends_on") or [])
+              for s in c["services"].values()))
+    torrc = open(os.path.join(ROOT, "sslabs-bitcoin-cash-node", "torrc")).read()
+    check("torrc still writes DataDirectory to the mounted volume",
+          "DataDirectory /data" in torrc)
+
+
 def test_full_mode_is_health_gated():
     s = open(SERVER).read()
     check("gate: SOCKS probe exists", "function torSocksOk" in s)
@@ -145,6 +165,7 @@ def test_tor_error_is_readable_in_ui():
 if __name__ == "__main__":
     print("tor / node-isolation regression tests:")
     test_tor_image_pinned_and_current()
+    test_tor_runs_as_root_on_an_existing_data_dir()
     test_full_mode_is_health_gated()
     test_socks_probe_behaviour()
     test_stale_tip_surfaced()
