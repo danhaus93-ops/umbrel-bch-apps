@@ -166,6 +166,49 @@ setInterval(async () => {
     }
   } catch (_) {}
 }, 5 * 60 * 1000);
+// Tor SOCKS5 health probe. `full` mode points bitcoind's -proxy at this port
+// for EVERY outbound connection, so if Tor is not actually answering, the node
+// silently stops seeing blocks: no peers, no error, tip frozen. That cost a
+// real user ~16h of mining on 2026-07-15 (Tor 0.4.7.8 was EOL and stuck at 30%
+// bootstrap). Never write `proxy=` without proving the proxy works first.
+// Stale-tip tracking. A node can look perfectly healthy -- peers connected,
+// RPC answering, no errors -- while its tip has not moved for hours. On
+// 2026-07-15 a node sat 87 blocks behind for 15.7h with 5 peers and nothing
+// surfaced it. BCH targets ~10 min/block, so 60 min of no movement is a
+// genuine signal, not noise.
+const STALE_TIP_MS = 60 * 60 * 1000;
+let tipHeight = null;
+let tipSeenAt = 0;
+function noteTip(blocks) {
+  if (typeof blocks !== 'number') return;
+  if (blocks !== tipHeight) { tipHeight = blocks; tipSeenAt = Date.now(); }
+  else if (!tipSeenAt) { tipSeenAt = Date.now(); }
+}
+function tipStalenessMs() {
+  return tipSeenAt ? Date.now() - tipSeenAt : 0;
+}
+
+function torSocksOk(ip, timeoutMs = 4000) {
+  return new Promise((resolve) => {
+    const sock = new net.Socket();
+    let done = false;
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      try { sock.destroy(); } catch (_) {}
+      resolve(ok);
+    };
+    sock.setTimeout(timeoutMs);
+    sock.on('timeout', () => finish(false));
+    sock.on('error', () => finish(false));
+    sock.connect(9050, ip, () => {
+      // SOCKS5 greeting: ver 5, 1 method, no-auth. A live Tor replies 0x05 0x00.
+      sock.write(Buffer.from([0x05, 0x01, 0x00]));
+    });
+    sock.on('data', (d) => finish(d.length >= 2 && d[0] === 0x05 && d[1] !== 0xff));
+  });
+}
+
 function readTorMode() {
   try {
     const c = fs.readFileSync(NODE_CONF, 'utf8');
@@ -177,6 +220,13 @@ function readTorMode() {
 async function writeTorMode(mode) {
   const ip = mode === 'off' ? null : await torSidecarIp();
   if (mode !== 'off' && !ip) throw new Error('tor sidecar not resolvable');
+  // Refuse `full` unless Tor is genuinely reachable: in this mode a dead proxy
+  // isolates the node completely instead of merely losing onion peers.
+  if (mode === 'full' && !(await torSocksOk(ip))) {
+    throw new Error('Tor is not answering on ' + ip + ':9050 — routing all '
+      + 'traffic through it would cut your node off from the network '
+      + 'entirely. Check the Tor logs, then try again.');
+  }
   const ext = (await detectPublicIp()) || readExternalIp();
   const body = '# Managed by the Bitcoin Cash Node dashboard (Tor settings)\n'
     + torBlock(mode, ip)
@@ -234,6 +284,19 @@ app.get('/api/status', async (_req, res) => {
     out.node.ipPending = ipChangedAt > 0 && (Date.now() - ipChangedAt) < 6 * 3600 * 1000;
     out.node.onion = (netinfo.localaddresses || [])
       .map(a => a.address).find(a => /\.onion$/.test(a || '')) || null;
+    noteTip(chain.blocks);
+    const staleMs = tipStalenessMs();
+    // headers === blocks while the tip is frozen means we are not even HEARING
+    // about new blocks (a merely-slow node has headers running ahead), which
+    // usually means no usable outbound peers.
+    out.node.tipStaleMinutes = Math.floor(staleMs / 60000);
+    out.node.tipStale = staleMs > STALE_TIP_MS && !chain.initialblockdownload;
+    out.node.tipStaleReason = out.node.tipStale
+      ? (chain.headers <= chain.blocks
+          ? 'No new blocks are reaching this node — it is not hearing about them. '
+            + 'Check peers and Tor mode.'
+          : 'Node is behind and still catching up.')
+      : null;
     out.chain = {
       chain: chain.chain,
       blocks: chain.blocks,

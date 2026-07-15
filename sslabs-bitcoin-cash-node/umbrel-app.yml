@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.1.14"
+version: "29.1.15"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
@@ -18,15 +18,15 @@ description: >-
   First sync downloads the full chain, so use an SSD (NVMe strongly recommended).
 
   Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
-releaseNotes: Hardening release. The node's unused built-in wallet is now
-  disabled, and the dashboard no longer caches pages after updates.
-developer: LoneStrike Labs
-website: https://bitcoincashnode.org
-dependencies: []
-repo: https://github.com/danhaus93-ops/umbrel-bch-apps
-support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
-port: 3330
-gallery: []
-path: ""
+releaseNotes: >-
+  Important fix for anyone using Tor. The bundled Tor was three years out of
+  date and could no longer connect to the Tor network, which meant onion peers
+  silently never worked — and if you selected "All traffic via Tor", your node
+  could lose every outbound connection and stop receiving new blocks entirely,
+  with nothing on screen to tell you. Tor is updated, "All traffic via Tor" now
+  refuses to apply unless Tor is genuinely reachable, and the dashboard shows a
+  clear warning if your node stops receiving blocks. If you mine against this
+  node, that warning matters: blocks found while the tip is stale are wasted.
+
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps

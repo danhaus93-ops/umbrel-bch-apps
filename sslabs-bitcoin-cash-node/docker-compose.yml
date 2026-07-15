@@ -7,7 +7,12 @@ services:
       APP_PORT: 3000
 
   tor:
-    image: getumbrel/tor:0.4.7.8
+    # 0.4.7.8 (Aug 2022) is EOL and can no longer bootstrap: its directory
+    # authority list is stale, so dir servers answer 404 "Consensus not signed
+    # by sufficient number of requested authorities" and Tor sticks at 30%.
+    # Pinned by digest to the same image the official Umbrel apps ship.
+    image: ghcr.io/getumbrel/tor:0.4.9.11@sha256:e382b8629c0dfef6ceb396b062622d4e4e955b19d6f16b883fd2c0723ad5671a
+    user: "1000:1000"
     restart: on-failure
     environment:
       HOME: /tmp
@@ -56,7 +61,7 @@ services:
       - bitcoind
     environment:
       PORT: 3000
-      APP_VERSION: v29.1.14
+      APP_VERSION: v29.1.15
       TOR_IP: ${APP_SSLABS_BITCOIN_CASH_NODE_TOR_IP}
       RPC_HOST: bitcoind
       RPC_PORT: "8332"

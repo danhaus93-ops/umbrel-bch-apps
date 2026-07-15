@@ -185,6 +185,7 @@
 </head>
 <body>
 <div class="wrap">
+  <div id="staleBanner" style="display:none;margin:0 0 14px;padding:12px 14px;border-radius:10px;background:#4a1d1d;border:1px solid #a33;color:#ffd9d9;font-size:14px;line-height:1.45"></div>
   <header>
     <div class="mark">
       <svg viewBox="0 0 1024 1024" aria-hidden="true">
@@ -516,6 +517,17 @@ async function tick(){
       '<span style="color:var(--muted);min-width:46px;text-align:right">'+fmtAge(Math.floor(Date.now()/1000)-b.time)+'</span></div>'
     ).join('');
   }
+  var sb=document.getElementById('staleBanner');
+  if(sb){
+    if(d.node&&d.node.tipStale){
+      sb.style.display='block';
+      sb.innerHTML='<strong>Node is not receiving new blocks.</strong><br>'+
+        'The chain tip has not moved for '+(d.node.tipStaleMinutes||0)+' minutes. '+
+        (d.node.tipStaleReason||'')+
+        '<br><span style="opacity:.85">Any mining against this node is being '+
+        'wasted \u2014 blocks found now would be built on a stale parent.</span>';
+    } else { sb.style.display='none'; }
+  }
   if(d.node&&d.node.torMode&&!window.__torTouched){
     const r=document.querySelector('input[name="torMode"][value="'+d.node.torMode+'"]');
     if(r)r.checked=true;
@@ -641,8 +653,13 @@ setInterval(tick, 5000);
     try{
       var r=await fetch('/api/tor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:sel.value})});
       if(!r.ok){var j=null;try{j=await r.json();}catch(_){ }
-        b.textContent='Failed: '+((j&&j.error)||r.status);
-        setTimeout(function(){b.textContent='Apply';},4000);return;}
+        var tn=document.getElementById('torNote');
+        if(tn){tn.style.color='#ff9d9d';
+          tn.textContent=(j&&j.error)||('Failed ('+r.status+')');}
+        b.textContent='Apply';return;}
+      var tn2=document.getElementById('torNote');
+      if(tn2){tn2.style.color='';
+        tn2.textContent='Applying restarts the node (about 30\u201360s); the dashboard reconnects on its own.';}
       b.textContent='Node restarting\u2026';
       setTimeout(function(){b.textContent='Apply';window.__torTouched=false;},25000);
     }catch(e){b.textContent='Failed';setTimeout(function(){b.textContent='Apply';},2000);}
