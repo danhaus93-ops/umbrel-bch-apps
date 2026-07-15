@@ -32,10 +32,28 @@ if [ -z "$PAYOUT" ]; then
     echo "[entrypoint] payout address received, starting SV2"
 fi
 PAYOUT_ADDRESS="$PAYOUT"
-PAYOUT_SCRIPT=$(python3 /usr/local/bin/addr_to_script.py "$PAYOUT_ADDRESS")
-if [ -z "$PAYOUT_SCRIPT" ]; then
-    echo "[entrypoint] ERROR: bad payout address '$PAYOUT_ADDRESS'"; exit 1
-fi
+# addr_to_script exits non-zero on a bad address. The old `VAR=$(...)` form
+# tripped `set -e`, so the container died BEFORE the error below could print
+# and `restart: on-failure` turned one typo into a silent crash-loop. `if`
+# is exempt from errexit: surface the real reason, then wait for a corrected
+# address rather than thrashing.
+PAYOUT_SCRIPT=""
+while [ -z "$PAYOUT_SCRIPT" ]; do
+    if OUT=$(python3 /usr/local/bin/addr_to_script.py "$PAYOUT_ADDRESS" 2>&1); then
+        PAYOUT_SCRIPT="$OUT"
+        break
+    fi
+    echo "[entrypoint] ERROR: payout address '$PAYOUT_ADDRESS' rejected: $OUT"
+    echo "[entrypoint] SV2 idle - set a valid address on the dashboard's Stratum V2 card"
+    PREV="$PAYOUT_ADDRESS"
+    while [ "$PAYOUT_ADDRESS" = "$PREV" ]; do
+        sleep 10
+        if [ -f "$ADDR_FILE" ]; then
+            NEW=$(tr -d ' \n' < "$ADDR_FILE")
+            [ -n "$NEW" ] && PAYOUT_ADDRESS="$NEW"
+        fi
+    done
+done
 echo "[entrypoint] payout script: raw($PAYOUT_SCRIPT)"
 
 # --- sig-derive-start (executed verbatim by tests/sv2-telemetry) ---

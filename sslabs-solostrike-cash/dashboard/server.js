@@ -95,7 +95,12 @@ function validAddress(a) {
   if (!a || typeof a !== 'string') return false;
   a = a.trim();
   if (a.length > 110) return false;
-  if (/^(bitcoincash:|bchtest:|bchreg:)?[qp][0-9a-z]{38,}$/i.test(a)) return true; // cashaddr
+  // A 20-byte-hash cashaddr is exactly 42 chars (34 payload + 8 checksum).
+  // Longer means a bigger hash (e.g. P2SH32), which the pool cannot pay to:
+  // accepting one here used to hand the SV2 entrypoint an address it would
+  // reject, crash-looping the container. Keep this in step with
+  // sv2/pool/sv2-helpers/addr_to_script.py.
+  if (/^(bitcoincash:|bchtest:|bchreg:)?[qp][0-9a-z]{41}$/i.test(a)) return true; // cashaddr
   if (/^[13][1-9A-HJ-NP-Za-km-z]{25,34}$/.test(a)) return true;                    // legacy
   return false;
 }
