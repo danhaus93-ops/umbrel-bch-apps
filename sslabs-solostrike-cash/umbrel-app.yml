@@ -75,13 +75,14 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: Your Stratum V2 blocks now carry the LoneStrike Cash miner
-  tag, so block explorers attribute them to you instead of showing "Unknown" —
-  this is the first Stratum V2 implementation for Bitcoin Cash, and its first
-  mainnet block was found on July 15. Solutions are also kept safe for longer:
-  templates are now retained by chain tip rather than a fixed 2-minute timer,
-  so a slow miner can still submit a winning share, and the found-block
-  safety net now repairs its own storage permissions automatically.
+releaseNotes: >-
+  Your Stratum V2 blocks now carry the LoneStrike Cash miner tag, so block
+  explorers attribute them to you instead of showing "Unknown" — this is the
+  first Stratum V2 implementation for Bitcoin Cash, and its first mainnet
+  block was found on July 15. Solutions are also kept safe for longer.
+  Templates are now retained by chain tip rather than a fixed 2-minute timer,
+  so a slow miner can still submit a winning share, and the found-block safety
+  net now repairs its own storage permissions automatically.
 
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
