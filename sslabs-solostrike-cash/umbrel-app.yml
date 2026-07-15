@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.51"
+version: "1.4.52"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -76,12 +76,13 @@ widgets:
           text: "0"
           subtext: "found"
 releaseNotes: >-
-  Safety fix for payout addresses. Some newer Bitcoin Cash address formats
-  (P2SH32) were accepted but silently shortened when building the block's
-  payout, which would have sent a found block's reward to an unspendable
-  address. Those addresses are now rejected with a clear message instead, the
-  dashboard refuses them up front, and a mistyped address no longer restarts
-  the pool in a loop - it tells you what is wrong and waits for you to fix it.
-  Standard addresses are completely unaffected.
+  The miner list now works the same way for Stratum V1 and V2. Every worker
+  shows accepted and rejected shares, and hashrate is reported over matching
+  1m / 5m / 1h / 1d windows for both protocols - previously the two were
+  measured differently and drawn on the same chart. Resetting a miner now
+  clears its share counts as well as its best, finding a block clears the best
+  for your whole fleet rather than just one protocol, and V2 share counts now
+  survive a restart. The Stratum V2 settings are labelled, and extranonce2
+  size is now adjustable.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
