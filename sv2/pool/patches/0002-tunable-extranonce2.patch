@@ -1,0 +1,76 @@
+diff --git a/pool-apps/pool/src/lib/channel_manager/mining_message_handler.rs b/pool-apps/pool/src/lib/channel_manager/mining_message_handler.rs
+index 831ad23..0810b3d 100644
+--- a/pool-apps/pool/src/lib/channel_manager/mining_message_handler.rs
++++ b/pool-apps/pool/src/lib/channel_manager/mining_message_handler.rs
+@@ -25,7 +25,7 @@ use tracing::{error, info};
+ use jd_server_sv2::job_declarator::SetCustomMiningJobResponse;
+ 
+ use crate::{
+-    channel_manager::{ChannelManager, RouteMessageTo, CLIENT_SEARCH_SPACE_BYTES},
++    channel_manager::{client_search_space_bytes, ChannelManager, RouteMessageTo},
+     error::{self, PoolError, PoolErrorKind},
+     utils::{create_close_channel_msg, PayoutMode, PayoutModeError},
+ };
+@@ -439,7 +439,7 @@ impl HandleMiningMessagesFromClientAsync for ChannelManager {
+                     requested_max_target,
+                     nominal_hash_rate,
+                     true, // version rolling always allowed
+-                    CLIENT_SEARCH_SPACE_BYTES as u16,
++                    client_search_space_bytes() as u16, // LoneStrike patch: tunable
+                     self.share_batch_size,
+                     self.shares_per_minute,
+                     self.pool_tag_string.clone(),
+diff --git a/pool-apps/pool/src/lib/channel_manager/mod.rs b/pool-apps/pool/src/lib/channel_manager/mod.rs
+index 1f1683c..f8d9eb9 100644
+--- a/pool-apps/pool/src/lib/channel_manager/mod.rs
++++ b/pool-apps/pool/src/lib/channel_manager/mod.rs
+@@ -59,8 +59,29 @@ const POOL_MAX_CHANNELS: u32 = 16_777_216;
+ // [`POOL_MAX_CHANNELS`] so the two stay in sync.
+ const POOL_LOCAL_PREFIX_BYTES: u8 = bytes_needed(POOL_MAX_CHANNELS);
+ const POOL_ALLOCATION_BYTES: u8 = POOL_SERVER_BYTES + POOL_LOCAL_PREFIX_BYTES;
+-const CLIENT_SEARCH_SPACE_BYTES: u8 = 16;
+-pub const FULL_EXTRANONCE_SIZE: u8 = POOL_ALLOCATION_BYTES + CLIENT_SEARCH_SPACE_BYTES;
++// LoneStrike patch: the miner-rollable extranonce2 space was a compile-time
++// constant, so operators could not tune it. Read it from the environment
++// (SV2_EXTRANONCE2_BYTES, written by the dashboard via the pool entrypoint)
++// and fall back to upstream's 16 when unset or out of range.
++//
++// Deliberately an env var rather than a config field: a config field means
++// touching PoolConfig, its constructor and serde, and this fork builds in CI
++// with a ~2h turnaround and no local compiler to check against.
++//
++// Bounds: below 4 starves SV1-behind-translator miners of rolling room; above
++// 32 eats the coinbase scriptSig budget (100B total; BIP34 height push + pool
++// tag + this extranonce must all fit; ~44B used at 16).
++pub const CLIENT_SEARCH_SPACE_DEFAULT: u8 = 16;
++pub fn client_search_space_bytes() -> u8 {
++    std::env::var("SV2_EXTRANONCE2_BYTES")
++        .ok()
++        .and_then(|v| v.trim().parse::<u8>().ok())
++        .filter(|n| (4..=32).contains(n))
++        .unwrap_or(CLIENT_SEARCH_SPACE_DEFAULT)
++}
++pub fn full_extranonce_size() -> u8 {
++    POOL_ALLOCATION_BYTES + client_search_space_bytes()
++}
+ 
+ #[derive(Clone)]
+ pub struct ChannelManagerIo {
+@@ -169,7 +190,7 @@ impl ChannelManager {
+         let local_prefix_bytes = config.server_id().to_be_bytes().to_vec();
+ 
+         let extranonce_allocator =
+-            ExtranonceAllocator::new(local_prefix_bytes, FULL_EXTRANONCE_SIZE, POOL_MAX_CHANNELS)
++            ExtranonceAllocator::new(local_prefix_bytes, full_extranonce_size(), POOL_MAX_CHANNELS)
+                 .map_err(PoolError::shutdown)?;
+ 
+         let channel_manager_io = ChannelManagerIo {
+@@ -223,7 +244,7 @@ impl ChannelManager {
+ 
+         let mut group_channel = match GroupChannel::new_for_pool(
+             channel_id,
+-            FULL_EXTRANONCE_SIZE as usize,
++            full_extranonce_size() as usize,
+             self.pool_tag_string.clone(),
+         ) {
+             Ok(channel) => channel,

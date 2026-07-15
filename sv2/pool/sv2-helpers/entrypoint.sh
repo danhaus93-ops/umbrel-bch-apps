@@ -80,6 +80,22 @@ if [ -f "$DATA/shares_per_minute" ]; then
     esac
 fi
 echo "[entrypoint] shares_per_minute=$SPM"
+# Miner-rollable extranonce2 space, written by the dashboard's SV2 card.
+# Consumed by patches/0002 via SV2_EXTRANONCE2_BYTES. Clamp here too: the
+# patch also falls back to 16, but a silent fallback with no log is a bad
+# way to find out your setting was ignored.
+XN=16
+if [ -f "$DATA/extranonce2_bytes" ]; then
+    CAND=$(tr -cd '0-9' < "$DATA/extranonce2_bytes")
+    if [ -n "$CAND" ] && [ "$CAND" -ge 4 ] 2>/dev/null && [ "$CAND" -le 32 ] 2>/dev/null; then
+        XN="$CAND"
+    else
+        echo "[entrypoint] WARNING: extranonce2_bytes='$CAND' out of range 4-32; using 16"
+    fi
+fi
+export SV2_EXTRANONCE2_BYTES="$XN"
+echo "[entrypoint] extranonce2 bytes: $XN (client rollable search space)"
+
 echo "[entrypoint] coinbase tag: /$SIG//"
 sed -e "s|__AUTH_PUB__|$PUB|" \
     -e "s|__AUTH_PRV__|$PRV|" \

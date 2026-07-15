@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [ master, main ]
-    paths: [ 'sslabs-solostrike-cash/dashboard/**', 'tests/sv2-telemetry/**', 'sv2/bridge/**', 'sv2/pool/sv2-helpers/**', 'pools-v2.json', '*/umbrel-app.yml', 'dashboard/**', 'sslabs-bitcoin-cash-node/**' ]
+    paths: [ 'sslabs-solostrike-cash/dashboard/**', 'tests/sv2-telemetry/**', 'sv2/bridge/**', 'sv2/pool/**', 'pools-v2.json', '*/umbrel-app.yml', 'dashboard/**', 'sslabs-bitcoin-cash-node/**' ]
 jobs:
   test:
     runs-on: ubuntu-latest
