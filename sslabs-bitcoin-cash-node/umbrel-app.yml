@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.1.17"
+version: "29.1.18"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
@@ -19,14 +19,14 @@ description: >-
 
   Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
 releaseNotes: >-
-  Important fix for anyone using Tor. The bundled Tor was three years out of
-  date and could no longer connect to the Tor network, which meant onion peers
-  silently never worked - and if you selected "All traffic via Tor", your node
-  could lose every outbound connection and stop receiving new blocks entirely,
-  with nothing on screen to tell you. Tor is updated, "All traffic via Tor" now
-  refuses to apply unless Tor is genuinely reachable, and the dashboard shows a
-  clear warning if your node stops receiving blocks. If you mine against this
-  node, that warning matters: blocks found while the tip is stale are wasted.
+  Onion peers are now visible and controllable. Bitcoin Cash has very few nodes
+  reachable over Tor, so seeing "0 via Tor" is normal rather than a fault - the
+  Peers card now says how many onion addresses your node actually knows about,
+  so the number makes sense. You can connect to one directly from the new list,
+  or switch on "Keep onion peers connected" to have your node hold a few. These
+  are extra connections that do not replace your normal peers; they give you
+  block sources that survive a clearnet outage. It is off by default, and it is
+  not a privacy setting - for that, use "All traffic via Tor".
 developer: LoneStrike Labs
 website: https://bitcoincashnode.org
 dependencies: []
