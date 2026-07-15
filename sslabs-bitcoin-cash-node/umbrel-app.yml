@@ -21,12 +21,19 @@ description: >-
 releaseNotes: >-
   Important fix for anyone using Tor. The bundled Tor was three years out of
   date and could no longer connect to the Tor network, which meant onion peers
-  silently never worked — and if you selected "All traffic via Tor", your node
+  silently never worked - and if you selected "All traffic via Tor", your node
   could lose every outbound connection and stop receiving new blocks entirely,
   with nothing on screen to tell you. Tor is updated, "All traffic via Tor" now
   refuses to apply unless Tor is genuinely reachable, and the dashboard shows a
   clear warning if your node stops receiving blocks. If you mine against this
   node, that warning matters: blocks found while the tip is stale are wasted.
-
+developer: LoneStrike Labs
+website: https://bitcoincashnode.org
+dependencies: []
+repo: https://github.com/danhaus93-ops/umbrel-bch-apps
+support: https://github.com/danhaus93-ops/umbrel-bch-apps/issues
+port: 3330
+gallery: []
+path: ""
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps

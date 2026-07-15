@@ -47,8 +47,15 @@ def main():
         if not ok:
             continue
         check(f"{rel} parses as YAML", True)
-        for field in ("id", "name", "version"):
-            check(f"{rel} has {field}", bool(d.get(field)))
+        # 29.1.15 shipped a manifest whose releaseNotes edit spliced out
+        # everything between releaseNotes: and submitter: -- including
+        # `port:`. umbreld's app-script reads it as APP_PROXY_PORT, got null,
+        # and the app could not start at all. Parsing is not enough: assert
+        # the fields umbreld actually needs.
+        for field in ("manifestVersion", "id", "name", "version", "port"):
+            check(f"{rel} has {field}", d.get(field) is not None)
+        check(f"{rel} port is an int", isinstance(d.get("port"), int),
+              repr(d.get("port")))
         # releaseNotes may legitimately be "" for an initial release; what
         # matters is that the key exists and is a string
         check(f"{rel} has releaseNotes key", "releaseNotes" in d)
@@ -69,9 +76,29 @@ def main():
                 check(f"{os.path.relpath(comp, ROOT)} parses as YAML", False, e)
 
 
+
+
+def test_no_manifest_keys_lost_vs_git():
+    """A version bump must never remove keys. This is the exact 29.1.15 bug:
+    an editing script sliced out seven fields and every test still passed."""
+    import subprocess
+    for m in sorted(glob.glob(os.path.join(ROOT, "*", "umbrel-app.yml"))):
+        rel = os.path.relpath(m, ROOT)
+        r = subprocess.run(["git", "show", f"HEAD:{rel}"], cwd=ROOT,
+                           capture_output=True, text=True)
+        if r.returncode != 0 or not r.stdout.strip():
+            continue
+        try:
+            was, now = yaml.safe_load(r.stdout), yaml.safe_load(open(m))
+        except Exception:
+            continue
+        lost = [k for k in (was or {}) if k not in (now or {})]
+        check(f"{rel} keeps every key it had at HEAD", not lost, f"lost {lost}")
+
 if __name__ == "__main__":
     print("app manifest validation:")
     main()
+    test_no_manifest_keys_lost_vs_git()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)
