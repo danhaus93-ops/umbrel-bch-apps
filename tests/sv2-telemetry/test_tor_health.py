@@ -162,6 +162,65 @@ def test_tor_error_is_readable_in_ui():
           "torNote" in h and "tn.textContent=(j&&j.error)" in h)
 
 
+
+def test_onion_peers():
+    """Onion peer directory. Measured 2026-07-15: 23 .onion of 33,048 addresses
+    (0.07%), so across 8 outbound slots the expected onion count is ~0.006 --
+    "0 via Tor" is arithmetic, not a fault, and waiting never fixes it."""
+    srv = open(SERVER).read()
+    check("onion: known-address reader exists", "async function onionKnown(" in srv)
+    check("onion: reads from getnodeaddresses", "getnodeaddresses" in srv)
+    check("onion: sorts by last-seen", "b.time - a.time" in srv)
+
+    # OPT-IN, default OFF -- a silent background dialler is the same failure
+    # class as the Tor-only toggle that isolated the node for 15.7h.
+    m = re.search(r"function onionPinOn\(\) \{(.*?)\n\}", srv, re.S)
+    check("onion: pin defaults OFF when unset",
+          bool(m) and "catch (_) { return false; }" in m.group(1))
+    r = re.search(r"async function onionReconcile\(\) \{(.*?)\n\}", srv, re.S)
+    check("onion: reconciler is a no-op while the toggle is off",
+          bool(r) and "if (!onionPinOn()) return;" in r.group(1))
+
+    body = r.group(1) if r else ""
+    # `add` maintains/retries; `onetry` would not survive a disconnect
+    check("onion: pinned peers use addnode 'add', not 'onetry'",
+          "'addnode', [o.address + ':' + o.port, 'add']" in body)
+    check("onion: never re-adds an already-connected peer",
+          "live.has(o.address)" in body)
+    check("onion: each address added at most once per boot (no tight retry)",
+          "onionAdded.has(o.address)" in body and "onionAdded.add(o.address)" in body)
+    check("onion: respects a maximum", "ONION_PIN_MAX" in body)
+    check("onion: stops once enough are live", "live.size >= ONION_PIN_MAX" in body)
+    check("onion: re-applies on boot (survives dashboard restart)",
+          "setTimeout(() => { onionReconcile()" in srv)
+    check("onion: periodic reconcile", "5 * 60 * 1000" in srv)
+
+    # must NOT touch bitcoin.conf: that needs a bitcoind restart
+    check("onion: never writes bitcoin.conf (no restart required)",
+          "addnode=" not in srv)
+
+    i = srv.index("app.post('/api/onion'")
+    ep = srv[i:i + 900]
+    check("onion: manual connect validates the address shape",
+          "/^[a-z2-7]{56}\\.onion$/i.test" in ep)
+    check("onion: manual connect uses onetry (one-shot, not pinned)",
+          "'onetry'" in ep)
+    check("onion: honest count exposed on status", "out.onion_known" in srv)
+
+    html = open(os.path.join(ROOT, "dashboard", "public", "index.html")).read()
+    check("onion: directory is collapsed by default (<details>, no `open`)",
+          '<details id="onionBox"' in html and '<details id="onionBox" open' not in html)
+    check("onion: toggle present", 'id="onionPin"' in html)
+    check("onion: summary reports how many are KNOWN, not just connected",
+          "onion known" in html)
+    check("onion: explains that 0 is normal for BCH, not a fault",
+          "so 0 connected is normal" in html and "not a fault" in html)
+    check("onion: states these are additive, not replacements",
+          "don't\n        replace your normal peers" in html or "replace your normal peers" in html)
+    check("onion: explicitly NOT sold as a privacy feature",
+          "This is not a privacy setting" in html)
+
+
 if __name__ == "__main__":
     print("tor / node-isolation regression tests:")
     test_tor_image_pinned_and_current()
@@ -170,6 +229,7 @@ if __name__ == "__main__":
     test_socks_probe_behaviour()
     test_stale_tip_surfaced()
     test_tor_error_is_readable_in_ui()
+    test_onion_peers()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)

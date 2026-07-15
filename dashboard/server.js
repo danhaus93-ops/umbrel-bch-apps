@@ -236,6 +236,100 @@ async function writeTorMode(mode) {
 // seed default (onion add-on) on first run so Tor works out of the box
 (async () => { try { if (!fs.existsSync(NODE_CONF)) await writeTorMode('onion'); } catch (_) {} })();
 
+// ---- Onion peers ---------------------------------------------------------
+// Measured 2026-07-15: getnodeaddresses returned 23 .onion out of 33,048
+// (0.07%). bitcoind draws outbound peers from that pool, so across 8 slots the
+// expected onion count is ~0.006 -- statistically never. "0 via Tor" is
+// arithmetic, not a fault, and waiting does not fix it.
+//
+// OPT-IN and default OFF, on purpose. A background control that silently dials
+// peers is the same failure class as the Tor-only toggle that silently cut this
+// node off from the network for 15.7h. If it is doing something, it says so.
+//
+// `addnode ... add` (not onetry) makes bitcoind maintain and retry the peer.
+// addnode peers do NOT consume the 8 outbound slots, so clearnet peers are
+// never evicted: these are purely additive block sources, which is mildly good
+// for a mining node. No bitcoin.conf edit, so no bitcoind restart; re-applied
+// on dashboard boot, which is what makes it survive restarts.
+const ONION_PIN_FILE = path.join(path.dirname(NODE_CONF), 'onion_pin');
+const ONION_PIN_MAX = 4;
+function onionPinOn() {
+  try { return fs.readFileSync(ONION_PIN_FILE, 'utf8').trim() === '1'; }
+  catch (_) { return false; }
+}
+function onionPinSet(on) {
+  try { fs.writeFileSync(ONION_PIN_FILE, on ? '1' : '0'); } catch (_) {}
+}
+async function onionKnown() {
+  const all = await rpc('getnodeaddresses', [0]).catch(() => []);
+  return (all || [])
+    .filter((a) => /\.onion$/i.test(a.address || ''))
+    .map((a) => ({ address: a.address, port: a.port || 8333, time: a.time || 0 }))
+    .sort((a, b) => b.time - a.time);
+}
+// Reconcile desired vs actual. Never re-add a peer that is already connected,
+// and never retry a dead hidden service in a tight loop: bitcoind's own retry
+// under `add` is the backoff, so we only ever add each address once per boot.
+const onionAdded = new Set();
+async function onionReconcile() {
+  if (!onionPinOn()) return;
+  try {
+    const peers = await rpc('getpeerinfo').catch(() => []);
+    const live = new Set((peers || [])
+      .filter((p) => /\.onion/.test(p.addr || ''))
+      .map((p) => (p.addr || '').split(':')[0]));
+    if (live.size >= ONION_PIN_MAX) return;
+    const known = await onionKnown();
+    for (const o of known.slice(0, ONION_PIN_MAX * 3)) {
+      if (live.size + onionAdded.size >= ONION_PIN_MAX) break;
+      if (live.has(o.address) || onionAdded.has(o.address)) continue;
+      onionAdded.add(o.address);
+      await rpc('addnode', [o.address + ':' + o.port, 'add']).catch(() => {});
+    }
+  } catch (_) {}
+}
+setInterval(() => { onionReconcile().catch(() => {}); }, 5 * 60 * 1000);
+setTimeout(() => { onionReconcile().catch(() => {}); }, 15000);
+
+app.get('/api/onion', async (_req, res) => {
+  try {
+    const [known, peers] = await Promise.all([
+      onionKnown(), rpc('getpeerinfo').catch(() => []),
+    ]);
+    const live = new Set((peers || [])
+      .filter((p) => /\.onion/.test(p.addr || ''))
+      .map((p) => (p.addr || '').split(':')[0]));
+    const now = Math.floor(Date.now() / 1000);
+    res.json({
+      pin: onionPinOn(),
+      max: ONION_PIN_MAX,
+      connected: live.size,
+      known: known.length,
+      peers: known.slice(0, 40).map((o) => ({
+        address: o.address, port: o.port,
+        connected: live.has(o.address),
+        seenAgo: o.time ? now - o.time : null,
+      })),
+    });
+  } catch (e) { res.status(500).json({ error: String(e.message || e) }); }
+});
+
+app.post('/api/onion', async (req, res) => {
+  const b = req.body || {};
+  try {
+    if (typeof b.pin === 'boolean') {
+      onionPinSet(b.pin);
+      if (b.pin) { onionAdded.clear(); await onionReconcile(); }
+      return res.json({ ok: true, pin: b.pin });
+    }
+    if (typeof b.connect === 'string' && /^[a-z2-7]{56}\.onion$/i.test(b.connect)) {
+      const r = await rpc('addnode', [b.connect + ':' + (Number(b.port) || 8333), 'onetry']);
+      return res.json({ ok: true, result: r === null ? 'requested' : r });
+    }
+    res.status(400).json({ ok: false, error: 'expected {pin:boolean} or {connect:"<x>.onion"}' });
+  } catch (e) { res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
 app.post('/api/tor', async (req, res) => {
   const mode = ((req.body && req.body.mode) || '').toString();
   if (!['off', 'onion', 'full'].includes(mode)) return res.status(400).json({ ok: false, error: 'bad mode' });
@@ -346,6 +440,8 @@ app.get('/api/status', async (_req, res) => {
       out.txstats = cts ? { count: cts.txcount ?? null, rate: cts.txrate ?? null, window: cts.window_block_count ?? null } : null;
       out.zmq = Array.isArray(zmq) ? zmq.map(z => ({ type: z.type, address: z.address })) : null;
       out.banned_count = Array.isArray(banned) ? banned.length : null;
+      out.onion_known = (await onionKnown().catch(() => [])).length;
+      out.onion_pin = onionPinOn();
       out.peers_list = (peers || []).slice(0, 40).map(p => ({
         addr: p.addr,
         inbound: Boolean(p.inbound),

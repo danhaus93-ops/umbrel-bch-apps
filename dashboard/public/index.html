@@ -309,7 +309,21 @@
     <div class="conn">
       <h3>Peers</h3>
       <p id="peersSummary" style="margin-bottom:10px">&mdash;</p>
-      <div id="peersTable" style="font-family:var(--mono);font-size:11.5px"></div>
+      <details id="onionBox" style="margin:10px 0 4px;border:1px solid var(--line2);border-radius:var(--r);padding:8px 10px">
+      <summary style="cursor:pointer;font-family:var(--fm);font-size:12px;color:var(--muted)">Onion peers</summary>
+      <div id="onionHint" style="font-family:var(--fm);font-size:11px;color:var(--dim);margin:8px 0 10px;line-height:1.5"></div>
+      <label style="display:flex;gap:8px;align-items:center;font-family:var(--fm);font-size:12px;color:var(--muted);cursor:pointer">
+        <input type="checkbox" id="onionPin"/>
+        Keep onion peers connected
+      </label>
+      <div style="font-family:var(--fm);font-size:10px;color:var(--dim);margin:6px 0 10px;line-height:1.5">
+        Asks your node to hold up to 4 onion peers. These are extra connections — they don't
+        replace your normal peers — and they give you block sources that survive a clearnet
+        outage. This is not a privacy setting: for that, use "All traffic via Tor" above.
+      </div>
+      <div id="onionList" style="font-family:var(--fm);font-size:11px"></div>
+    </details>
+    <div id="peersTable" style="font-family:var(--mono);font-size:11.5px"></div>
     </div>
     <div class="conn">
       <h3>Recent blocks</h3>
@@ -498,8 +512,20 @@ async function tick(){
   }
   if(d.peers_list){
     const inb=d.peers_list.filter(p=>p.inbound).length;
+    var torN=d.peers_list.filter(p=>p.tor).length;
+    var known=(typeof d.onion_known==='number')?d.onion_known:null;
     $('peersSummary').textContent=d.peers_list.length+' connected \u00b7 '+inb+' inbound \u00b7 '+
-      d.peers_list.filter(p=>p.tor).length+' via Tor';
+      torN+' via Tor'+(known!==null?' \u00b7 '+known+' onion known':'');
+    var oh=document.getElementById('onionHint');
+    if(oh&&known!==null){
+      // BCH's onion population is tiny: at ~23/33000 addresses, random peer
+      // selection picks one about 0.6% of the time across 8 slots. 0 is normal.
+      oh.textContent=(torN===0)
+        ? 'Bitcoin Cash has very few onion nodes ('+known+' known here), so 0 connected is normal \u2014 not a fault. Pin a few below if you want them.'
+        : torN+' onion peer'+(torN===1?'':'s')+' connected of '+known+' known.';
+    }
+    var op=document.getElementById('onionPin');
+    if(op&&typeof d.onion_pin==='boolean'&&!window.__onionTouched)op.checked=d.onion_pin;
     document.getElementById('peersTable').innerHTML=d.peers_list.map(p=>
       '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:center">'+
       '<span style="color:'+(p.inbound?'#34D399':'var(--muted)')+';min-width:28px">'+(p.inbound?'IN':'OUT')+'</span>'+
@@ -621,6 +647,48 @@ document.addEventListener('click',(e)=>{
 
 tick();
 setInterval(tick, 5000);
+
+(function(){
+  var pin=document.getElementById('onionPin');
+  var box=document.getElementById('onionBox');
+  var list=document.getElementById('onionList');
+  if(!pin||!box)return;
+  function ago(s){ if(s==null)return '?'; if(s<3600)return Math.floor(s/60)+'m';
+    if(s<86400)return Math.floor(s/3600)+'h'; return Math.floor(s/86400)+'d'; }
+  async function draw(){
+    if(!box.open)return;
+    try{
+      var r=await fetch('/api/onion'); var j=await r.json();
+      if(!j||!j.peers)return;
+      pin.checked=!!j.pin;
+      list.innerHTML=j.peers.map(function(o){
+        return '<div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line)">'+
+          '<span style="width:8px;height:8px;border-radius:50%;background:'+(o.connected?'#34D399':'var(--line2)')+'"></span>'+
+          '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)">'+o.address.slice(0,16)+'\u2026onion</span>'+
+          '<span style="color:var(--dim)">'+ago(o.seenAgo)+'</span>'+
+          (o.connected?'<span style="color:#34D399;width:64px;text-align:right">connected</span>'
+            :'<button data-a="'+o.address+'" data-p="'+o.port+'" class="onionGo" style="width:64px;background:none;border:1px solid var(--line2);border-radius:6px;color:var(--muted);font-family:var(--fm);font-size:10px;padding:3px 0;cursor:pointer">connect</button>')+
+          '</div>';
+      }).join('')||'<div style="color:var(--dim)">no onion addresses known yet</div>';
+      Array.prototype.forEach.call(list.querySelectorAll('.onionGo'),function(b){
+        b.onclick=async function(){
+          b.textContent='\u2026';
+          await fetch('/api/onion',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({connect:b.dataset.a,port:Number(b.dataset.p)})}).catch(function(){});
+          setTimeout(draw,4000);
+        };
+      });
+    }catch(e){}
+  }
+  pin.onchange=async function(){
+    window.__onionTouched=true;
+    await fetch('/api/onion',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pin:pin.checked})}).catch(function(){});
+    setTimeout(draw,2000);
+  };
+  box.addEventListener('toggle',draw);
+  setInterval(draw,20000);
+})();
 </script>
 <script>
 (function(){
