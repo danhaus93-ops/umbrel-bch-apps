@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.49"
+version: "1.4.50"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -75,11 +75,13 @@ widgets:
         - title: "Blocks"
           text: "0"
           subtext: "found"
-releaseNotes: Stratum V2 reliability hardening — a found block can no
-  longer be lost to a transient hiccup. Every SV2 solution is now saved to
-  disk before submission, submitted with automatic retries, and re-submitted
-  after restarts until your node has definitively judged it. Local sanity
-  checks warn instead of blocking, so the node always gets the final say.
+releaseNotes: Your Stratum V2 blocks now carry the LoneStrike Cash miner
+  tag, so block explorers attribute them to you instead of showing "Unknown" —
+  this is the first Stratum V2 implementation for Bitcoin Cash, and its first
+  mainnet block was found on July 15. Solutions are also kept safe for longer:
+  templates are now retained by chain tip rather than a fixed 2-minute timer,
+  so a slow miner can still submit a winning share, and the found-block
+  safety net now repairs its own storage permissions automatically.
 
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
