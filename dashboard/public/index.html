@@ -376,12 +376,9 @@
   .gcard .ticks{display:flex;gap:26px;margin:16px 2px 4px;padding-top:14px;border-top:1px solid var(--line)}
   .gcard .tick b{display:block;font-family:var(--mono);font-size:19px;font-weight:600}
   .gcard .tick span{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
-  /* was font-size:9.5px, padding:3px 8px -- about an 18px tall target. Apple's
-     own guidance is 44pt. Small enough that a miss looks exactly like a button
-     that does nothing. */
-  .dc{flex:none;font-family:var(--mono);font-size:11px;letter-spacing:.4px;padding:9px 12px;border-radius:999px;
-    min-height:38px;cursor:pointer;background:transparent;border:1px solid var(--line);color:#8fa89b;
-    transition:all .15s;margin-left:4px;-webkit-tap-highlight-color:rgba(10,193,142,.3)}
+  .dc{flex:none;font-family:var(--mono);font-size:9.5px;letter-spacing:.4px;padding:3px 8px;border-radius:999px;
+    cursor:pointer;background:transparent;border:1px solid var(--line);color:#6d8478;transition:all .15s;
+    margin-left:4px;-webkit-tap-highlight-color:rgba(10,193,142,.3)}
   .dc:hover{border-color:rgba(224,147,78,.55);color:var(--warn);background:rgba(224,147,78,.07)}
   .dc:focus-visible{outline:2px solid var(--green);outline-offset:2px}
   .dc:disabled{opacity:.35;cursor:default}
@@ -679,10 +676,7 @@ function peerSay(msg, ok){
   el.style.color       = ok ? 'var(--green)' : 'var(--warn)';
 }
 async function disconnectPeer(addr, btn){
-  peerSay('tap registered \u2192 '+addr, true);
-  // Record the tap over GET. GETs demonstrably reach this node -- /diag arrives.
-  // If this lands and the POST below does not, POSTs are being dropped between
-  // the browser and the app, which would explain this entire saga at a stroke.
+  peerSay('disconnecting \u2026', true);
   fetch('/api/peers/tap?via=click&addr='+encodeURIComponent(addr)).catch(()=>{});
   btn.disabled=true; btn.textContent='dropping';
   const done=(j)=>{
@@ -813,13 +807,9 @@ const peersTableEl = document.getElementById('peersTable');
 peersTableEl.addEventListener('pointerdown',(e)=>{
   const b=e.target.closest('button.dc');
   if(!b) return;
+  // Silent probe. /diag still reports lastPointer, which is what pinned this
+  // down; the on-screen dump was for the hunt, not for daily use.
   fetch('/api/peers/pointer?kind=pointerdown').catch(()=>{});
-  // "touch on ?" told us dataset.addr was empty on a button that matched
-  // button.dc -- which the source says is impossible. So report what the
-  // element ACTUALLY is rather than trusting what it should be.
-  const attrs=(b.getAttributeNames?b.getAttributeNames():[]).join(',');
-  peerSay('touch: text="'+b.textContent+'" attrs=['+attrs+'] addr='+(b.dataset.addr||'(none)')+
-          ' resolved='+(addrOfButton(b)||'(none)'), true);
 },true);
 
 // click AND touchend: on iOS a click can fail to form even when the touch is
