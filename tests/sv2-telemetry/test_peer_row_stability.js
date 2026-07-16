@@ -98,6 +98,28 @@ check('rows are not ordered by ping (it changes every poll and moves rows)',
   check('the remaining row is untouched', rows.get('1.2.3.4:8333').btn.dataset.addr === '1.2.3.4:8333');
 }
 
+
+// ---- the handler must never bail silently ---------------------------------
+// "touch on ?" on a real device: a button matched button.dc but carried no
+// dataset.addr, which the source says cannot happen. The old guard was
+//     if(!b || !b.dataset.addr) return;
+// so it returned quietly and looked exactly like a dead button. Nine releases
+// were spent downstream of that silent return.
+{
+  const arm = UI.slice(UI.indexOf('function armDisconnect(e){'), UI.indexOf("peersTableEl.addEventListener('click'"));
+  check('armDisconnect does not require dataset.addr', !/if\(!b \|\| !b\.dataset\.addr\) return;/.test(arm));
+  check('it resolves the address from the row instead', /addrOfButton\(b\)/.test(arm));
+  check('an unresolvable button reports on screen rather than returning quietly',
+    /peerSay\('could not work out which peer/.test(arm));
+
+  const resolve = UI.slice(UI.indexOf('function addrOfButton(b){'), UI.indexOf('function armDisconnect(e){'));
+  check('addrOfButton prefers dataset when present', /b\.dataset\.addr/.test(resolve));
+  check('addrOfButton falls back to the address the row is displaying', /querySelector\('\.pa'\)/.test(resolve));
+  check('addrOfButton strips the [tor] prefix the row adds for display',
+    /replace\(\/\^\\\[tor\\\]/.test(resolve));
+  check('addrOfButton has aria-label as a last resort', /aria-label/.test(resolve));
+}
+
 console.log();
 if (failed) { console.log('FAILED: ' + failed); process.exit(1); }
 console.log('all peer row stability checks passed');

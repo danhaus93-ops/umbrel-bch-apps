@@ -814,17 +814,38 @@ peersTableEl.addEventListener('pointerdown',(e)=>{
   const b=e.target.closest('button.dc');
   if(!b) return;
   fetch('/api/peers/pointer?kind=pointerdown').catch(()=>{});
-  peerSay('touch on '+(b.dataset.addr||'?'), true);
+  // "touch on ?" told us dataset.addr was empty on a button that matched
+  // button.dc -- which the source says is impossible. So report what the
+  // element ACTUALLY is rather than trusting what it should be.
+  const attrs=(b.getAttributeNames?b.getAttributeNames():[]).join(',');
+  peerSay('touch: text="'+b.textContent+'" attrs=['+attrs+'] addr='+(b.dataset.addr||'(none)')+
+          ' resolved='+(addrOfButton(b)||'(none)'), true);
 },true);
 
 // click AND touchend: on iOS a click can fail to form even when the touch is
 // clean. dataset.busy stops the two firing twice.
+// The address the row is DISPLAYING is the source of truth. dataset.addr came
+// back empty on a real device for reasons the source does not explain, and
+// `if(!b.dataset.addr) return;` then bailed out silently -- the exact shape of
+// failure that cost this whole session. Never bail quietly again: if the
+// address cannot be resolved, say so on screen.
+function addrOfButton(b){
+  if(b.dataset && b.dataset.addr) return b.dataset.addr;
+  const row=b.parentElement;
+  const pa=row && row.querySelector && row.querySelector('.pa');
+  if(pa && pa.textContent) return pa.textContent.replace(/^\[tor\]\s*/,'').trim();
+  const al=b.getAttribute && b.getAttribute('aria-label');
+  if(al){ const m=al.match(/peer (.+)$/); if(m) return m[1]; }
+  return null;
+}
 function armDisconnect(e){
   const b=e.target.closest('button.dc');
-  if(!b || !b.dataset.addr) return;
+  if(!b) return;
   if(b.dataset.busy==='1') return;
+  const addr=addrOfButton(b);
+  if(!addr){ peerSay('could not work out which peer that button is for', false); return; }
   b.dataset.busy='1';
-  disconnectPeer(b.dataset.addr, b);
+  disconnectPeer(addr, b);
 }
 peersTableEl.addEventListener('click', armDisconnect);
 peersTableEl.addEventListener('touchend', armDisconnect);
