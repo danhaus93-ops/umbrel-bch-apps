@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.55"
+version: "1.4.56"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -76,22 +76,15 @@ widgets:
           text: "0"
           subtext: "found"
 releaseNotes: >-
-  Security fix for the Stratum V2 template bridge.
+  The SV2 card now shows what the pool is actually running, not just what you
+  saved.
 
-  Every Stratum V2 message begins with a small header stating how many bytes
-  follow. The bridge trusted that number and sized its next read from it, so a
-  single connection could claim megabytes and make the bridge hold them. Frame
-  lengths are now checked against what each message type can legitimately be,
-  before any of the payload is read.
+  These settings only take effect when the pool restarts, so the value you saved
+  and the value in use can differ — and there was no way to tell. The Extranonce2
+  box also showed a hint of 16 whatever it really was. It now shows your real
+  setting, and warns you plainly when a restart is needed to apply it.
 
-  The limits come from the protocol itself rather than a round number: a found
-  block's solution carries a full coinbase transaction and is allowed to be
-  large, so the check can never refuse real work.
-
-  The bridge also now accepts a bounded number of connections, and the block
-  notification reader has its own length check.
-
-  Thanks to Christhealien for the heads-up after the same class of bug hit
-  another Stratum V2 pool.
+  If a miner is being refused for asking too large an extranonce2, this is where it
+  will say so.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
