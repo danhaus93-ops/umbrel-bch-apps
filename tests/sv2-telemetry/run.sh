@@ -16,6 +16,7 @@ node test_globe_frame.js
 node test_peer_disconnect.js
 node test_tor_apply_label.js
 node test_peer_row_stability.js
+node test_sv2_saved_vs_active.js
 
 python3 test_frame_bounds.py
 python3 test_bridge_submit.py

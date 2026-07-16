@@ -224,7 +224,14 @@
       <label for="sv2SpmInput" style="font-family:var(--fm);font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Shares / min
         <input id="sv2SpmInput" inputmode="decimal" placeholder="6" title="Target shares per minute per miner. Vardiff tunes each miner's difficulty to hit this rate: lower = fewer, larger shares; higher = more, smaller shares. Applies after app restart." style="width:74px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:13px;padding:10px 8px"/></label>
       <label for="sv2XnInput" style="font-family:var(--fm);font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Extranonce2 bytes
-        <input id="sv2XnInput" inputmode="numeric" placeholder="16" title="Size of the miner's rollable extranonce2 search space, in bytes (4-32, default 16). Larger gives each miner more nonce room before it must ask for new work; smaller frees coinbase scriptSig space. Requires a pool restart." style="width:74px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:13px;padding:10px 8px"/></label>
+        <input id="sv2XnInput" inputmode="numeric" title="Size of the miner's rollable extranonce2 search space, in bytes (4-32, default 16). Larger gives each miner more nonce room before it must ask for new work; smaller frees coinbase scriptSig space." style="width:74px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:13px;padding:10px 8px"/></label>
+    <!-- The pool reads these ONCE, at container start, so what you saved and
+         what it enforces can differ indefinitely. That used to be said only in a
+         title= tooltip, which a phone cannot render -- a tester lost a day to a
+         pool quietly running a different value. Say it out loud. -->
+    <div id="sv2Pending" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;
+      font-family:var(--fm);font-size:11px;line-height:1.5;
+      background:rgba(224,147,78,.08);border:1px solid rgba(224,147,78,.3);color:var(--warn)"></div>
       <label for="sv2AddrInput" style="font-family:var(--fm);font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:3px;flex:1;min-width:220px">Payout address
         <input id="sv2AddrInput" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="BCH payout address to enable SV2" title="Every SV2 block you find pays here in full. Standard BCH addresses only (P2PKH/P2SH)." style="width:100%;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:13px;padding:10px 12px"/></label>
       <button class="copy" id="sv2Save" style="padding:10px 16px">Save</button>
@@ -410,7 +417,21 @@ function loadSv2(){
     const spmEl=document.getElementById('sv2SpmInput');
     if(spmEl&&document.activeElement!==spmEl){
       spmEl.value=d.savedSpm||6;
-      spmEl.title='target shares/min per miner (vardiff)'+(d.activeSpm&&d.activeSpm!==d.savedSpm?' \u00b7 active: '+d.activeSpm+' \u00b7 restart app to apply saved value':'');
+      spmEl.title='target shares/min per miner (vardiff)';
+      const xnEl=document.getElementById('sv2XnInput');
+      // A real value, not a placeholder hint. The hint always read 16 whatever
+      // the pool was really running, so the field could be written and never
+      // read back -- you could not see your own setting.
+      if(d.savedXn && document.activeElement!==xnEl) xnEl.value=d.savedXn;
+      const pend=[];
+      if(d.activeSpm && d.savedSpm && d.activeSpm!==d.savedSpm)
+        pend.push('Shares/min: saved '+d.savedSpm+', pool is running '+d.activeSpm+'.');
+      if(d.activeXn && d.savedXn && d.activeXn!==d.savedXn)
+        pend.push('Extranonce2: saved '+d.savedXn+', pool is running '+d.activeXn+
+                  '. Miners asking for more than '+d.activeXn+' will be refused.');
+      const pb=document.getElementById('sv2Pending');
+      if(pend.length){ pb.style.display='block'; pb.textContent=pend.join(' ')+' Restart the app to apply.'; }
+      else pb.style.display='none';
     }
     p.textContent=d.authorityPub||'\u2014 generated on first enable';
     renderSv2Status(d.enabled?{enabled:true}:{enabled:false});

@@ -277,11 +277,26 @@ function fmtHs(hs) {
 const SV2_D1 = 0xffffn << 208n;                    // difficulty-1 target
 const sv2State = {
   offset: 0, pendingId: '', pendingAge: 99, roundWork: 0, lastBlockCount: -1,
+  // The extranonce2 size the pool is REALLY running, read off the wire rather
+  // than from the file. The file is what you SAVED; the pool only reads it at
+  // container start, so the two can disagree indefinitely with nothing on
+  // screen to say so. That cost a tester a day: he saved 5, the pool kept
+  // enforcing 4, his translator asked for 5 and was refused -- correctly.
+  activeXn: 0,
   roundDiff: 0, allDiff: 0,          // difficulty-weighted share accounting
   channels: {},                                    // cid -> stats
   shares: [],                                      // [ts_ms, work, cid] rolling window
 };
 const SV2_RE_SHARE = /valid share \| downstream_id: (\d+), channel_id: (\d+), sequence_number: (\d+), share_hash: ([0-9a-fA-F]{64}), share_work: ([0-9.eE+-]+)/;
+// What the pool actually GRANTED a channel. Authoritative: this is the size the
+// miner is rolling right now. Preferred over the entrypoint banner because the
+// banner prints once at boot and rotates out of a busy log.
+// NB: [^)]* does NOT work here -- target: U256(...) closes a paren before
+// extranonce_size ever appears, so the class stops short. Caught by testing
+// against a real line from a tester's log rather than an imagined one.
+const SV2_RE_XN_GRANT = /OpenExtendedMiningChannelSuccess.*?extranonce_size: (\d+)/;
+// Fallback: the boot banner, for a pool that has not opened a channel yet.
+const SV2_RE_XN_BOOT  = /\[entrypoint\] extranonce2 bytes: (\d+)/;
 const SV2_RE_TS    = /^(\d{4}-\d{2}-\d{2}T[0-9:.]+Z)/;
 const SV2_RE_IDENT = /Open(?:Standard|Extended)MiningChannel\b[^\n]*?user_identity[^"\x27]*["\x27]?([^"\x27,\s)]+)/;
 const SV2_RE_OPENOK = /Open(?:Standard|Extended)MiningChannelSuccess[^\n]*?channel_id[=:\s]+(\d+)/;
@@ -326,6 +341,8 @@ function sv2Ingest() {
   sv2State.offset = st.size;
   const nowS = Math.floor(Date.now() / 1000);
   for (const line of chunk.split('\n')) {
+    const xg = SV2_RE_XN_GRANT.exec(line) || SV2_RE_XN_BOOT.exec(line);
+    if (xg) { const n = parseInt(xg[1], 10); if (n >= 1 && n <= 32) sv2State.activeXn = n; }
     if (/Open(?:Standard|Extended)MiningChannel\b/.test(line) && line.includes('user_identity')) {
       let ident = '';
       const plain = line.match(/user_identity[=:\s]+([^\s,"\x27)]+)/);
@@ -1274,8 +1291,12 @@ app.get('/api/sv2', (req, res) => {
   try { const v = parseFloat(fs.readFileSync(SV2_SPM_FILE, 'utf8')); if (v > 0) savedSpm = v; } catch (_) {}
   let activeSpm = 0;
   for (const c of Object.values(sv2Api.channels)) { if (c.spm > 0) { activeSpm = c.spm; break; } }
+  // Both, always. Reporting only the saved value is what let a tester spend a
+  // day fighting a pool that was enforcing something else.
+  sv2Ingest();
   const out = { ok: true, enabled: !!addr, address: addr, authorityPub: pub,
                 savedSpm, activeSpm,
+                savedXn: readSv2Xn(), activeXn: sv2State.activeXn || null,
                 endpoint: STRATUM_HOST + ':33333' };
   if (req.query && req.query.debug) {
     try {
