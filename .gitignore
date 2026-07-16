@@ -1,2 +1,5 @@
 .DS_Store__pycache__/
 *.pyc
+dashboard/geo/geo.bin
+dashboard/geo/centroids.json
+dashboard/geo/node_modules/

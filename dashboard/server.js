@@ -5,6 +5,13 @@ const fs = require('fs');
 const net = require('net');
 const path = require('path');
 
+// Country lookup for the peer globe. The table is baked into the image at
+// build time (dashboard/geo/build-geo.js); nothing here touches the network.
+// Sending the peer list to a hosted geo API would hand a passive observer the
+// node's whole topology on every refresh.
+const geo = require('./geo/geo.js');
+const GEO_OK = geo.load(path.join(__dirname, 'geo'));
+
 const app = express();
 app.use(express.json());
 const PORT = Number(process.env.PORT || 3000);
@@ -442,14 +449,25 @@ app.get('/api/status', async (_req, res) => {
       out.banned_count = Array.isArray(banned) ? banned.length : null;
       out.onion_known = (await onionKnown().catch(() => [])).length;
       out.onion_pin = onionPinOn();
-      out.peers_list = (peers || []).slice(0, 40).map(p => ({
-        addr: p.addr,
-        inbound: Boolean(p.inbound),
-        tor: /\.onion/.test(p.addr || ''),
-        ping: p.pingtime != null ? Math.round(p.pingtime * 1000) : null,
-        age: p.conntime ? Math.floor(Date.now() / 1000) - p.conntime : null,
-        sub: (p.subver || '').replace(/\//g, ''),
-      }));
+      out.geo_ready = GEO_OK;
+      out.peers_list = (peers || []).slice(0, 40).map(p => {
+        // Resolved HERE, on the node. The browser only ever receives a country
+        // code and a centroid — never an address it didn't already have.
+        // .onion returns nulls by design; an unresolved address returns nulls
+        // too, never (0, 0). A peer at Null Island means a lookup failed quietly.
+        const g = geo.lookup(p.addr);
+        return {
+          addr: p.addr,
+          inbound: Boolean(p.inbound),
+          tor: /\.onion/.test(p.addr || ''),
+          ping: p.pingtime != null ? Math.round(p.pingtime * 1000) : null,
+          age: p.conntime ? Math.floor(Date.now() / 1000) - p.conntime : null,
+          sub: (p.subver || '').replace(/\//g, ''),
+          country: g.country,
+          lat: g.lat,
+          lon: g.lon,
+        };
+      });
       out.recent_blocks = await recentBlocks(chain.blocks, 8);
     } catch { /* non-fatal extras */ }
   } catch (err) {
@@ -472,6 +490,34 @@ app.get('/api/status', async (_req, res) => {
 
   res.set('Cache-Control', 'no-store');
   res.json(out);
+});
+
+// Drop one peer. This is `disconnectnode`, not `setban`: a one-shot
+// disconnect that bitcoind is free to undo by dialling the address again. The
+// UI says so, because a control that quietly did more than it claimed is the
+// same failure class as a toggle that silently isolates the node.
+app.post('/api/peers/disconnect', async (req, res) => {
+  const addr = String((req.body && req.body.addr) || '').trim();
+  if (!addr || addr.length > 128) {
+    return res.status(400).json({ ok: false, error: 'addr required' });
+  }
+  // Only disconnect something we are actually connected to. Passing an
+  // arbitrary caller-supplied string through to the node is not something a
+  // dashboard should do, and it makes the error honest when the peer has
+  // already gone away on its own.
+  try {
+    const peers = await rpc('getpeerinfo');
+    const hit = (peers || []).find(p => p.addr === addr);
+    if (!hit) {
+      return res.status(404).json({ ok: false, error: 'not connected to that peer' });
+    }
+    // Prefer the node id: addresses are not unique (two peers can share an
+    // inbound source), and the id is exactly the connection we looked up.
+    await rpc('disconnectnode', ['', hit.id]);
+    return res.json({ ok: true, addr });
+  } catch (err) {
+    return res.status(502).json({ ok: false, error: String(err.message || err) });
+  }
 });
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));

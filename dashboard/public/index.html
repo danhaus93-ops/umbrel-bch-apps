@@ -181,6 +181,198 @@
   .toropt{display:flex;align-items:center;gap:7px;border:1px solid var(--line2);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:12px;color:var(--text);cursor:pointer}
   .toropt input{accent-color:#34D399}
   html,body{max-width:100%;overflow-x:hidden}
+  /* ================= one card ================= */
+  .gcard{
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--line);border-radius:20px;overflow:hidden;
+  }
+
+  
+
+  .run-dot{width:8px;height:8px;border-radius:50%;background:var(--green);
+    box-shadow:0 0 10px 1px rgba(10,193,142,.8);flex:none;animation:beat 2.4s ease-in-out infinite}
+  @keyframes beat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
+  .run-txt{font-size:14.5px;font-weight:500}
+  .run-txt b{color:var(--green);font-weight:600}
+  .run-txt span{color:var(--muted);font-weight:400}
+
+  /* ---- globe hero: bleeds past the card, cropped ---- */
+  .hero{position:relative;height:284px;overflow:hidden;background:#060F0C}
+  /* Sized off the hero HEIGHT, not its width: the disc is min(W,H)*0.46, so
+     a %-of-width field made the globe swell on a wide card and shrink on a
+     phone. Height-relative keeps it identical everywhere. 112% => the globe
+     just kisses the top and bottom of the frame. */
+  .hero .field{
+    position:absolute;left:50%;top:47%;height:112%;aspect-ratio:1/1;
+    transform:translate(-50%,-50%);
+  }
+  .hero canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .hero .scrim{
+    position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(to top, rgba(6,15,12,.85) 0%, rgba(6,15,12,.25) 18%, transparent 40%);
+  }
+
+
+  .syncwrap{
+    position:absolute;inset:0;display:grid;place-content:center;z-index:3;
+    pointer-events:none;transition:opacity .8s ease, transform .8s ease;
+    background:radial-gradient(circle at 50% 50%, rgba(6,15,12,.78) 34%, rgba(6,15,12,0) 68%);
+  }
+  .syncwrap.done{opacity:0;transform:scale(1.14)}
+  .syncwrap svg{transform:rotate(-90deg);display:block}
+  .syncwrap .track{stroke:rgba(255,255,255,.10)}
+  .syncwrap .arc{stroke:var(--green);transition:stroke-dashoffset .6s cubic-bezier(.22,1,.36,1)}
+  .syncwrap .mid{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:3px}
+  .syncwrap .pct{font-family:var(--mono);font-weight:700;font-size:31px;line-height:1}
+  .syncwrap .pct small{font-size:14px;color:var(--muted);font-weight:500}
+  .syncwrap .lab{font-family:var(--mono);font-size:9.5px;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted)}
+
+  .tip{
+    position:absolute;pointer-events:none;opacity:0;transform:translate(-50%,-145%);
+    background:rgba(4,11,9,.95);border:1px solid var(--line);border-radius:9px;
+    padding:6px 9px;white-space:nowrap;transition:opacity .12s;z-index:4;
+  }
+  .tip.on{opacity:1}
+  .tip b{font-family:var(--mono);font-size:11px;font-weight:500;display:block}
+  .tip span{font-family:var(--mono);font-size:9.5px;color:var(--muted)}
+
+  /* ---- connections, same card ---- */
+  .conn2{padding:16px 18px 6px;border-top:1px solid var(--line)}
+  .conn2 h3{margin:0 0 4px;font-size:19px;font-weight:600;letter-spacing:-.2px}
+  .conn2 .cgrid{display:flex;align-items:center;gap:10px}
+  .legend{flex:1;display:flex;flex-direction:column;gap:14px;padding-left:2px}
+  .legend .row{display:flex;align-items:center;gap:12px}
+  .legend .sw{width:11px;height:11px;border-radius:50%;flex:none}
+  .legend .nm{font-size:15.5px;color:var(--text);flex:1}
+  .legend .ct{font-family:var(--mono);font-size:15px;color:var(--muted)}
+
+  .donut{position:relative;width:168px;height:168px;flex:none}
+  .donut svg{transform:rotate(-90deg);display:block}
+  .donut .track{stroke:rgba(255,255,255,.045)}
+  .donut .seg{transition:stroke-dasharray 1s cubic-bezier(.22,1,.36,1)}
+  .donut .center{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+  .donut .n{font-family:var(--mono);font-weight:600;font-size:27px;line-height:1.05}
+  .donut .n-lab{font-size:12.5px;color:var(--muted)}
+
+  .truth{
+    margin:14px 2px 0;font-size:12.5px;line-height:1.5;color:var(--muted);
+  }
+  .peers{margin:14px -18px 0;border-top:1px solid var(--line)}
+  .peers .ph{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 18px 8px;font-family:var(--mono);font-size:10px;
+    letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);
+  }
+  .peers .list{max-height:236px;overflow-y:auto;padding:0 10px 6px}
+  .prow{
+    display:flex;align-items:center;gap:10px;padding:8px;border-radius:9px;
+    transition:background .15s;
+  }
+  .prow:hover{background:rgba(255,255,255,.03)}
+  .prow .net{width:7px;height:7px;border-radius:50%;flex:none;background:var(--green)}
+  .prow.tor .net{background:var(--brass)}
+  .prow.unplaced .net{background:var(--muted)}
+  .prow .who{flex:1;min-width:0}
+  .prow .a{font-family:var(--mono);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prow .m{font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:1px}
+  .prow .ms{font-family:var(--mono);font-size:11.5px;color:var(--muted);flex:none;width:52px;text-align:right}
+  .prow.tor .ms{color:var(--brass)}
+  .dc{
+    flex:none;font-family:var(--mono);font-size:9.5px;letter-spacing:.6px;
+    padding:4px 9px;border-radius:999px;cursor:pointer;
+    background:transparent;border:1px solid var(--line);color:var(--muted);
+    transition:all .15s;
+  }
+  .dc:hover{border-color:rgba(224,147,78,.5);color:var(--warn);background:rgba(224,147,78,.07)}
+  .dc:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+  .dc:disabled{opacity:.4;cursor:default}
+  .pnote{padding:2px 18px 12px;font-size:11.5px;color:#6d8478;line-height:1.5}
+  .truth b{color:var(--text);font-weight:600}
+  .attrib{
+    margin:0;padding:12px 18px 13px;
+    font-family:var(--mono);font-size:9.5px;color:#54685e;line-height:1.6;
+  }
+  .attrib a{color:#6d8478;text-decoration:none;border-bottom:1px dotted #3b4d44}
+
+  /* ================= blocks rail ================= */
+  .rail-head{display:flex;align-items:baseline;justify-content:space-between;margin:30px 2px 12px}
+  .rail{
+    display:flex;gap:14px;overflow-x:auto;padding:2px 2px 14px;
+    scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .rail::-webkit-scrollbar{display:none}
+  .blk{
+    flex:none;width:172px;height:172px;scroll-snap-align:start;position:relative;
+    border-radius:12px;padding:9px;
+    background:linear-gradient(150deg,#3d5a4d 0%,#243b31 34%,#16261E 68%,#2e4a3d 100%);
+    box-shadow:0 12px 26px -14px rgba(0,0,0,.9);
+  }
+  .blk .face{
+    position:relative;width:100%;height:100%;border-radius:5px;overflow:hidden;
+    background:#0b1f18;
+    box-shadow:inset 0 1px 0 rgba(0,0,0,.65), inset 0 0 0 1px rgba(0,0,0,.45);
+  }
+  .blk .face canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .blk .lab{position:absolute;left:11px;bottom:9px;right:10px}
+  .blk .lab .h{font-size:22px;font-weight:600;letter-spacing:-.5px;line-height:1.1}
+  .blk .lab .s{font-size:12px;color:#9fb3a8;margin-top:1px}
+  .blk .pool{
+    position:absolute;top:18px;left:19px;right:18px;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.6px;
+    color:#9fb3a8;background:rgba(4,11,9,.62);border:1px solid rgba(255,255,255,.09);
+    border-radius:999px;padding:3px 8px;width:max-content;max-width:calc(100% - 38px);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;backdrop-filter:blur(2px);
+  }
+  .blk .pool.none{color:#6d8478;font-style:italic}
+  .blk.ours .pool{color:var(--brass);border-color:rgba(201,162,39,.45);background:rgba(14,10,2,.7)}
+  .blk.ours{background:linear-gradient(150deg,#6b5b28 0%,#3e3416 34%,#241d09 68%,#544river 100%)}
+  .blk.ours{background:linear-gradient(150deg,#6b5b28 0%,#3e3416 34%,#241d09 68%,#54471d 100%)}
+  .blk.ours .face{background:#1b1508}
+  .blk.ours .lab .s{color:#b9a877}
+
+  .foot{
+    margin-top:22px;font-family:var(--mono);font-size:10px;color:#54685e;line-height:1.8;
+  }
+
+  /* ---- peers card ---- */
+  .pcard{margin-top:26px;padding:16px 18px 6px}
+  .pcard h3{margin:0 0 3px;font-size:19px;font-weight:600;letter-spacing:-.2px}
+  .psum{margin:0 0 12px;font-size:13px;color:var(--muted)}
+  .onion{margin-bottom:8px}
+  .onion summary{cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--muted);outline:none}
+  .onion summary:focus-visible{outline:2px solid var(--green);outline-offset:3px;border-radius:4px}
+  .ohint{margin:8px 0 10px;font-size:12px;color:#6d8478;line-height:1.5}
+  #peersTable{font-family:var(--mono);font-size:11.5px}
+  .prow{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:center}
+  .prow .io{min-width:28px;color:var(--muted)}
+  .prow.in .io{color:#34D399}
+  .prow .a{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prow.tor .a{color:#C9A227}
+  .prow .ms{color:var(--muted);min-width:46px;text-align:right}
+  .prow .ag{color:var(--muted);min-width:34px;text-align:right}
+  .dc{
+    flex:none;font-family:var(--mono);font-size:9.5px;letter-spacing:.4px;
+    padding:3px 8px;border-radius:999px;cursor:pointer;background:transparent;
+    border:1px solid var(--line);color:#6d8478;transition:all .15s;
+  }
+  .dc:hover{border-color:rgba(224,147,78,.55);color:var(--warn);background:rgba(224,147,78,.07)}
+  .dc:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+  .dc:disabled{opacity:.35;cursor:default}
+  .pnote{margin:12px 0 10px;font-size:11.5px;color:#54685e;line-height:1.5}
+
+
+  .gcard{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);
+    border-radius:20px;overflow:hidden;margin-top:4px}
+  .gcard .ticks{display:flex;gap:26px;margin:16px 2px 4px;padding-top:14px;border-top:1px solid var(--line)}
+  .gcard .tick b{display:block;font-family:var(--mono);font-size:19px;font-weight:600}
+  .gcard .tick span{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+  .dc{flex:none;font-family:var(--mono);font-size:9.5px;letter-spacing:.4px;padding:3px 8px;border-radius:999px;
+    cursor:pointer;background:transparent;border:1px solid var(--line);color:#6d8478;transition:all .15s;margin-left:4px}
+  .dc:hover{border-color:rgba(224,147,78,.55);color:var(--warn);background:rgba(224,147,78,.07)}
+  .dc:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+  .dc:disabled{opacity:.35;cursor:default}
+  .geo-off{margin:10px 2px 0;font-size:12px;color:var(--warn)}
 </style>
 </head>
 <body>
@@ -214,29 +406,52 @@
     </div>
   </header>
 
-  <div class="hero">
-    <div class="beacon starting" id="beacon">
-      <svg width="200" height="200" viewBox="0 0 200 200">
-        <circle class="track" cx="100" cy="100" r="86" fill="none" stroke-width="10"/>
-        <circle class="arc" id="arc" cx="100" cy="100" r="86" fill="none" stroke-width="10"
-                stroke-linecap="round" stroke-dasharray="540.35" stroke-dashoffset="540.35"/>
-      </svg>
-      <div class="center">
-        <div class="pct" id="pct">—<small>%</small></div>
-        <div class="blab" id="blab">validated</div>
+  <!-- Peer globe + Connections. Replaces the beacon card. The sync ring now
+       rides on the globe and removes itself once the node is validated. -->
+  <div class="gcard">
+    <div class="hero" id="hero">
+      <div class="field" id="field">
+        <canvas id="gl"></canvas>
+        <canvas id="ov"></canvas>
       </div>
-      <div class="core"></div>
+      <div class="scrim"></div>
+      <div class="syncwrap" id="syncwrap">
+        <svg viewBox="0 0 168 168" width="168" height="168" aria-hidden="true">
+          <circle class="track" cx="84" cy="84" r="66" fill="none" stroke-width="7"/>
+          <circle class="arc" id="syncArc" cx="84" cy="84" r="66" fill="none" stroke-width="7"
+                  stroke-linecap="round" stroke-dasharray="414.7" stroke-dashoffset="414.7"/>
+        </svg>
+        <div class="mid"><div class="pct" id="syncPct">&mdash;<small>%</small></div><div class="lab">Validated</div></div>
+      </div>
+      <div class="tip" id="tip"><b id="tipAddr"></b><span id="tipMeta"></span></div>
     </div>
-    <div>
-      <h2 class="headline" id="headline">Starting your node…</h2>
-      <p class="blurb" id="blurb">Bringing up Bitcoin Cash Node. The first launch takes a moment while the daemon opens its database.</p>
+    <div class="conn2">
+      <h3>Connections</h3>
+      <div class="cgrid">
+        <div class="legend" id="legend"></div>
+        <div class="donut">
+          <svg viewBox="0 0 168 168" width="168" height="168" aria-hidden="true">
+            <circle class="track" cx="84" cy="84" r="64" fill="none" stroke-width="15"/>
+            <circle class="seg" id="segClear" cx="84" cy="84" r="64" fill="none" stroke="#0AC18E" stroke-width="15" stroke-dasharray="0 999"/>
+            <circle class="seg" id="segTor" cx="84" cy="84" r="64" fill="none" stroke="#C9A227" stroke-width="15" stroke-dasharray="0 999"/>
+          </svg>
+          <div class="center"><div class="n" id="peerTotal">&mdash;</div><div class="n-lab">Peers</div></div>
+        </div>
+      </div>
+      <p class="truth" id="truth"></p>
+      <p class="geo-off" id="geoOff" style="display:none">Country table unavailable, so peers can't be placed. The globe still spins and the counts are real.</p>
       <div class="ticks">
-        <div class="tick"><b id="tHeight">—</b><span>block height</span></div>
-        <div class="tick"><b id="tPeers">—</b><span>peers</span></div>
-        <div class="tick"><b id="tDisk">—</b><span>on disk</span></div>
+        <div class="tick"><b id="tHeight">&mdash;</b><span>block height</span></div>
+        <div class="tick"><b id="tPeers">&mdash;</b><span>peers</span></div>
+        <div class="tick"><b id="tDisk">&mdash;</b><span>on disk</span></div>
       </div>
     </div>
+    <p class="attrib">IP-to-country data by <a href="https://db-ip.com" target="_blank" rel="noopener">DB-IP</a>
+      &mdash; CC BY 4.0. Resolved on your node; no peer address leaves this machine.</p>
   </div>
+
+  <div class="section-label">Latest blocks</div>
+  <div class="rail" id="rail"></div>
 
   <div id="warnBanner" style="display:none;margin:18px 2px 0;border:1px solid rgba(224,147,78,.4);background:rgba(224,147,78,.07);color:var(--warn);border-radius:12px;padding:12px 14px;font-family:var(--mono);font-size:12.5px"></div>
 
@@ -407,7 +622,56 @@ function copyText(txt){
 }
 
 const C = 2 * Math.PI * 86;
-const $ = (id) => document.getElementById(id);
+const _gone = { textContent:'', innerHTML:'', className:'', style:{}, hidden:false,
+  setAttribute(){}, appendChild(){}, classList:{add(){},remove(){}}, children:[] };
+// headline / blurb / blab / beacon left with the hero card. An inert stub keeps
+// the existing render path writing harmlessly instead of throwing on null.
+const $ = (id) => document.getElementById(id) || _gone;
+
+// ---- peer rows -------------------------------------------------------------
+// Onion first, lowest ping at the top. BCH knows ~23 .onion addresses out of
+// 33,048, so the scarce ones go where they can be seen rather than under a
+// dozen clearnet rows. Ping ascending inside each group; a peer with no ping
+// yet sorts last, not as 0.
+function peerRowOrder(a, b){
+  const ta=a.tor?0:1, tb=b.tor?0:1;
+  if(ta!==tb) return ta-tb;
+  const pa=a.ping==null?Infinity:a.ping, pb=b.ping==null?Infinity:b.ping;
+  return pa-pb;
+}
+async function disconnectPeer(addr, btn){
+  btn.disabled=true; btn.textContent='dropping';
+  try{
+    const r=await fetch('/api/peers/disconnect',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({addr})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok){ btn.disabled=false; btn.textContent='Disconnect';
+      btn.title=j.error||('HTTP '+r.status); return; }
+    tick();
+  }catch(e){ btn.disabled=false; btn.textContent='Disconnect'; btn.title=String(e.message||e); }
+}
+function renderPeerRows(list){
+  const t=document.getElementById('peersTable');
+  t.textContent='';
+  for(const p of (list||[]).slice().sort(peerRowOrder)){
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:center';
+    row.innerHTML=
+      '<span style="color:'+(p.inbound?'#34D399':'var(--muted)')+';min-width:28px">'+(p.inbound?'IN':'OUT')+'</span>'+
+      '<span class="pa" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'+
+        (p.tor?';color:#C9A227':'')+'"></span>'+
+      '<span style="color:var(--muted)">'+(p.ping!=null?p.ping+'ms':'')+'</span>'+
+      '<span style="color:var(--muted);min-width:46px;text-align:right">'+(p.age!=null?fmtAge(p.age):'')+'</span>';
+    // addr is off the wire — textContent, never innerHTML.
+    row.querySelector('.pa').textContent=(p.tor?'[tor] ':'')+p.addr;
+    const btn=document.createElement('button');
+    btn.className='dc'; btn.textContent='Disconnect';
+    btn.setAttribute('aria-label','Disconnect peer '+p.addr);
+    btn.addEventListener('click',()=>disconnectPeer(p.addr,btn));
+    row.appendChild(btn);
+    t.appendChild(row);
+  }
+}
 
 function fmtInt(n){ return (n==null||Number.isNaN(n)) ? '—' : Number(n).toLocaleString('en-US'); }
 function fmtBytes(b){
@@ -424,12 +688,10 @@ function fmtDiff(d){
   return Math.round(d).toLocaleString('en-US');
 }
 function setBeacon(progress, mode){
-  const arc = $('arc');
-  const p = Math.max(0, Math.min(1, progress||0));
-  arc.style.strokeDashoffset = (C*(1-p)).toFixed(2);
-  $('beacon').className = 'beacon ' + mode;
-  $('pct').innerHTML = (p*100).toFixed(p>=0.9999?0:1)+'<small>%</small>';
+  // The beacon card is gone; the ring rides the globe and leaves at 100%.
+  setSync(progress || 0, mode !== 'synced');
 }
+
 
 function applyMode(mode, chain, fulOk){
   const pruned = mode === 'pruned';
@@ -526,15 +788,12 @@ async function tick(){
     }
     var op=document.getElementById('onionPin');
     if(op&&typeof d.onion_pin==='boolean'&&!window.__onionTouched)op.checked=d.onion_pin;
-    document.getElementById('peersTable').innerHTML=d.peers_list.map(p=>
-      '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:center">'+
-      '<span style="color:'+(p.inbound?'#34D399':'var(--muted)')+';min-width:28px">'+(p.inbound?'IN':'OUT')+'</span>'+
-      '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(p.tor?'[tor] ':'')+p.addr+'</span>'+
-      '<span style="color:var(--muted)">'+(p.ping!=null?p.ping+'ms':'')+'</span>'+
-      '<span style="color:var(--muted);min-width:46px;text-align:right">'+(p.age!=null?fmtAge(p.age):'')+'</span></div>'
-    ).join('');
+    renderPeerRows(d.peers_list);
+    syncPeers(d.peers_list);
+    if(d.geo_ready===false){var go=document.getElementById('geoOff'); if(go)go.style.display='block';}
   }
   if(d.recent_blocks){
+    renderBlocks(d.recent_blocks);
     document.getElementById('blocksTable').innerHTML=d.recent_blocks.map(b=>
       '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:center">'+
       '<span style="color:var(--green);min-width:64px">'+b.height.toLocaleString()+'</span>'+
@@ -734,5 +993,6 @@ setInterval(tick, 5000);
   });
 })();
 </script>
+<script src="globe.js"></script>
 </body>
 </html>

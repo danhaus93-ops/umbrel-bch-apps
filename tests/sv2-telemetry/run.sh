@@ -3,6 +3,16 @@ set -euo pipefail
 cd "$(dirname "$0")"
 python3 gen_logs.py fixtures
 node run_tests.js
+# The geo table is baked into the dashboard image at docker build. Build it
+# here too, so test_geo_lookup checks the real DB-IP data rather than a fixture.
+# CI-only: the Umbrel host has no node (see HANDOFF 2.4).
+if [ ! -f ../../dashboard/geo/geo.bin ]; then
+  (cd ../../dashboard/geo \
+    && npm install --no-audit --no-fund --silent world-atlas@2 topojson-client i18n-iso-countries \
+    && node build-geo.js geo.bin)
+fi
+node test_geo_lookup.js
+
 python3 test_frame_bounds.py
 python3 test_bridge_submit.py
 python3 test_pool_signature.py
