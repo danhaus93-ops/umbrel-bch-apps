@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.1.23"
+version: "29.1.24"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
@@ -19,21 +19,9 @@ description: >-
 
   Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
 releaseNotes: >-
-  Disconnect now actually keeps a peer away. The previous attempt did not work,
-  and this explains why.
-
-  Your node keeps a target number of outbound connections and refills a free slot
-  within about half a second, choosing from peers it already knows — and one it
-  just dropped is a prime candidate. So disconnecting a peer could never hold on
-  its own.
-
-  Disconnect now also blocks the peer, which is the only thing that stops your node
-  dialling it again, and it withdraws the standing request to keep onion peers
-  connected. Both are needed: each one alone leaves a path open.
-
-  Because this genuinely blocks a peer rather than nudging it, there is now a
-  Blocked list under Peers with an Allow button for each one. Nothing is blocked
-  without you tapping Disconnect, and nothing stays blocked once you allow it.
+  Fixes the Tor Apply button, which said "Copied" after you tapped it instead of
+  "Applying". It was applying the change correctly — only the label was wrong — but
+  a button that reports the wrong action is a button you can't trust.
 developer: LoneStrike Labs
 website: https://bitcoincashnode.org
 dependencies: []

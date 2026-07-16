@@ -102,13 +102,13 @@
     border:1px solid var(--line);border-radius:8px;padding:9px 11px;color:var(--text);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
-  .copy{
+  .copy, .btn-inline{
     flex:none;font-family:var(--mono);font-size:11px;letter-spacing:.5px;cursor:pointer;
     background:rgba(10,193,142,.1);color:var(--green);border:1px solid rgba(10,193,142,.35);
     border-radius:8px;padding:9px 12px;transition:background .15s;
   }
-  .copy:hover{background:rgba(10,193,142,.2)}
-  .copy:active{transform:translateY(1px)}
+  .copy:hover, .btn-inline:hover{background:rgba(10,193,142,.2)}
+  .copy:active, .btn-inline:active{transform:translateY(1px)}
   .copy.done{color:#06120d;background:var(--green);border-color:var(--green)}
   .note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.45}
   .disabled-card{opacity:.92}
@@ -566,7 +566,7 @@
         <label class="toropt"><input type="radio" name="torMode" value="onion"/> Onion add-on</label>
         <label class="toropt"><input type="radio" name="torMode" value="full"/> All traffic via Tor</label>
       </div>
-      <button class="copy" id="torApply" style="padding:10px 16px">Apply</button>
+      <button class="btn-inline" id="torApply" style="padding:10px 16px">Apply</button>
       <div class="note" id="torNote" style="margin-top:9px">Applying restarts the node (about 30&ndash;60s); the dashboard reconnects on its own.</div>
     </div>
   </div>
@@ -637,10 +637,14 @@ function copyText(txt){
 
 const C = 2 * Math.PI * 86;
 const _gone = { textContent:'', innerHTML:'', className:'', style:{}, hidden:false,
-  setAttribute(){}, appendChild(){}, classList:{add(){},remove(){}}, children:[] };
-// headline / blurb / blab / beacon left with the hero card. An inert stub keeps
-// the existing render path writing harmlessly instead of throwing on null.
-const $ = (id) => document.getElementById(id) || _gone;
+  setAttribute(){}, appendChild(){}, classList:{add(){},remove(){},toggle(){}}, children:[] };
+// headline / blurb / blab left with the hero card; the render path still writes
+// to them, harmlessly. NAMED, not a blanket fallback: `|| _gone` for ANY id
+// turned a real TypeError into silence, which is how Apply came to say
+// "Copied" -- getElementById(undefined) returned the stub instead of throwing.
+// A missing id that ISN'T one of these is a bug and should still be loud.
+const _GONE_IDS = new Set(['headline','blurb','blab']);
+const $ = (id) => document.getElementById(id) || (_GONE_IDS.has(id) ? _gone : null);
 
 // ---- peer rows -------------------------------------------------------------
 // Onion first, lowest ping at the top. BCH knows ~23 .onion addresses out of
@@ -937,10 +941,15 @@ async function tick(){
 }
 
 document.addEventListener('click',(e)=>{
-  const copyBtn = e.target.closest('.copy');
+  // `.copy` is a LOOK, and this used to treat it as a behaviour: #torApply wears
+  // it for styling, so Apply matched here, bubbled in after its own handler had
+  // set "Applying...", and relabelled the button "Copied". Match on the thing
+  // that actually declares an intent to copy, and confirm the source exists.
+  const copyBtn = e.target.closest('.copy[data-copy]');
   if(copyBtn){
-    const txt = $(copyBtn.dataset.copy).textContent;
-    copyText(txt).then(()=>{
+    const src = document.getElementById(copyBtn.dataset.copy);
+    if(!src) return;
+    copyText(src.textContent).then(()=>{
       const old = copyBtn.textContent; copyBtn.textContent='Copied'; copyBtn.classList.add('done');
       setTimeout(()=>{ copyBtn.textContent=old; copyBtn.classList.remove('done'); },1400);
     });
