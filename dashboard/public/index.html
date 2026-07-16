@@ -652,10 +652,12 @@ const $ = (id) => document.getElementById(id) || (_GONE_IDS.has(id) ? _gone : nu
 // dozen clearnet rows. Ping ascending inside each group; a peer with no ping
 // yet sorts last, not as 0.
 function peerRowOrder(a, b){
+  // Onion first, then by ADDRESS -- deliberately not by ping. Ping changes on
+  // every 5s poll, so sorting by it made rows jump under your finger. A list
+  // that reorders while you are aiming at it is not a list you can use.
   const ta=a.tor?0:1, tb=b.tor?0:1;
   if(ta!==tb) return ta-tb;
-  const pa=a.ping==null?Infinity:a.ping, pb=b.ping==null?Infinity:b.ping;
-  return pa-pb;
+  return String(a.addr).localeCompare(String(b.addr));
 }
 async function disconnectPeer(addr, btn){
   btn.disabled=true; btn.textContent='dropping';
@@ -665,9 +667,11 @@ async function disconnectPeer(addr, btn){
     const j=await r.json().catch(()=>({}));
     if(!r.ok){ btn.disabled=false; btn.textContent='Disconnect';
       btn.title=j.error||('HTTP '+r.status); return; }
+    if(j.note){ btn.textContent='!'; btn.title=j.note; }
     tick();
   }catch(e){ btn.disabled=false; btn.textContent='Disconnect'; btn.title=String(e.message||e); }
 }
+
 function renderBlocked(list){
   const box=document.getElementById('blockedBox');
   if(!box) return;
@@ -697,30 +701,68 @@ function renderBlocked(list){
     t.appendChild(row);
   }
 }
+// Reconcile rather than rebuild.
+//
+// This used to do t.textContent='' and recreate every row from scratch on every
+// 5s poll. On a phone a tap is touchstart -> delay -> touchend -> click; if the
+// button leaves the DOM in that window the click NEVER FIRES. So the request
+// never left the browser, /diag showed lastDisconnect: null, and every fix
+// shipped for this bug was to code that could not run.
+//
+// Rows are keyed by address and updated in place, so the button under your
+// finger survives the poll. The listener is delegated to the container below,
+// for the same reason: a per-row listener dies with its row.
+const peerRows = new Map();
 function renderPeerRows(list){
   const t=document.getElementById('peersTable');
-  t.textContent='';
-  for(const p of (list||[]).slice().sort(peerRowOrder)){
-    const row=document.createElement('div');
-    row.style.cssText='display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:center';
-    row.innerHTML=
-      '<span style="color:'+(p.inbound?'#34D399':'var(--muted)')+';min-width:28px">'+(p.inbound?'IN':'OUT')+'</span>'+
-      '<span class="pa" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'+
-        (p.tor?';color:#C9A227':'')+'"></span>'+
-      '<span style="color:var(--muted)">'+(p.ping!=null?p.ping+'ms':'')+'</span>'+
-      '<span style="color:var(--muted);min-width:46px;text-align:right">'+(p.age!=null?fmtAge(p.age):'')+'</span>';
-    // addr is off the wire — textContent, never innerHTML.
-    row.querySelector('.pa').textContent=(p.tor?'[tor] ':'')+p.addr;
-    const btn=document.createElement('button');
-    btn.className='dc'; btn.textContent='Disconnect';
-    // says what it does: this blocks the peer until you allow it back
-    btn.title='Disconnect and block this peer. Your node will not reconnect to it until you allow it again.';
-    btn.setAttribute('aria-label','Disconnect and block peer '+p.addr);
-    btn.addEventListener('click',()=>disconnectPeer(p.addr,btn));
-    row.appendChild(btn);
-    t.appendChild(row);
+  const want=(list||[]).slice().sort(peerRowOrder);
+  const seen=new Set();
+  for(const p of want){
+    seen.add(p.addr);
+    let row=peerRows.get(p.addr);
+    if(!row){
+      row=document.createElement('div');
+      row.style.cssText='display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:center';
+      row.innerHTML=
+        '<span class="dir" style="min-width:28px"></span>'+
+        '<span class="pa" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>'+
+        '<span class="pg" style="color:var(--muted)"></span>'+
+        '<span class="ag" style="color:var(--muted);min-width:46px;text-align:right"></span>';
+      const btn=document.createElement('button');
+      btn.className='dc'; btn.textContent='Disconnect';
+      btn.dataset.addr=p.addr;
+      btn.title='Disconnect and block this peer. Your node will not reconnect to it until you allow it again.';
+      btn.setAttribute('aria-label','Disconnect and block peer '+p.addr);
+      row.appendChild(btn);
+      peerRows.set(p.addr,row);
+      t.appendChild(row);
+    }
+    const dir=row.querySelector('.dir');
+    dir.textContent=p.inbound?'IN':'OUT';
+    dir.style.color=p.inbound?'#34D399':'var(--muted)';
+    const pa=row.querySelector('.pa');
+    pa.textContent=(p.tor?'[tor] ':'')+p.addr;   // off the wire: textContent only
+    pa.style.color=p.tor?'#C9A227':'';
+    row.querySelector('.pg').textContent=(p.ping!=null?p.ping+'ms':'');
+    row.querySelector('.ag').textContent=(p.age!=null?fmtAge(p.age):'');
+  }
+  for(const [addr,row] of [...peerRows]){
+    if(!seen.has(addr)){ row.remove(); peerRows.delete(addr); }
+  }
+  let i=0;
+  for(const p of want){
+    const row=peerRows.get(p.addr);
+    if(t.children[i]!==row) t.insertBefore(row, t.children[i]||null);
+    i++;
   }
 }
+
+// ONE listener, on the container, alive for the life of the page.
+document.getElementById('peersTable').addEventListener('click',(e)=>{
+  const b=e.target.closest('button.dc');
+  if(!b || !b.dataset.addr) return;
+  disconnectPeer(b.dataset.addr, b);
+});
 
 function fmtInt(n){ return (n==null||Number.isNaN(n)) ? '—' : Number(n).toLocaleString('en-US'); }
 function fmtBytes(b){
