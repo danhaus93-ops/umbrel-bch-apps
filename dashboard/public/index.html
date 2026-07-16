@@ -197,7 +197,13 @@
   .run-txt span{color:var(--muted);font-weight:400}
 
   /* ---- globe hero: bleeds past the card, cropped ---- */
-  .hero{position:relative;height:284px;overflow:hidden;background:#060F0C}
+  /* Inset so the globe floats inside the card. This is also what removes the
+     two stubs at the bottom corners: they were this dark backplate meeting the
+     card edge, visible only where the scrim gradient didn't reach. */
+  .hero{
+    position:relative;height:270px;overflow:hidden;background:#060F0C;
+    margin:14px;border-radius:14px;border:1px solid var(--line);
+  }
   /* Sized off the hero HEIGHT, not its width: the disc is min(W,H)*0.46, so
      a %-of-width field made the globe swell on a wide card and shrink on a
      phone. Height-relative keeps it identical everywhere. 112% => the globe
@@ -209,7 +215,8 @@
   .hero canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
   .hero .scrim{
     position:absolute;inset:0;pointer-events:none;
-    background:linear-gradient(to top, rgba(6,15,12,.85) 0%, rgba(6,15,12,.25) 18%, transparent 40%);
+    background:linear-gradient(to top, rgba(6,15,12,.55) 0%, transparent 26%);
+    border-radius:14px;   /* must follow the inset radius or it paints the corners */
   }
 
 
@@ -237,7 +244,9 @@
   .tip span{font-family:var(--mono);font-size:9.5px;color:var(--muted)}
 
   /* ---- connections, same card ---- */
-  .conn2{padding:16px 18px 6px;border-top:1px solid var(--line)}
+  /* No rule here: the inset panel already reads as its own surface, so the
+     divider was only adding another edge. */
+  .conn2{padding:4px 18px 6px}
   .conn2 h3{margin:0 0 4px;font-size:19px;font-weight:600;letter-spacing:-.2px}
   .conn2 .cgrid{display:flex;align-items:center;gap:10px}
   .legend{flex:1;display:flex;flex-direction:column;gap:14px;padding-left:2px}

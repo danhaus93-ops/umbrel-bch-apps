@@ -129,6 +129,46 @@ check('requestAnimationFrame re-armed (loop is alive)', rafQ.length > 0);
 const rot1 = eval1('rotY');
 check('rotY advanced (globe is turning)', typeof rot1 === 'number' && rot1 !== rot0);
 
+
+// ---- depth: nothing may be drawn behind the planet -------------------------
+// The overlay canvas is above the WebGL canvas and has no depth buffer, so a
+// far-side peer drawn at any alpha would paint ON TOP of the globe and look
+// like it is in front. "Behind" can only be expressed by not drawing.
+{
+  const D2R = Math.PI / 180, TILT = 23.5 * D2R, ROTX = 0.34;
+  const zOf = (lat, lon, rotY) => {
+    const cl = Math.cos(lat * D2R);
+    const x = cl * Math.sin(lon * D2R), y = Math.sin(lat * D2R), z = cl * Math.cos(lon * D2R);
+    const cy = Math.cos(rotY), sy = Math.sin(rotY);
+    const x1 = x * cy + z * sy, y1 = y, z1 = -x * sy + z * cy;
+    const ct = Math.cos(TILT), st = Math.sin(TILT);
+    const y2 = x1 * st + y1 * ct, z2 = z1;
+    const cp = Math.cos(ROTX), sp = Math.sin(ROTX);
+    return y2 * sp + z2 * cp;
+  };
+  const fade = (z) => (z <= 0 ? 0 : Math.min(1, z / 0.34));
+  let behindDrawn = 0, everShown = 0;
+  for (const p of peers) {
+    if (p.lat == null) continue;
+    let shown = false;
+    for (let d = 0; d < 360; d += 5) {
+      const z = zOf(p.lat, p.lon, d * D2R);
+      const a = fade(z);
+      if (z <= 0 && a > 0) behindDrawn++;
+      if (a > 0) shown = true;
+    }
+    if (shown) everShown++;
+  }
+  check('nothing is drawn while behind the globe', behindDrawn === 0);
+  check('every placed peer is visible somewhere in a rotation', everShown === peers.filter(p => p.lat != null).length);
+
+  // the limb ease-in: a peer must not arrive at full brightness
+  const steps = [];
+  for (let z = 0; z <= 0.34; z += 0.34 / 8) steps.push(fade(z));
+  const jumps = steps.filter((v, i) => i && v - steps[i - 1] > 0.30).length;
+  check('a peer eases in at the limb rather than popping', jumps === 0);
+}
+
 console.log();
 if (failed) { console.log('FAILED: ' + failed); process.exit(1); }
 console.log('all globe frame checks passed  (' + quadCalls + ' arcs, ' + dotCalls + ' dots over ' + ticks + ' frames)');

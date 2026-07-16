@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.1.20"
+version: "29.1.21"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
@@ -19,14 +19,11 @@ description: >-
 
   Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
 releaseNotes: >-
-  Hotfix: the peer globe rendered a single frame and then froze, with no peers,
-  arcs or packets on it. The connection counts beside it were always correct.
+  The globe now sits inside its own panel within the card, which also removes two
+  stray marks that were showing at the lower corners.
 
-  Two helper functions used by the render loop were left out of the shipped file,
-  so the loop threw on its first pass and never scheduled another frame.
-
-  The globe now rotates and draws peers again. A regression test drives the render
-  loop with peers that are guaranteed to be on-screen and fails if the loop stops.
+  Peers fade in more gently as the globe turns them into view. Peers on the far
+  side stay hidden until they come round to the front, as before.
 developer: LoneStrike Labs
 website: https://bitcoincashnode.org
 dependencies: []

@@ -412,7 +412,15 @@ function frame(now) {
     if (!o.alive && o.op < 0.01) retired = true;
     const q = project(o.la, o.lo, rotY);
     o.sx = q.sx; o.sy = q.sy; o.z = q.z;
-    o.fade = (q.z <= 0 ? 0 : Math.min(1, q.z / 0.22)) * o.op;
+    // A peer on the far side is behind the planet and is not drawn; it appears
+    // as the globe carries it round to the front. The overlay canvas sits above
+    // the WebGL canvas and has no depth buffer, so not drawing is the only way
+    // "behind" can mean behind.
+    //
+    // The fade band is 0.34 rather than 0.22 so a peer rises out of the limb
+    // over ~10s instead of ~7s. Nothing arrives at full strength -- the pop was
+    // the part that read as flickering.
+    o.fade = (q.z <= 0 ? 0 : Math.min(1, q.z / 0.34)) * o.op;
   }
   if (retired) live = live.filter(o => o.alive || o.op >= 0.01);
 
