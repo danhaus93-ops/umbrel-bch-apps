@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.54"
+version: "1.4.55"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -76,11 +76,22 @@ widgets:
           text: "0"
           subtext: "found"
 releaseNotes: >-
-  You can now download the Stratum V2 pool log straight from the SV2 card. It
-  is redacted by default - your payout address, worker names and miner IP
-  addresses are stripped out - so it is safe to paste into Discord or a bug
-  report when you need help. A raw link is there too if you need the full
-  detail for yourself; it is labelled, because that version contains all of
-  the above.
+  Security fix for the Stratum V2 template bridge.
+
+  Every Stratum V2 message begins with a small header stating how many bytes
+  follow. The bridge trusted that number and sized its next read from it, so a
+  single connection could claim megabytes and make the bridge hold them. Frame
+  lengths are now checked against what each message type can legitimately be,
+  before any of the payload is read.
+
+  The limits come from the protocol itself rather than a round number: a found
+  block's solution carries a full coinbase transaction and is allowed to be
+  large, so the check can never refuse real work.
+
+  The bridge also now accepts a bounded number of connections, and the block
+  notification reader has its own length check.
+
+  Thanks to Christhealien for the heads-up after the same class of bug hit
+  another Stratum V2 pool.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
