@@ -295,6 +295,11 @@ function dropsRead() {
   catch (_) { return new Set(); }
 }
 let dropsWriteError = null;
+// Every stage of the last Disconnect, recorded before any early return can
+// swallow it. /diag showing empty drops + empty listbanned is ambiguous: it
+// looks the same whether the button was never pressed or the handler bailed at
+// the first line. This removes the ambiguity.
+let lastDisconnect = null;
 function dropsWrite(set) {
   try {
     fs.writeFileSync(ONION_DROP_FILE, JSON.stringify([...set]));
@@ -574,7 +579,9 @@ app.get('/api/status', async (_req, res) => {
 // ~500ms. "Lighter" is not a virtue if the control does not work.
 app.post('/api/peers/disconnect', async (req, res) => {
   const addr = String((req.body && req.body.addr) || '').trim();
+  lastDisconnect = { at: new Date().toISOString(), addrReceived: addr, stage: 'received' };
   if (!addr || addr.length > 128) {
+    lastDisconnect.stage = 'rejected: bad addr';
     return res.status(400).json({ ok: false, error: 'addr required' });
   }
   // Only disconnect something we are actually connected to. Passing an
@@ -585,8 +592,14 @@ app.post('/api/peers/disconnect', async (req, res) => {
     const peers = await rpc('getpeerinfo');
     const hit = (peers || []).find(p => p.addr === addr);
     if (!hit) {
+      // The likeliest silent failure: the address the UI sent does not match
+      // getpeerinfo byte for byte, so we 404 and nothing downstream ever runs.
+      // Record BOTH sides so a mismatch is obvious instead of theoretical.
+      lastDisconnect.stage = 'peer not found in getpeerinfo';
+      lastDisconnect.knownAddrs = (peers || []).map(p => p.addr).slice(0, 20);
       return res.status(404).json({ ok: false, error: 'not connected to that peer' });
     }
+    lastDisconnect.stage = 'matched'; lastDisconnect.id = hit.id;
     const host = hostOfAddr(addr);
 
     // disconnectnode is ONE-SHOT. bitcoind's own words: "Immediately
@@ -629,13 +642,15 @@ app.post('/api/peers/disconnect', async (req, res) => {
     //    BEFORE disconnectnode and left the peer connected. The button became a
     //    no-op, which is exactly what was still being seen. The drop is the part
     //    the user asked for; it must never be gated on a bonus step succeeding.
-    await rpc('disconnectnode', ['', hit.id]).catch(() => {});
+    try { await rpc('disconnectnode', ['', hit.id]); lastDisconnect.dropped = true; }
+    catch (e) { lastDisconnect.dropped = false; lastDisconnect.dropError = String(e.message || e); }
 
     // 3. remember it. Consulted by the pin reconcile AND by the watchdog below.
     const drops = dropsRead();
     drops.add(host);
     const persisted = dropsWrite(drops);
-    if (!persisted) note = 'block not saved: ' + dropsWriteError;
+    lastDisconnect.persisted = persisted;
+    if (!persisted) { note = 'block not saved: ' + dropsWriteError; lastDisconnect.persistError = dropsWriteError; }
     onionAdded.delete(host);
 
     // 4. ban, so bitcoind's automatic outbound path skips it and we don't rely
@@ -648,9 +663,14 @@ app.post('/api/peers/disconnect', async (req, res) => {
       const msg = String(e.message || e);
       if (/already banned/i.test(msg)) { banned = true; }
       else { note = 'not banned (' + msg + '); the watchdog will keep dropping it'; }
+      lastDisconnect.setbanError = msg;
     }
+    lastDisconnect.banned = banned;
+    lastDisconnect.hostBanned = host;
+    lastDisconnect.stage = 'done';
     return res.json({ ok: true, addr, unpinned, banned, note, persisted, dropFile: ONION_DROP_FILE });
   } catch (err) {
+    if (lastDisconnect) { lastDisconnect.stage = 'threw'; lastDisconnect.error = String(err.message || err); }
     return res.status(502).json({ ok: false, error: String(err.message || err) });
   }
 });
@@ -694,6 +714,7 @@ app.get('/api/peers/diag', async (_req, res) => {
   catch (e) { out.dropFileRaw = null; }
   out.drops = [...dropsRead()];
   out.lastWriteError = dropsWriteError;
+  out.lastDisconnect = lastDisconnect;   // null => the button has never been pressed on this build
 
   // what the node itself thinks
   try {
