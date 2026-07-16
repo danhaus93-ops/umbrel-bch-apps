@@ -84,8 +84,8 @@ else
 fi
 echo "$PH$PL" | grep -q "address .* rejected:" && bad "payout address was REJECTED — SV2 is idle" \
   || ok "payout address accepted"
-TAG=$(echo "$PH" | grep -o 'coinbase tag: [^ ]*' | tail -1)
-[ -n "$TAG" ] && ok "$TAG (attribution)" || warn "coinbase tag line rotated out of the log — restart the app to re-print the banner"
+TAG=$(echo "$PH" | grep -o 'coinbase tag: .*' | tail -1 | sed 's/[[:space:]]*$//')
+[ -n "$TAG" ] && ok "$TAG  <- must contain a tag from pools-v2.json" || warn "coinbase tag line rotated out of the log — restart the app to re-print the banner"
 XN=$(echo "$PH" | grep -o 'extranonce2 bytes: [0-9]*' | tail -1)
 [ -n "$XN" ] && ok "$XN" || warn "extranonce2 line rotated out of the log — restart the app to re-print the banner"
 
