@@ -12,6 +12,7 @@ if [ ! -f ../../dashboard/geo/geo.bin ]; then
     && node build-geo.js geo.bin)
 fi
 node test_geo_lookup.js
+node test_globe_frame.js
 
 python3 test_frame_bounds.py
 python3 test_bridge_submit.py

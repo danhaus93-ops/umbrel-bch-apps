@@ -373,6 +373,22 @@ function project(la, lo, rotY) {
   return { sx: cx + x3 * R, sy: cy - y3 * R, z: z3 };
 }
 
+// Arc: quadratic bezier, control point swung tangentially so every arc sweeps
+// the same way. NOTE: with the node anchored at centre-front, the true
+// great-circle path projects to a straight line — the curve is a rendering
+// convention, not geometry. The anchor stays honest; the sweep is decoration.
+function ctrl(sx, sy) {
+  const dx = cx - sx, dy = cy - sy;
+  const mx = sx + dx * 0.5, my = sy + dy * 0.5;
+  const len = Math.hypot(dx, dy) || 1;
+  return [mx + (-dy / len) * len * 0.26, my + (dx / len) * len * 0.26];
+}
+const qpt = (p0, c, p1, t) => {
+  const u = 1 - t;
+  return [u * u * p0[0] + 2 * u * t * c[0] + t * t * p1[0],
+          u * u * p0[1] + 2 * u * t * c[1] + t * t * p1[1]];
+};
+
 let rotY = 2.55, last = performance.now(), hover = null;
 
 function frame(now) {

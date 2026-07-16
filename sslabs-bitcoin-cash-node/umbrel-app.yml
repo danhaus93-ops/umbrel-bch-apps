@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.1.19"
+version: "29.1.20"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
@@ -19,22 +19,14 @@ description: >-
 
   Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
 releaseNotes: >-
-  The node status page now opens with a rotating globe of your peers instead of a
-  percentage ring, with a Connections breakdown of clearnet vs Tor and the latest
-  blocks beneath it.
+  Hotfix: the peer globe rendered a single frame and then froze, with no peers,
+  arcs or packets on it. The connection counts beside it were always correct.
 
-  Peers are located on your own machine. The country table is built into the app
-  image, so no peer address ever leaves your node — asking a web service where
-  your peers are would hand whoever runs it a map of everyone you talk to.
+  Two helper functions used by the render loop were left out of the shipped file,
+  so the loop threw on its first pass and never scheduled another frame.
 
-  Tor peers have no location at all, by design; they orbit the centre marker
-  rather than being hidden. A peer whose country can't be determined is shown as
-  unplaced rather than guessed.
-
-  Each peer row now has a Disconnect button. It asks your node to drop that
-  connection once — it is not a ban, and your node may reconnect later.
-
-  IP-to-country data by DB-IP (db-ip.com), CC BY 4.0.
+  The globe now rotates and draws peers again. A regression test drives the render
+  loop with peers that are guaranteed to be on-screen and fails if the loop stops.
 developer: LoneStrike Labs
 website: https://bitcoincashnode.org
 dependencies: []
