@@ -294,8 +294,20 @@ function dropsRead() {
   try { return new Set(JSON.parse(fs.readFileSync(ONION_DROP_FILE, 'utf8'))); }
   catch (_) { return new Set(); }
 }
+let dropsWriteError = null;
 function dropsWrite(set) {
-  try { fs.writeFileSync(ONION_DROP_FILE, JSON.stringify([...set])); } catch (_) {}
+  try {
+    fs.writeFileSync(ONION_DROP_FILE, JSON.stringify([...set]));
+    dropsWriteError = null;
+    return true;
+  } catch (e) {
+    // NOT swallowed. If this fails, every block silently evaporates on the next
+    // read and the Blocked list stays empty -- which looks exactly like "the
+    // button does nothing". `catch (_) {}` here is what made four fixes
+    // untestable from the outside.
+    dropsWriteError = String(e.message || e);
+    return false;
+  }
 }
 const hostOfAddr = (a) => {
   const s = String(a || '');
@@ -622,7 +634,8 @@ app.post('/api/peers/disconnect', async (req, res) => {
     // 3. remember it. Consulted by the pin reconcile AND by the watchdog below.
     const drops = dropsRead();
     drops.add(host);
-    dropsWrite(drops);
+    const persisted = dropsWrite(drops);
+    if (!persisted) note = 'block not saved: ' + dropsWriteError;
     onionAdded.delete(host);
 
     // 4. ban, so bitcoind's automatic outbound path skips it and we don't rely
@@ -636,7 +649,7 @@ app.post('/api/peers/disconnect', async (req, res) => {
       if (/already banned/i.test(msg)) { banned = true; }
       else { note = 'not banned (' + msg + '); the watchdog will keep dropping it'; }
     }
-    return res.json({ ok: true, addr, unpinned, banned, note });
+    return res.json({ ok: true, addr, unpinned, banned, note, persisted, dropFile: ONION_DROP_FILE });
   } catch (err) {
     return res.status(502).json({ ok: false, error: String(err.message || err) });
   }
@@ -658,6 +671,59 @@ app.post('/api/peers/allow', async (req, res) => {
   } catch (err) {
     return res.status(502).json({ ok: false, error: String(err.message || err) });
   }
+});
+
+// Diagnostics. This exists because I shipped four fixes for the same bug
+// without any way to see which assumption was wrong. Everything here is
+// measured on the spot, not inferred.
+app.get('/api/peers/diag', async (_req, res) => {
+  const out = { version: APP_VERSION, dropFile: ONION_DROP_FILE };
+
+  // can we actually write there? try it, don't assume.
+  try {
+    const probe = ONION_DROP_FILE + '.probe';
+    fs.writeFileSync(probe, 'x');
+    fs.unlinkSync(probe);
+    out.dropFileWritable = true;
+  } catch (e) {
+    out.dropFileWritable = false;
+    out.dropFileError = String(e.message || e);
+  }
+  out.dropFileExists = fs.existsSync(ONION_DROP_FILE);
+  try { out.dropFileRaw = fs.readFileSync(ONION_DROP_FILE, 'utf8').slice(0, 500); }
+  catch (e) { out.dropFileRaw = null; }
+  out.drops = [...dropsRead()];
+  out.lastWriteError = dropsWriteError;
+
+  // what the node itself thinks
+  try {
+    const b = await rpc('listbanned');
+    out.listbanned = b;
+    out.bannedCount = (b || []).length;
+  } catch (e) { out.listbannedError = String(e.message || e); }
+  try {
+    out.addednodes = (await rpc('getaddednodeinfo') || []).map((a) => a.addednode);
+  } catch (e) { out.addednodesError = String(e.message || e); }
+  try {
+    const peers = await rpc('getpeerinfo');
+    out.peers = (peers || []).map((p) => ({ id: p.id, addr: p.addr, inbound: p.inbound, age: p.conntime }));
+    out.peerCount = out.peers.length;
+  } catch (e) { out.peersError = String(e.message || e); }
+
+  res.json(out);
+});
+
+// Ban one address directly, so the ban itself can be tested apart from the rest
+// of the flow. Reports the raw RPC error instead of hiding it behind a 502.
+app.post('/api/peers/testban', async (req, res) => {
+  const host = hostOfAddr(String((req.body && req.body.addr) || '').trim());
+  if (!host) return res.status(400).json({ ok: false, error: 'addr required' });
+  const out = { host };
+  try { out.setban = await rpc('setban', [host, 'add', PEER_BLOCK_SECONDS, false]) ?? 'ok'; }
+  catch (e) { out.setbanError = String(e.message || e); }
+  try { out.isBannedNow = ((await rpc('listbanned')) || []).some((b) => String(b.address).startsWith(host)); }
+  catch (e) { out.listbannedError = String(e.message || e); }
+  res.json(out);
 });
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
