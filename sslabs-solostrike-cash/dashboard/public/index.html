@@ -222,13 +222,17 @@
   <div class="addr">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
       <label for="sv2SpmInput" style="font-family:var(--fm);font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Shares / min
-        <input id="sv2SpmInput" inputmode="decimal" placeholder="6" title="Target shares per minute per miner. Vardiff tunes each miner's difficulty to hit this rate: lower = fewer, larger shares; higher = more, smaller shares. Applies after app restart." style="width:74px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:13px;padding:10px 8px"/></label>
+        <input id="sv2SpmInput" inputmode="decimal" placeholder="6" title="Target shares per minute per miner. Vardiff tunes each miner's difficulty to hit this rate: lower = fewer, larger shares; higher = more, smaller shares." style="width:74px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:13px;padding:10px 8px"/></label>
       <label for="sv2XnInput" style="font-family:var(--fm);font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Extranonce2 bytes
         <input id="sv2XnInput" inputmode="numeric" title="Size of the miner's rollable extranonce2 search space, in bytes (4-32, default 16). Larger gives each miner more nonce room before it must ask for new work; smaller frees coinbase scriptSig space." style="width:74px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:13px;padding:10px 8px"/></label>
+      <label for="sv2TtlInput" style="font-family:var(--fm);font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Idle worker timeout (min)
+        <input id="sv2TtlInput" inputmode="numeric" title="A worker with no accepted shares for this many minutes is removed from the list (5-1440). It reappears on its next share. Applies within a couple of minutes - no restart." style="width:74px;background:#0b231d;border:1px solid var(--line2);border-radius:var(--r);color:var(--text);font-family:var(--fm);font-size:13px;padding:10px 8px"/></label>
     <!-- The pool reads these ONCE, at container start, so what you saved and
          what it enforces can differ indefinitely. That used to be said only in a
          title= tooltip, which a phone cannot render -- a tester lost a day to a
          pool quietly running a different value. Say it out loud. -->
+    <div style="font-family:var(--fm);font-size:10px;color:var(--dim);margin-top:6px;line-height:1.5">
+      Shares/min and Extranonce2 take effect when the pool restarts. Idle timeout applies right away.</div>
     <div id="sv2Pending" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;
       font-family:var(--fm);font-size:11px;line-height:1.5;
       background:rgba(224,147,78,.08);border:1px solid rgba(224,147,78,.3);color:var(--warn)"></div>
@@ -423,6 +427,8 @@ function loadSv2(){
       // the pool was really running, so the field could be written and never
       // read back -- you could not see your own setting.
       if(d.savedXn && document.activeElement!==xnEl) xnEl.value=d.savedXn;
+      const ttlEl=document.getElementById('sv2TtlInput');
+      if(d.workerTtlMin && document.activeElement!==ttlEl) ttlEl.value=d.workerTtlMin;
       const pend=[];
       if(d.activeSpm && d.savedSpm && d.activeSpm!==d.savedSpm)
         pend.push('Shares/min: saved '+d.savedSpm+', pool is running '+d.activeSpm+'.');
@@ -449,7 +455,7 @@ async function saveSv2(){
   const ai=document.getElementById('sv2AddrInput'),msg=document.getElementById('sv2Msg');
   const a=ai.value.trim();
   try{
-    const r=await fetch('/api/sv2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:a,sharesPerMinute:parseFloat(document.getElementById('sv2SpmInput').value)||undefined,extranonce2Bytes:parseInt(document.getElementById('sv2XnInput').value,10)||undefined})});
+    const r=await fetch('/api/sv2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:a,sharesPerMinute:parseFloat(document.getElementById('sv2SpmInput').value)||undefined,extranonce2Bytes:parseInt(document.getElementById('sv2XnInput').value,10)||undefined,workerTtlMin:parseInt(document.getElementById('sv2TtlInput').value,10)||undefined})});
     const j=await r.json();
     if(j.ok){msg.style.color='var(--mint)';msg.textContent=j.enabled?'SV2 enabled \u2014 endpoint live in ~10s':'SV2 disabled (restart the app to stop the pool)';loadSv2();}
     else{msg.style.color='var(--red)';msg.textContent=j.error||'invalid address';}

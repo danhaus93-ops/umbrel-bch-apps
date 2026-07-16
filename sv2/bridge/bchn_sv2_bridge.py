@@ -439,7 +439,19 @@ class Bridge:
                 else:
                     self.last_tip = cur
             except Exception as e:
-                self.log(f"[bridge] tip poll error: {e}")
+                # Log the first failure, then every 60th. A persistent failure
+                # (e.g. the BCHN hostname not resolving) used to log ~11x/min,
+                # which rotated the entrypoint banner out of the pool log --
+                # the noise erased the evidence needed to debug a different
+                # problem. Mining does not depend on this poll (ZMQ + the TP
+                # socket carry templates); it is a belt-and-braces tip check.
+                self._tip_errs = getattr(self, "_tip_errs", 0) + 1
+                if self._tip_errs == 1 or self._tip_errs % 60 == 0:
+                    self.log(f"[bridge] tip poll error (x{self._tip_errs}): {e}")
+            else:
+                if getattr(self, "_tip_errs", 0):
+                    self.log(f"[bridge] tip poll recovered after {self._tip_errs} failures")
+                self._tip_errs = 0
             await asyncio.sleep(POLL_SECS_ZMQ_OK if self.zmq_ok else POLL_SECS)
 
     async def zmq_watcher(self):

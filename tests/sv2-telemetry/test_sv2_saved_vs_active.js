@@ -73,6 +73,30 @@ check('"requires a pool restart" is no longer tooltip-only', !/Requires a pool r
 check('the spm restart note is out of the tooltip too',
   !/restart app to apply saved value/.test(UI));
 
+
+// ---- idle worker timeout ----------------------------------------------------
+// Requested by the same tester: rigs lingered ~70 min after his rental ended.
+// One knob, read from disk on EVERY use, so it applies on the next sweep with
+// no restart -- deliberately unlike the pool-side settings, so there is no
+// saved-vs-active gap to surface for it.
+check('a single TTL reader exists', /function workerTtlSec\(\)/.test(SRV));
+check('it is read from disk on every use, not cached at boot',
+  (SRV.match(/workerTtlSec\(\)/g) || []).length >= 4);
+check('the SV2 sweep uses it', /const TTL = workerTtlSec\(\);/.test(SRV));
+check('the SV1 roster filter uses it too', /const WORKER_TTL = workerTtlSec\(\);/.test(SRV));
+check('bounds are enforced on save (5..1440 minutes)',
+  /ttl < 5 \|\| ttl > 1440/.test(SRV));
+check('/api/sv2 reports it', /workerTtlMin: Math\.round\(workerTtlSec\(\) \/ 60\)/.test(SRV));
+check('the UI has the field', /id="sv2TtlInput"/.test(UI));
+check('the UI populates it from the server', /ttlEl\.value=d\.workerTtlMin/.test(UI));
+check('the UI saves it', /workerTtlMin:parseInt/.test(UI));
+// The restart requirement is now VISIBLE text, not a tooltip -- and it also
+// says which setting does NOT need one.
+check('restart requirement is visible text',
+  /Shares\/min and Extranonce2 take effect when the pool restarts\. Idle timeout applies right away\./.test(UI));
+check('the spm tooltip no longer hides the restart fact',
+  !/Applies after app restart/.test(UI));
+
 console.log();
 if (failed) { console.log('FAILED: ' + failed); process.exit(1); }
 console.log('all sv2 saved-vs-active checks passed');

@@ -35,6 +35,18 @@ const SV2_SPM_FILE    = path.join(SV2_DIR, 'shares_per_minute');
 // tunable. Bounds: <4 starves SV1-via-translator miners, >32 eats the
 // coinbase scriptSig budget (100B total, ~44B used today).
 const SV2_XN_FILE     = path.join(SV2_DIR, 'extranonce2_bytes');
+// How long a silent worker stays on the roster, in minutes. Requested by a
+// tester whose rigs lingered ~70 minutes after a rental ended. Read from disk
+// on every use, so saving it applies on the next sweep -- no restart, hence no
+// saved-vs-active gap like the pool-side settings have.
+const WORKER_TTL_FILE = path.join(SV2_DIR, 'worker_ttl_min');
+function workerTtlSec() {
+  try {
+    const n = parseInt(fs.readFileSync(WORKER_TTL_FILE, 'utf8').trim(), 10);
+    if (n >= 5 && n <= 1440) return n * 60;
+  } catch (_) {}
+  return Number(process.env.WORKER_TTL_SEC || 3600);
+}
 const SV2_XN_DEFAULT  = 16;
 function readSv2Xn() {
   try {
@@ -415,7 +427,7 @@ setInterval(() => { try { workersSave(); } catch (_) {} }, 60000);
 setInterval(() => {
   try {
     const nowS = Math.floor(Date.now() / 1000);
-    const TTL = Number(process.env.WORKER_TTL_SEC || 3600);
+    const TTL = workerTtlSec();
     let dirty = false;
     for (const [cid, ch] of Object.entries(sv2State.channels)) {
       const fb = /^sv2-\d+\.\d+$/.test(ch.name);
@@ -442,7 +454,7 @@ function sv2Stats() {
   sv2Ingest();
   const nowS = Math.floor(Date.now() / 1000);
   const winMs = 300 * 1000, cutoff = Date.now() - winMs;
-  const TTL = Number(process.env.WORKER_TTL_SEC || 3600);
+  const TTL = workerTtlSec();
   const perChan = {};
   for (const [ts, w, cid, diff, seq] of sv2State.shares) {
     if (ts < cutoff) continue;
@@ -731,7 +743,7 @@ function readWorkers() {
   // Inactive miners fall off the roster after ~1h of no shares. asicseer-pool keeps
   // a per-user file around indefinitely, so without this a powered-off ASIC lingers
   // forever. Override with WORKER_TTL_SEC if you want a different window.
-  const WORKER_TTL = Number(process.env.WORKER_TTL_SEC || 3600);
+  const WORKER_TTL = workerTtlSec();
   const nowS = Math.floor(Date.now() / 1000);
   let live = out.filter(w => (w.last || 0) > 0 && (nowS - w.last) <= WORKER_TTL);
   // hidden workers: stay hidden unless they show fresh activity
@@ -1297,6 +1309,7 @@ app.get('/api/sv2', (req, res) => {
   const out = { ok: true, enabled: !!addr, address: addr, authorityPub: pub,
                 savedSpm, activeSpm,
                 savedXn: readSv2Xn(), activeXn: sv2State.activeXn || null,
+                workerTtlMin: Math.round(workerTtlSec() / 60),
                 endpoint: STRATUM_HOST + ':33333' };
   if (req.query && req.query.debug) {
     try {
@@ -1337,6 +1350,13 @@ app.post('/api/sv2', (req, res) => {
   const spm = Number(req.body && req.body.sharesPerMinute);
   if (spm && spm >= 0.5 && spm <= 600) {
     try { fs.writeFileSync(SV2_SPM_FILE, String(spm)); } catch (_) {}
+  }
+  const ttl = Number(req.body && req.body.workerTtlMin);
+  if (Number.isFinite(ttl)) {
+    if (!Number.isInteger(ttl) || ttl < 5 || ttl > 1440) {
+      return res.status(400).json({ ok: false, error: 'idle worker timeout must be a whole number of minutes from 5 to 1440' });
+    }
+    try { fs.writeFileSync(WORKER_TTL_FILE, String(ttl)); } catch (_) {}
   }
   const xn = Number(req.body && req.body.extranonce2Bytes);
   if (xn) {
