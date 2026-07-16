@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.1.29"
+version: "29.1.30"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
@@ -19,11 +19,11 @@ description: >-
 
   Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
 releaseNotes: >-
-  Disconnect now tells you on screen what happened when you tap it, instead of
-  hiding errors in a tooltip that a phone can never show. The button is also a
-  proper size to tap.
+  Another attempt at the Disconnect button, which still does nothing.
 
-  If it still doesn't work, the message on screen will say which step failed.
+  Tapping now shows a message on screen the moment your finger touches the button,
+  so it is finally possible to see how far the tap gets. If the normal request is
+  being blocked, the app retries a different way automatically.
 developer: LoneStrike Labs
 website: https://bitcoincashnode.org
 dependencies: []

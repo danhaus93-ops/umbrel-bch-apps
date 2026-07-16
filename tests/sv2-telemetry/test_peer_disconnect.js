@@ -26,10 +26,23 @@ const check = (name, cond) => {
 
 // Bound to the disconnect handler alone: /api/peers/allow now sits between it
 // and /healthz, and it legitimately contains 'remove' + setban of its own.
+// Anchored to the handler FUNCTION, not the route registration: the same body
+// is now reachable over POST and (as a fallback) GET, so the express route line
+// is no longer where the logic lives.
 const endpoint = SRC.slice(
-  SRC.indexOf("app.post('/api/peers/disconnect'"),
-  SRC.indexOf("app.post('/api/peers/allow'"));
-check('the disconnect endpoint exists', endpoint.length > 0);
+  SRC.indexOf('async function disconnectHandler(req, res) {'),
+  SRC.indexOf("app.post('/api/peers/disconnect', disconnectHandler);"));
+check('the disconnect handler exists', endpoint.length > 0);
+check('the handler is reachable over POST', SRC.includes("app.post('/api/peers/disconnect', disconnectHandler);"));
+// POSTs may be being dropped between the browser and this app -- both
+// POST-driven features show zero evidence of ever having run. A correct verb
+// that never arrives is worth nothing, so the same body is reachable by GET.
+check('the same handler is reachable over GET as a fallback',
+  SRC.includes("app.get('/api/peers/disconnect-get'") && /return disconnectHandler\(req, res\)/.test(SRC));
+check('a GET probe records that the click handler ran at all',
+  SRC.includes("app.get('/api/peers/tap'") && SRC.includes('out.lastTap'));
+check('a GET probe records raw pointerdown, before click logic',
+  SRC.includes("app.get('/api/peers/pointer'") && SRC.includes('out.lastPointer'));
 
 // ---- the drop must never be gated on the ban ------------------------------
 // 29.1.23 called setban BEFORE disconnectnode and returned 502 if it threw.

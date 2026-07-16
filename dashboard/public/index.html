@@ -679,28 +679,43 @@ function peerSay(msg, ok){
   el.style.color       = ok ? 'var(--green)' : 'var(--warn)';
 }
 async function disconnectPeer(addr, btn){
-  // Proves the tap reached JS at all. If this never appears, the click is being
-  // lost before any code runs and nothing server-side is worth looking at.
   peerSay('tap registered \u2192 '+addr, true);
+  // Record the tap over GET. GETs demonstrably reach this node -- /diag arrives.
+  // If this lands and the POST below does not, POSTs are being dropped between
+  // the browser and the app, which would explain this entire saga at a stroke.
+  fetch('/api/peers/tap?via=click&addr='+encodeURIComponent(addr)).catch(()=>{});
   btn.disabled=true; btn.textContent='dropping';
+  const done=(j)=>{
+    peerSay('done \u2014 banned:'+j.banned+' saved:'+j.persisted+(j.note?(' \u2014 '+j.note):''),
+            Boolean(j.banned&&j.persisted));
+    btn.textContent='blocked'; btn.dataset.busy=''; tick();
+  };
+  const viaGet=async()=>{
+    const r=await fetch('/api/peers/disconnect-get?addr='+encodeURIComponent(addr));
+    const j=await r.json().catch(()=>({}));
+    if(r.ok){ done(j); return true; }
+    peerSay('GET also failed \u2014 HTTP '+r.status+' '+(j.error||''), false);
+    return false;
+  };
   try{
     const r=await fetch('/api/peers/disconnect',{method:'POST',
       headers:{'Content-Type':'application/json'},body:JSON.stringify({addr})});
     let j={}; try{ j=await r.json(); }catch(_){ }
     if(!r.ok){
-      btn.disabled=false; btn.textContent='Disconnect';
-      peerSay('HTTP '+r.status+' \u2014 '+(j.error||'no body'), false);
+      // Rather than insist on the correct verb and ship something that does
+      // nothing, fall back. A request that never arrives is worth less than an
+      // inelegant one that does.
+      peerSay('POST rejected ('+r.status+') \u2014 retrying over GET', false);
+      if(await viaGet()) return;
+      btn.disabled=false; btn.textContent='Disconnect'; btn.dataset.busy='';
       return;
     }
-    peerSay('HTTP 200 \u2014 dropped:'+(j.dropped!==false)+' banned:'+j.banned+
-            ' saved:'+j.persisted+(j.note?(' \u2014 '+j.note):''), Boolean(j.banned&&j.persisted));
-    btn.textContent='blocked';
-    tick();
+    done(j);
   }catch(e){
-    btn.disabled=false; btn.textContent='Disconnect';
-    // A failed fetch is the one thing that would explain lastDisconnect staying
-    // null while the handler clearly fires.
-    peerSay('request never completed \u2014 '+String(e.message||e), false);
+    peerSay('POST failed ('+String(e.message||e)+') \u2014 retrying over GET', false);
+    try{ if(await viaGet()) return; }
+    catch(e2){ peerSay('neither POST nor GET reached the node \u2014 '+String(e2.message||e2), false); }
+    btn.disabled=false; btn.textContent='Disconnect'; btn.dataset.busy='';
   }
 }
 
@@ -790,11 +805,29 @@ function renderPeerRows(list){
 }
 
 // ONE listener, on the container, alive for the life of the page.
-document.getElementById('peersTable').addEventListener('click',(e)=>{
+const peersTableEl = document.getElementById('peersTable');
+
+// pointerdown fires before click and survives a sloppy tap. If the server sees
+// this but never sees the tap probe, the touch lands and the CLICK never forms.
+// That distinction cannot be reasoned out from here, so measure it.
+peersTableEl.addEventListener('pointerdown',(e)=>{
+  const b=e.target.closest('button.dc');
+  if(!b) return;
+  fetch('/api/peers/pointer?kind=pointerdown').catch(()=>{});
+  peerSay('touch on '+(b.dataset.addr||'?'), true);
+},true);
+
+// click AND touchend: on iOS a click can fail to form even when the touch is
+// clean. dataset.busy stops the two firing twice.
+function armDisconnect(e){
   const b=e.target.closest('button.dc');
   if(!b || !b.dataset.addr) return;
+  if(b.dataset.busy==='1') return;
+  b.dataset.busy='1';
   disconnectPeer(b.dataset.addr, b);
-});
+}
+peersTableEl.addEventListener('click', armDisconnect);
+peersTableEl.addEventListener('touchend', armDisconnect);
 
 function fmtInt(n){ return (n==null||Number.isNaN(n)) ? '—' : Number(n).toLocaleString('en-US'); }
 function fmtBytes(b){

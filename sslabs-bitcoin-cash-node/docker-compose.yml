@@ -68,7 +68,7 @@ services:
       - bitcoind
     environment:
       PORT: 3000
-      APP_VERSION: v29.1.29
+      APP_VERSION: v29.1.30
       TOR_IP: ${APP_SSLABS_BITCOIN_CASH_NODE_TOR_IP}
       RPC_HOST: bitcoind
       RPC_PORT: "8332"

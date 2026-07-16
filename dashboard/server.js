@@ -300,6 +300,11 @@ let dropsWriteError = null;
 // looks the same whether the button was never pressed or the handler bailed at
 // the first line. This removes the ambiguity.
 let lastDisconnect = null;
+// Recorded by a GET, because GETs demonstrably reach this node (/diag does).
+// If lastTap fills in and lastDisconnect stays null, the click IS firing and the
+// POST is what dies -- which no amount of staring at the handler would reveal.
+let lastTap = null;
+let lastPointer = null;
 function dropsWrite(set) {
   try {
     fs.writeFileSync(ONION_DROP_FILE, JSON.stringify([...set]));
@@ -577,7 +582,7 @@ app.get('/api/status', async (_req, res) => {
 // one-shot drop is the lighter, more honest action. It was neither -- it was a
 // button that did nothing, because bitcoind refills the outbound slot within
 // ~500ms. "Lighter" is not a virtue if the control does not work.
-app.post('/api/peers/disconnect', async (req, res) => {
+async function disconnectHandler(req, res) {
   const addr = String((req.body && req.body.addr) || '').trim();
   lastDisconnect = { at: new Date().toISOString(), addrReceived: addr, stage: 'received' };
   if (!addr || addr.length > 128) {
@@ -673,7 +678,9 @@ app.post('/api/peers/disconnect', async (req, res) => {
     if (lastDisconnect) { lastDisconnect.stage = 'threw'; lastDisconnect.error = String(err.message || err); }
     return res.status(502).json({ ok: false, error: String(err.message || err) });
   }
-});
+}
+
+app.post('/api/peers/disconnect', disconnectHandler);
 
 // Un-block a peer. Without this, Disconnect on a clearnet peer would be a
 // one-way door: it has no entry in the onion directory, so there would be no
@@ -696,6 +703,27 @@ app.post('/api/peers/allow', async (req, res) => {
 // Diagnostics. This exists because I shipped four fixes for the same bug
 // without any way to see which assumption was wrong. Everything here is
 // measured on the spot, not inferred.
+// GET probes. Deliberately side-effect-free apart from recording that they
+// happened, and deliberately GET: the whole question is whether the browser can
+// reach this server at all from a tap.
+app.get('/api/peers/tap', (req, res) => {
+  lastTap = { at: new Date().toISOString(), addr: String(req.query.addr || '').slice(0, 128),
+              via: String(req.query.via || 'click') };
+  res.json({ ok: true });
+});
+app.get('/api/peers/pointer', (req, res) => {
+  lastPointer = { at: new Date().toISOString(), kind: String(req.query.kind || '').slice(0, 32) };
+  res.json({ ok: true });
+});
+
+// GET fallback for the disconnect itself. Not how this should be modelled -- a
+// GET must not change state -- but if POSTs are being dropped between the
+// browser and this app, a correct verb that never arrives is worth nothing.
+app.get('/api/peers/disconnect-get', async (req, res) => {
+  req.body = { addr: String(req.query.addr || '') };
+  return disconnectHandler(req, res);
+});
+
 app.get('/api/peers/diag', async (_req, res) => {
   const out = { version: APP_VERSION, dropFile: ONION_DROP_FILE };
 
@@ -714,7 +742,9 @@ app.get('/api/peers/diag', async (_req, res) => {
   catch (e) { out.dropFileRaw = null; }
   out.drops = [...dropsRead()];
   out.lastWriteError = dropsWriteError;
-  out.lastDisconnect = lastDisconnect;   // null => the button has never been pressed on this build
+  out.lastDisconnect = lastDisconnect;   // null => the POST never arrived
+  out.lastTap = lastTap;                 // set by a GET the instant the click handler runs
+  out.lastPointer = lastPointer;         // set by a GET on raw pointerdown, before any click logic
 
   // what the node itself thinks
   try {
