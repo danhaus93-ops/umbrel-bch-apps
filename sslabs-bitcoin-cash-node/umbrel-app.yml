@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.1.21"
+version: "29.1.22"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
@@ -19,11 +19,14 @@ description: >-
 
   Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
 releaseNotes: >-
-  The globe now sits inside its own panel within the card, which also removes two
-  stray marks that were showing at the lower corners.
+  Disconnecting a Tor peer now actually keeps it disconnected.
 
-  Peers fade in more gently as the globe turns them into view. Peers on the far
-  side stay hidden until they come round to the front, as before.
+  "Keep onion peers connected" asks your node to maintain those peers, so it would
+  dial a dropped one straight back — the peer reappeared within seconds. Tapping
+  Disconnect now also withdraws that standing request, and the choice is remembered
+  across restarts.
+
+  The peer stays gone until you tap Connect on it again.
 developer: LoneStrike Labs
 website: https://bitcoincashnode.org
 dependencies: []

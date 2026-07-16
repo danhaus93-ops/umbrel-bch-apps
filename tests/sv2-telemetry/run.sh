@@ -13,6 +13,7 @@ if [ ! -f ../../dashboard/geo/geo.bin ]; then
 fi
 node test_geo_lookup.js
 node test_globe_frame.js
+node test_peer_disconnect.js
 
 python3 test_frame_bounds.py
 python3 test_bridge_submit.py

@@ -278,6 +278,28 @@ async function onionKnown() {
 // and never retry a dead hidden service in a tight loop: bitcoind's own retry
 // under `add` is the backoff, so we only ever add each address once per boot.
 const onionAdded = new Set();
+
+// Peers the user dropped by hand. This has to be DURABLE and it has to be
+// consulted by the pin, because `addnode ... add` is a standing instruction:
+// bitcoind maintains and retries that peer forever. disconnectnode alone just
+// loses a race with bitcoind's own redial -- the connection comes straight
+// back and the button looks broken. An in-memory set would also forget every
+// dashboard restart, and the peer would silently return.
+const ONION_DROP_FILE = path.join(path.dirname(NODE_CONF), 'peer_drops');
+function dropsRead() {
+  try { return new Set(JSON.parse(fs.readFileSync(ONION_DROP_FILE, 'utf8'))); }
+  catch (_) { return new Set(); }
+}
+function dropsWrite(set) {
+  try { fs.writeFileSync(ONION_DROP_FILE, JSON.stringify([...set])); } catch (_) {}
+}
+const hostOfAddr = (a) => {
+  const s = String(a || '');
+  if (s.startsWith('[')) { const e = s.indexOf(']'); return e > 0 ? s.slice(1, e) : s; }
+  const c = s.lastIndexOf(':');
+  if (c > 0 && s.indexOf(':') !== c) return s;       // bare IPv6
+  return c > 0 ? s.slice(0, c) : s;
+};
 async function onionReconcile() {
   if (!onionPinOn()) return;
   try {
@@ -287,9 +309,13 @@ async function onionReconcile() {
       .map((p) => (p.addr || '').split(':')[0]));
     if (live.size >= ONION_PIN_MAX) return;
     const known = await onionKnown();
+    const drops = dropsRead();
     for (const o of known.slice(0, ONION_PIN_MAX * 3)) {
       if (live.size + onionAdded.size >= ONION_PIN_MAX) break;
       if (live.has(o.address) || onionAdded.has(o.address)) continue;
+      // The pin is a convenience; an explicit disconnect is an instruction.
+      // The instruction wins until the user connects again.
+      if (drops.has(o.address)) continue;
       onionAdded.add(o.address);
       await rpc('addnode', [o.address + ':' + o.port, 'add']).catch(() => {});
     }
@@ -307,6 +333,7 @@ app.get('/api/onion', async (_req, res) => {
       .filter((p) => /\.onion/.test(p.addr || ''))
       .map((p) => (p.addr || '').split(':')[0]));
     const now = Math.floor(Date.now() / 1000);
+    const drops = dropsRead();
     res.json({
       pin: onionPinOn(),
       max: ONION_PIN_MAX,
@@ -315,6 +342,7 @@ app.get('/api/onion', async (_req, res) => {
       peers: known.slice(0, 40).map((o) => ({
         address: o.address, port: o.port,
         connected: live.has(o.address),
+        dropped: drops.has(o.address),
         seenAgo: o.time ? now - o.time : null,
       })),
     });
@@ -330,6 +358,10 @@ app.post('/api/onion', async (req, res) => {
       return res.json({ ok: true, pin: b.pin });
     }
     if (typeof b.connect === 'string' && /^[a-z2-7]{56}\.onion$/i.test(b.connect)) {
+      // An explicit Connect undoes an explicit Disconnect -- otherwise the
+      // peer could never come back and the button would silently do nothing.
+      const drops = dropsRead();
+      if (drops.delete(b.connect)) dropsWrite(drops);
       const r = await rpc('addnode', [b.connect + ':' + (Number(b.port) || 8333), 'onetry']);
       return res.json({ ok: true, result: r === null ? 'requested' : r });
     }
@@ -511,10 +543,33 @@ app.post('/api/peers/disconnect', async (req, res) => {
     if (!hit) {
       return res.status(404).json({ ok: false, error: 'not connected to that peer' });
     }
+    const host = hostOfAddr(addr);
+
+    // ORDER MATTERS. If this peer is pinned with `addnode ... add`, bitcoind
+    // will redial it the moment we drop it -- that is what `add` means. Remove
+    // the standing entry BEFORE disconnecting, or the peer is back before the
+    // UI has finished repainting.
+    let unpinned = false;
+    try {
+      const added = await rpc('getaddednodeinfo').catch(() => []);
+      const pinned = (added || []).some((a) => hostOfAddr(a.addednode) === host);
+      if (pinned) {
+        await rpc('addnode', [addr, 'remove']).catch(() => {});
+        unpinned = true;
+      }
+    } catch (_) { /* non-fatal: the disconnect below still stands */ }
+
+    // Remember it, so the 5-minute pin reconcile doesn't quietly re-add it and
+    // so the decision survives a dashboard restart.
+    const drops = dropsRead();
+    drops.add(host);
+    dropsWrite(drops);
+    onionAdded.delete(host);
+
     // Prefer the node id: addresses are not unique (two peers can share an
     // inbound source), and the id is exactly the connection we looked up.
     await rpc('disconnectnode', ['', hit.id]);
-    return res.json({ ok: true, addr });
+    return res.json({ ok: true, addr, unpinned });
   } catch (err) {
     return res.status(502).json({ ok: false, error: String(err.message || err) });
   }
