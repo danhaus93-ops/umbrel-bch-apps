@@ -33,16 +33,35 @@ const BASE = 'https://raw.githubusercontent.com/sapics/ip-location-db/main/dbip-
 const OUT = process.argv[2] || path.join(__dirname, 'geo.bin');
 const UNKNOWN = 0xffff;
 
-function get(url) {
+function once(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      if (res.statusCode === 302 || res.statusCode === 301) return resolve(get(res.headers.location));
+    const req = https.get(url, (res) => {
+      if (res.statusCode === 302 || res.statusCode === 301) return resolve(once(res.headers.location));
       if (res.statusCode !== 200) return reject(new Error(url + ' -> HTTP ' + res.statusCode));
       const chunks = [];
       res.on('data', (c) => chunks.push(c));
       res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-    }).on('error', reject);
+    });
+    req.setTimeout(120000, () => req.destroy(new Error('timeout after 120s: ' + url)));
+    req.on('error', reject);
   });
+}
+
+// The image build's only network dependency, so a blip here fails the whole
+// build. Retry with backoff rather than losing a release to one bad fetch.
+async function get(url, tries = 4) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    try { return await once(url); } catch (e) {
+      last = e;
+      if (i < tries - 1) {
+        const wait = 2000 * Math.pow(2, i);
+        console.error(`  fetch failed (${e.message}); retrying in ${wait / 1000}s`);
+        await new Promise((r) => setTimeout(r, wait));
+      }
+    }
+  }
+  throw last;
 }
 
 const v4ToInt = (s) => s.split('.').reduce((a, o) => (a * 256 + Number(o)) >>> 0, 0);
