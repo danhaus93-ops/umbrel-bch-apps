@@ -325,6 +325,25 @@ async function onionReconcile() {
     }
   } catch (_) {}
 }
+// Enforce blocks. A ban should make this redundant, but "should" is what the
+// last two attempts ran on: I asserted setban would hold and shipped twice
+// without a way to notice it hadn't. This closes the loop from our side, so the
+// block holds whatever bitcoind does with the ban. Cheap: one getpeerinfo, and
+// it does nothing at all when nothing is blocked.
+async function enforceDrops() {
+  const drops = dropsRead();
+  if (!drops.size) return;
+  try {
+    const peers = await rpc('getpeerinfo').catch(() => []);
+    for (const p of peers || []) {
+      if (drops.has(hostOfAddr(p.addr))) {
+        await rpc('disconnectnode', ['', p.id]).catch(() => {});
+      }
+    }
+  } catch (_) {}
+}
+setInterval(() => { enforceDrops().catch(() => {}); }, 10 * 1000);
+
 setInterval(() => { onionReconcile().catch(() => {}); }, 5 * 60 * 1000);
 setTimeout(() => { onionReconcile().catch(() => {}); }, 15000);
 
@@ -578,9 +597,11 @@ app.post('/api/peers/disconnect', async (req, res) => {
     // So keeping a peer away needs BOTH. A ban alone leaves the pin dialling;
     // removing the pin alone leaves the automatic path dialling. That is why
     // the previous fix did not work.
-    let unpinned = false, banned = false;
+    let unpinned = false, banned = false, note = null;
 
-    // 1. withdraw the standing addnode request (the ban cannot stop this path)
+    // 1. withdraw the standing addnode request. The ban CANNOT stop this path
+    //    (OpenNetworkConnection skips the ban check when pszDest is non-null),
+    //    so this has to happen regardless of what the ban does.
     try {
       const added = await rpc('getaddednodeinfo').catch(() => []);
       if ((added || []).some((a) => hostOfAddr(a.addednode) === host)) {
@@ -589,32 +610,33 @@ app.post('/api/peers/disconnect', async (req, res) => {
       }
     } catch (_) { /* non-fatal */ }
 
-    // 2. ban, so the automatic outbound path skips it too. Long rather than
-    // indefinite: bitcoind has no "forever", and a ban that silently expires in
-    // 24h would quietly undo the user's decision. Removed by Allow/Connect.
-    try {
-      await rpc('setban', [host, 'add', PEER_BLOCK_SECONDS, false]);
-      banned = true;
-    } catch (e) {
-      // If the ban won't take we must say so: without it the peer WILL return,
-      // and a button that lies is worse than one that fails.
-      return res.status(502).json({
-        ok: false, addr,
-        error: 'could not block this peer, so it would reconnect: ' + String(e.message || e),
-      });
-    }
+    // 2. DROP THE CONNECTION FIRST, unconditionally.
+    //    29.1.23 banned first and returned early if the ban threw. setban raises
+    //    RPC_CLIENT_NODE_ALREADY_ADDED ("already banned") for a peer that is
+    //    already on the list -- so tapping Disconnect a second time bailed out
+    //    BEFORE disconnectnode and left the peer connected. The button became a
+    //    no-op, which is exactly what was still being seen. The drop is the part
+    //    the user asked for; it must never be gated on a bonus step succeeding.
+    await rpc('disconnectnode', ['', hit.id]).catch(() => {});
 
-    // 3. remember it: survives a dashboard restart, and the pin reconcile skips it
+    // 3. remember it. Consulted by the pin reconcile AND by the watchdog below.
     const drops = dropsRead();
     drops.add(host);
     dropsWrite(drops);
     onionAdded.delete(host);
 
-    // 4. finally drop the live connection. By node id: addresses are not unique
-    // (two peers can share an inbound source) and the id is the exact
-    // connection we looked up.
-    await rpc('disconnectnode', ['', hit.id]);
-    return res.json({ ok: true, addr, unpinned, banned });
+    // 4. ban, so bitcoind's automatic outbound path skips it and we don't rely
+    //    on the watchdog. Best-effort and REPORTED: "already banned" is a
+    //    success for our purposes, not a failure.
+    try {
+      await rpc('setban', [host, 'add', PEER_BLOCK_SECONDS, false]);
+      banned = true;
+    } catch (e) {
+      const msg = String(e.message || e);
+      if (/already banned/i.test(msg)) { banned = true; }
+      else { note = 'not banned (' + msg + '); the watchdog will keep dropping it'; }
+    }
+    return res.json({ ok: true, addr, unpinned, banned, note });
   } catch (err) {
     return res.status(502).json({ ok: false, error: String(err.message || err) });
   }

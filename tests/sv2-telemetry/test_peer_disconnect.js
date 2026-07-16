@@ -31,31 +31,33 @@ const endpoint = SRC.slice(
   SRC.indexOf("app.post('/api/peers/allow'"));
 check('the disconnect endpoint exists', endpoint.length > 0);
 
-// ---- BOTH dial paths must be closed ----------------------------------------
-// bitcoind refills a freed outbound slot within ~500ms (ThreadOpenConnections),
-// so disconnectnode alone is a no-op by design. Two paths dial a peer and each
-// ignores a different guard:
-//   automatic (pszDest == nullptr) -> checks IsBanned. Stopped only by a ban.
-//   addnode   (pszDest != nullptr) -> ban check SKIPPED. Stopped only by
-//                                     removing the addnode entry.
-// Closing one and not the other is exactly the bug that shipped in 29.1.22.
+// ---- the drop must never be gated on the ban ------------------------------
+// 29.1.23 called setban BEFORE disconnectnode and returned 502 if it threw.
+// setban raises RPC_CLIENT_NODE_ALREADY_ADDED for an already-banned peer, so
+// the second tap bailed out before disconnecting and the button silently did
+// nothing. The drop is what the user asked for; a bonus step must not block it.
 const iRemove = endpoint.indexOf("rpc('addnode', [addr, 'remove']");
 const iBan = endpoint.indexOf("rpc('setban'");
 const iDrop = endpoint.indexOf("rpc('disconnectnode'");
 check('disconnect removes the standing addnode entry (closes the addnode path)', iRemove > -1);
-check('disconnect BANS the peer (closes the automatic outbound path)', iBan > -1);
-check('a ban alone is not relied on — the addnode entry is removed too',
-  iRemove > -1 && iBan > -1);
-check('both guards are applied BEFORE disconnecting (else bitcoind redials first)',
-  iRemove > -1 && iBan > -1 && iDrop > -1 && iRemove < iDrop && iBan < iDrop);
+check('disconnect bans the peer (closes the automatic outbound path)', iBan > -1);
+check('the addnode entry is removed BEFORE the drop', iRemove > -1 && iDrop > -1 && iRemove < iDrop);
+check('the DROP happens before the ban, so a ban failure cannot cancel it',
+  iDrop > -1 && iBan > -1 && iDrop < iBan);
+check('"already banned" is treated as success, not an error', /already banned/i.test(endpoint));
+check('a ban failure is reported, not swallowed and not fatal',
+  /note = 'not banned/.test(endpoint));
 check('the ban outlives setban\'s 24h default', /PEER_BLOCK_SECONDS/.test(endpoint) &&
   /PEER_BLOCK_SECONDS = 10 \* 365/.test(SRC));
-check('a failed ban is reported, not swallowed (the peer would return)',
-  /could not block this peer/.test(endpoint));
-check('it checks getaddednodeinfo rather than guessing what is pinned',
-  endpoint.includes('getaddednodeinfo'));
-check('it disconnects by node id, not by address',
-  /disconnectnode',\s*\['',\s*hit\.id\]/.test(endpoint));
+
+// ---- and the block is enforced, not merely requested -----------------------
+// Both previous attempts asserted a mechanism would hold and shipped without
+// any way to notice it hadn't. This closes the loop from our own side.
+const watchdog = SRC.slice(SRC.indexOf('async function enforceDrops'), SRC.indexOf('setInterval(() => { onionReconcile'));
+check('a watchdog enforces blocks independently of the ban', watchdog.length > 0);
+check('the watchdog re-drops any blocked peer that turns up', /drops\.has\(hostOfAddr\(p\.addr\)\)/.test(watchdog));
+check('the watchdog is a no-op when nothing is blocked', /if \(!drops\.size\) return;/.test(watchdog));
+check('the watchdog is actually scheduled', /setInterval\(\(\) => \{ enforceDrops\(\)/.test(SRC));
 
 // ---- durability -------------------------------------------------------------
 check('the decision is persisted, not held in memory',
