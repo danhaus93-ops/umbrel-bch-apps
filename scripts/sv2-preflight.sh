@@ -16,6 +16,12 @@ bad(){  echo "  FAIL  $1"; FAIL=$((FAIL+1)); }
 warn(){ echo "  WARN  $1"; WARN=$((WARN+1)); }
 cli(){ sudo docker exec ${NODE}_bitcoind_1 bitcoin-cli -rpcuser="$RPCUSER" -rpcpassword="$RPCPASS" "$@" 2>/dev/null; }
 blog(){ sudo docker logs --tail "${2:-400}" ${APP}_$1 2>&1; }
+# The entrypoint banner (payout script, coinbase tag, extranonce2) prints ONCE
+# at container start, so it lives at the HEAD of the log and scrolls out of any
+# --tail window within hours. Grepping the tail for it reported "no payout
+# script" on a pool that was demonstrably serving a client. Head for the
+# banner, tail for runtime errors.
+bhead(){ sudo docker logs ${APP}_$1 2>&1 | head -"${2:-80}"; }
 
 echo "=============================================="
 echo " SV2 block-safety preflight"
@@ -62,8 +68,12 @@ echo "$BL" | grep -q "not writable" && bad "bridge cannot write pending_blocks (
 
 echo; echo "[4/7] Coinbase: would the reward actually be spendable?"
 PL=$(blog sv2-pool_1 400)
-PS=$(echo "$PL" | grep -o 'payout script: raw([0-9a-f]*)' | tail -1)
-if [ -z "$PS" ]; then bad "no payout script — SV2 idle? (set the address on the SV2 card)"
+PH=$(bhead sv2-pool_1 80)
+PS=$(echo "$PH" | grep -o 'payout script: raw([0-9a-f]*)' | tail -1)
+if [ -z "$PS" ]; then
+  if [ "${CL:-0}" -ge 1 ]; then
+    warn "payout banner not in the log (rotated out), but the pool is serving $CL client — it bootstrapped, so a payout script exists"
+  else bad "no payout script and 0 clients — SV2 is idle (set the address on the SV2 card)"; fi
 else
   HEX=$(echo "$PS" | grep -o '[0-9a-f]\{20,\}')
   case "$HEX" in
@@ -72,12 +82,12 @@ else
     *)           bad "UNRECOGNISED payout script: $HEX — do not mine on this" ;;
   esac
 fi
-echo "$PL" | grep -q "rejected:" && bad "payout address was REJECTED — SV2 is idle" \
+echo "$PH$PL" | grep -q "address .* rejected:" && bad "payout address was REJECTED — SV2 is idle" \
   || ok "payout address accepted"
-TAG=$(echo "$PL" | grep -o 'coinbase tag: [^ ]*' | tail -1)
-[ -n "$TAG" ] && ok "$TAG (attribution)" || warn "no coinbase tag line — pre-1.4.50 image?"
-XN=$(echo "$PL" | grep -o 'extranonce2 bytes: [0-9]*' | tail -1)
-[ -n "$XN" ] && ok "$XN" || warn "no extranonce2 line — pre-1.4.53 image?"
+TAG=$(echo "$PH" | grep -o 'coinbase tag: [^ ]*' | tail -1)
+[ -n "$TAG" ] && ok "$TAG (attribution)" || warn "coinbase tag line rotated out of the log — restart the app to re-print the banner"
+XN=$(echo "$PH" | grep -o 'extranonce2 bytes: [0-9]*' | tail -1)
+[ -n "$XN" ] && ok "$XN" || warn "extranonce2 line rotated out of the log — restart the app to re-print the banner"
 
 echo; echo "[5/7] Pool health: nothing fatal in the log?"
 for pat in "CoinbaseTxPrefixError" "panicked" "Shutdown" "ExtranonceAllocator"; do
