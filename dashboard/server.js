@@ -295,16 +295,6 @@ function dropsRead() {
   catch (_) { return new Set(); }
 }
 let dropsWriteError = null;
-// Every stage of the last Disconnect, recorded before any early return can
-// swallow it. /diag showing empty drops + empty listbanned is ambiguous: it
-// looks the same whether the button was never pressed or the handler bailed at
-// the first line. This removes the ambiguity.
-let lastDisconnect = null;
-// Recorded by a GET, because GETs demonstrably reach this node (/diag does).
-// If lastTap fills in and lastDisconnect stays null, the click IS firing and the
-// POST is what dies -- which no amount of staring at the handler would reveal.
-let lastTap = null;
-let lastPointer = null;
 function dropsWrite(set) {
   try {
     fs.writeFileSync(ONION_DROP_FILE, JSON.stringify([...set]));
@@ -584,9 +574,7 @@ app.get('/api/status', async (_req, res) => {
 // ~500ms. "Lighter" is not a virtue if the control does not work.
 async function disconnectHandler(req, res) {
   const addr = String((req.body && req.body.addr) || '').trim();
-  lastDisconnect = { at: new Date().toISOString(), addrReceived: addr, stage: 'received' };
   if (!addr || addr.length > 128) {
-    lastDisconnect.stage = 'rejected: bad addr';
     return res.status(400).json({ ok: false, error: 'addr required' });
   }
   // Only disconnect something we are actually connected to. Passing an
@@ -597,14 +585,8 @@ async function disconnectHandler(req, res) {
     const peers = await rpc('getpeerinfo');
     const hit = (peers || []).find(p => p.addr === addr);
     if (!hit) {
-      // The likeliest silent failure: the address the UI sent does not match
-      // getpeerinfo byte for byte, so we 404 and nothing downstream ever runs.
-      // Record BOTH sides so a mismatch is obvious instead of theoretical.
-      lastDisconnect.stage = 'peer not found in getpeerinfo';
-      lastDisconnect.knownAddrs = (peers || []).map(p => p.addr).slice(0, 20);
       return res.status(404).json({ ok: false, error: 'not connected to that peer' });
     }
-    lastDisconnect.stage = 'matched'; lastDisconnect.id = hit.id;
     const host = hostOfAddr(addr);
 
     // disconnectnode is ONE-SHOT. bitcoind's own words: "Immediately
@@ -647,15 +629,13 @@ async function disconnectHandler(req, res) {
     //    BEFORE disconnectnode and left the peer connected. The button became a
     //    no-op, which is exactly what was still being seen. The drop is the part
     //    the user asked for; it must never be gated on a bonus step succeeding.
-    try { await rpc('disconnectnode', ['', hit.id]); lastDisconnect.dropped = true; }
-    catch (e) { lastDisconnect.dropped = false; lastDisconnect.dropError = String(e.message || e); }
+    await rpc('disconnectnode', ['', hit.id]).catch(() => {});
 
     // 3. remember it. Consulted by the pin reconcile AND by the watchdog below.
     const drops = dropsRead();
     drops.add(host);
     const persisted = dropsWrite(drops);
-    lastDisconnect.persisted = persisted;
-    if (!persisted) { note = 'block not saved: ' + dropsWriteError; lastDisconnect.persistError = dropsWriteError; }
+    if (!persisted) note = 'block not saved: ' + dropsWriteError;
     onionAdded.delete(host);
 
     // 4. ban, so bitcoind's automatic outbound path skips it and we don't rely
@@ -668,14 +648,9 @@ async function disconnectHandler(req, res) {
       const msg = String(e.message || e);
       if (/already banned/i.test(msg)) { banned = true; }
       else { note = 'not banned (' + msg + '); the watchdog will keep dropping it'; }
-      lastDisconnect.setbanError = msg;
     }
-    lastDisconnect.banned = banned;
-    lastDisconnect.hostBanned = host;
-    lastDisconnect.stage = 'done';
     return res.json({ ok: true, addr, unpinned, banned, note, persisted, dropFile: ONION_DROP_FILE });
   } catch (err) {
-    if (lastDisconnect) { lastDisconnect.stage = 'threw'; lastDisconnect.error = String(err.message || err); }
     return res.status(502).json({ ok: false, error: String(err.message || err) });
   }
 }
@@ -703,80 +678,6 @@ app.post('/api/peers/allow', async (req, res) => {
 // Diagnostics. This exists because I shipped four fixes for the same bug
 // without any way to see which assumption was wrong. Everything here is
 // measured on the spot, not inferred.
-// GET probes. Deliberately side-effect-free apart from recording that they
-// happened, and deliberately GET: the whole question is whether the browser can
-// reach this server at all from a tap.
-app.get('/api/peers/tap', (req, res) => {
-  lastTap = { at: new Date().toISOString(), addr: String(req.query.addr || '').slice(0, 128),
-              via: String(req.query.via || 'click') };
-  res.json({ ok: true });
-});
-app.get('/api/peers/pointer', (req, res) => {
-  lastPointer = { at: new Date().toISOString(), kind: String(req.query.kind || '').slice(0, 32) };
-  res.json({ ok: true });
-});
-
-// GET fallback for the disconnect itself. Not how this should be modelled -- a
-// GET must not change state -- but if POSTs are being dropped between the
-// browser and this app, a correct verb that never arrives is worth nothing.
-app.get('/api/peers/disconnect-get', async (req, res) => {
-  req.body = { addr: String(req.query.addr || '') };
-  return disconnectHandler(req, res);
-});
-
-app.get('/api/peers/diag', async (_req, res) => {
-  const out = { version: APP_VERSION, dropFile: ONION_DROP_FILE };
-
-  // can we actually write there? try it, don't assume.
-  try {
-    const probe = ONION_DROP_FILE + '.probe';
-    fs.writeFileSync(probe, 'x');
-    fs.unlinkSync(probe);
-    out.dropFileWritable = true;
-  } catch (e) {
-    out.dropFileWritable = false;
-    out.dropFileError = String(e.message || e);
-  }
-  out.dropFileExists = fs.existsSync(ONION_DROP_FILE);
-  try { out.dropFileRaw = fs.readFileSync(ONION_DROP_FILE, 'utf8').slice(0, 500); }
-  catch (e) { out.dropFileRaw = null; }
-  out.drops = [...dropsRead()];
-  out.lastWriteError = dropsWriteError;
-  out.lastDisconnect = lastDisconnect;   // null => the POST never arrived
-  out.lastTap = lastTap;                 // set by a GET the instant the click handler runs
-  out.lastPointer = lastPointer;         // set by a GET on raw pointerdown, before any click logic
-
-  // what the node itself thinks
-  try {
-    const b = await rpc('listbanned');
-    out.listbanned = b;
-    out.bannedCount = (b || []).length;
-  } catch (e) { out.listbannedError = String(e.message || e); }
-  try {
-    out.addednodes = (await rpc('getaddednodeinfo') || []).map((a) => a.addednode);
-  } catch (e) { out.addednodesError = String(e.message || e); }
-  try {
-    const peers = await rpc('getpeerinfo');
-    out.peers = (peers || []).map((p) => ({ id: p.id, addr: p.addr, inbound: p.inbound, age: p.conntime }));
-    out.peerCount = out.peers.length;
-  } catch (e) { out.peersError = String(e.message || e); }
-
-  res.json(out);
-});
-
-// Ban one address directly, so the ban itself can be tested apart from the rest
-// of the flow. Reports the raw RPC error instead of hiding it behind a 502.
-app.post('/api/peers/testban', async (req, res) => {
-  const host = hostOfAddr(String((req.body && req.body.addr) || '').trim());
-  if (!host) return res.status(400).json({ ok: false, error: 'addr required' });
-  const out = { host };
-  try { out.setban = await rpc('setban', [host, 'add', PEER_BLOCK_SECONDS, false]) ?? 'ok'; }
-  catch (e) { out.setbanError = String(e.message || e); }
-  try { out.isBannedNow = ((await rpc('listbanned')) || []).some((b) => String(b.address).startsWith(host)); }
-  catch (e) { out.listbannedError = String(e.message || e); }
-  res.json(out);
-});
-
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
 app.use(express.static(path.join(__dirname, 'public'), {

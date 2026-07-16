@@ -549,9 +549,9 @@
       <div id="onionList" style="font-family:var(--fm);font-size:11px"></div>
     </details>
     <div id="peersTable" style="font-family:var(--mono);font-size:11.5px"></div>
-    <!-- Visible, on-screen status. Every error used to go to btn.title, which
-         is a tooltip: on a phone there is no hover, so it can never render. All
-         the failure reporting was going somewhere physically unreadable. -->
+    <!-- Errors only. They used to go to btn.title -- a tooltip a phone cannot
+         render -- so every failure was invisible. Success stays quiet: the peer
+         simply leaves the list and appears under Blocked. -->
     <div id="peerStatus" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;
       font-family:var(--mono);font-size:11px;line-height:1.5;word-break:break-all;
       background:rgba(224,147,78,.08);border:1px solid rgba(224,147,78,.3);color:var(--warn)"></div>
@@ -666,50 +666,38 @@ function peerRowOrder(a, b){
   if(ta!==tb) return ta-tb;
   return String(a.addr).localeCompare(String(b.addr));
 }
-function peerSay(msg, ok){
+// Errors only. Success is self-evident: the peer leaves the list and appears
+// under Blocked, so a banner adds nothing. A FAILURE has to be seen, though --
+// every error here used to go to btn.title, a tooltip, which cannot render on a
+// phone. That silence is what made this bug take ten releases to find.
+function peerSay(msg){
   const el=document.getElementById('peerStatus');
   if(!el) return;
   el.style.display='block';
   el.textContent=msg;
-  el.style.borderColor = ok ? 'rgba(10,193,142,.4)' : 'rgba(224,147,78,.4)';
-  el.style.background  = ok ? 'rgba(10,193,142,.08)' : 'rgba(224,147,78,.08)';
-  el.style.color       = ok ? 'var(--green)' : 'var(--warn)';
+}
+function peerHush(){
+  const el=document.getElementById('peerStatus');
+  if(el) el.style.display='none';
 }
 async function disconnectPeer(addr, btn){
-  peerSay('disconnecting \u2026', true);
-  fetch('/api/peers/tap?via=click&addr='+encodeURIComponent(addr)).catch(()=>{});
   btn.disabled=true; btn.textContent='dropping';
-  const done=(j)=>{
-    peerSay('done \u2014 banned:'+j.banned+' saved:'+j.persisted+(j.note?(' \u2014 '+j.note):''),
-            Boolean(j.banned&&j.persisted));
-    btn.textContent='blocked'; btn.dataset.busy=''; tick();
-  };
-  const viaGet=async()=>{
-    const r=await fetch('/api/peers/disconnect-get?addr='+encodeURIComponent(addr));
-    const j=await r.json().catch(()=>({}));
-    if(r.ok){ done(j); return true; }
-    peerSay('GET also failed \u2014 HTTP '+r.status+' '+(j.error||''), false);
-    return false;
-  };
   try{
     const r=await fetch('/api/peers/disconnect',{method:'POST',
       headers:{'Content-Type':'application/json'},body:JSON.stringify({addr})});
     let j={}; try{ j=await r.json(); }catch(_){ }
     if(!r.ok){
-      // Rather than insist on the correct verb and ship something that does
-      // nothing, fall back. A request that never arrives is worth less than an
-      // inelegant one that does.
-      peerSay('POST rejected ('+r.status+') \u2014 retrying over GET', false);
-      if(await viaGet()) return;
       btn.disabled=false; btn.textContent='Disconnect'; btn.dataset.busy='';
+      peerSay('HTTP '+r.status+' \u2014 '+(j.error||'no body'));
       return;
     }
-    done(j);
+    // Success needs no banner: the peer leaves this list and turns up under
+    // Blocked. Only speak when there is something wrong to say.
+    if(j.note) peerSay(j.note); else peerHush();
+    btn.textContent='blocked'; btn.dataset.busy=''; tick();
   }catch(e){
-    peerSay('POST failed ('+String(e.message||e)+') \u2014 retrying over GET', false);
-    try{ if(await viaGet()) return; }
-    catch(e2){ peerSay('neither POST nor GET reached the node \u2014 '+String(e2.message||e2), false); }
     btn.disabled=false; btn.textContent='Disconnect'; btn.dataset.busy='';
+    peerSay('request failed \u2014 '+String(e.message||e));
   }
 }
 
@@ -734,9 +722,11 @@ function renderBlocked(list){
       try{
         const r=await fetch('/api/peers/allow',{method:'POST',
           headers:{'Content-Type':'application/json'},body:JSON.stringify({addr:host})});
-        if(!r.ok){ b.disabled=false; b.textContent='Allow'; return; }
-        tick();
-      }catch(e){ b.disabled=false; b.textContent='Allow'; }
+        if(!r.ok){ b.disabled=false; b.textContent='Allow';
+          const j=await r.json().catch(()=>({}));
+          peerSay('could not allow '+host+' \u2014 '+(j.error||('HTTP '+r.status))); return; }
+        peerHush(); tick();
+      }catch(e){ b.disabled=false; b.textContent='Allow'; peerSay('could not allow '+host+' \u2014 '+String(e.message||e)); }
     });
     row.appendChild(b);
     t.appendChild(row);
@@ -800,17 +790,6 @@ function renderPeerRows(list){
 
 // ONE listener, on the container, alive for the life of the page.
 const peersTableEl = document.getElementById('peersTable');
-
-// pointerdown fires before click and survives a sloppy tap. If the server sees
-// this but never sees the tap probe, the touch lands and the CLICK never forms.
-// That distinction cannot be reasoned out from here, so measure it.
-peersTableEl.addEventListener('pointerdown',(e)=>{
-  const b=e.target.closest('button.dc');
-  if(!b) return;
-  // Silent probe. /diag still reports lastPointer, which is what pinned this
-  // down; the on-screen dump was for the hunt, not for daily use.
-  fetch('/api/peers/pointer?kind=pointerdown').catch(()=>{});
-},true);
 
 // click AND touchend: on iOS a click can fail to form even when the touch is
 // clean. dataset.busy stops the two firing twice.

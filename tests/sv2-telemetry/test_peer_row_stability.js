@@ -43,16 +43,16 @@ check('the click is delegated to the container, not the row',
 check('touchend is wired as a fallback for a click that never forms',
   /peersTableEl\.addEventListener\('touchend', armDisconnect\)/.test(UI));
 check('the two paths cannot double-fire', /dataset\.busy==='1'/.test(UI));
-check('a GET probe fires on pointerdown, before any click logic',
-  /'\/api\/peers\/pointer\?kind=pointerdown'/.test(UI));
-check('a GET probe records the tap, since GETs demonstrably arrive',
-  /'\/api\/peers\/tap\?via=click/.test(UI));
-check('the disconnect falls back to GET when the POST does not land',
-  /'\/api\/peers\/disconnect-get\?addr='/.test(UI));
 // btn.title is a tooltip: it cannot render on a phone, which is where this is
 // used. Every error path went there for nine releases.
 check('errors are reported on screen, not into a tooltip',
   /function peerSay/.test(UI) && !/btn\.title=j\.error/.test(UI));
+// Success needs no banner: the peer leaves the list and appears under Blocked.
+// A failure has nowhere else to go, which is the whole reason peerSay exists.
+check('success is quiet', /if\(j\.note\) peerSay\(j\.note\); else peerHush\(\);/.test(UI));
+check('the Allow button reports its failures too', /could not allow /.test(UI));
+check('no diagnostic scaffolding left in the tap path',
+  !/peers\/tap|peers\/pointer|disconnect-get/.test(UI));
 check('no per-row click listener survives', !/btn\.addEventListener\('click'/.test(UI));
 check('the delegated handler reads the address off the button',
   /b\.dataset\.addr/.test(UI));

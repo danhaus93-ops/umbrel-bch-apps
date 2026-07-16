@@ -34,15 +34,12 @@ const endpoint = SRC.slice(
   SRC.indexOf("app.post('/api/peers/disconnect', disconnectHandler);"));
 check('the disconnect handler exists', endpoint.length > 0);
 check('the handler is reachable over POST', SRC.includes("app.post('/api/peers/disconnect', disconnectHandler);"));
-// POSTs may be being dropped between the browser and this app -- both
-// POST-driven features show zero evidence of ever having run. A correct verb
-// that never arrives is worth nothing, so the same body is reachable by GET.
-check('the same handler is reachable over GET as a fallback',
-  SRC.includes("app.get('/api/peers/disconnect-get'") && /return disconnectHandler\(req, res\)/.test(SRC));
-check('a GET probe records that the click handler ran at all',
-  SRC.includes("app.get('/api/peers/tap'") && SRC.includes('out.lastTap'));
-check('a GET probe records raw pointerdown, before click logic',
-  SRC.includes("app.get('/api/peers/pointer'") && SRC.includes('out.lastPointer'));
+// The GET fallback and the tap/pointer probes were scaffolding for the hunt. The
+// POST works -- it is what finally returned banned:true -- so a hedge against
+// "POSTs are being dropped" is now just dead code.
+check('no diagnostic endpoints left in production',
+  !/peers\/tap|peers\/pointer|peers\/diag|testban|disconnect-get/.test(SRC));
+check('no leftover debug state', !/lastTap|lastPointer|lastDisconnect/.test(SRC));
 
 // ---- the drop must never be gated on the ban ------------------------------
 // 29.1.23 called setban BEFORE disconnectnode and returned 502 if it threw.

@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.1.32"
+version: "29.1.33"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
@@ -19,9 +19,12 @@ description: >-
 
   Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
 releaseNotes: >-
-  Puts the Disconnect buttons back to their original size. They were enlarged
-  while chasing the bug that stopped them working, which turned out to have nothing
-  to do with their size.
+  Removes the diagnostics that were added while tracking down the Disconnect
+  button, now that it works. The fix itself is unchanged.
+
+  Disconnecting a peer no longer shows a confirmation banner — the peer simply
+  leaves the list and appears under Blocked. If something goes wrong, it still says
+  so.
 developer: LoneStrike Labs
 website: https://bitcoincashnode.org
 dependencies: []
