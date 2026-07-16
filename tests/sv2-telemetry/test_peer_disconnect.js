@@ -24,17 +24,34 @@ const check = (name, cond) => {
   if (!cond) failed++;
 };
 
+// Bound to the disconnect handler alone: /api/peers/allow now sits between it
+// and /healthz, and it legitimately contains 'remove' + setban of its own.
 const endpoint = SRC.slice(
   SRC.indexOf("app.post('/api/peers/disconnect'"),
-  SRC.indexOf('app.get(\'/healthz\''));
+  SRC.indexOf("app.post('/api/peers/allow'"));
 check('the disconnect endpoint exists', endpoint.length > 0);
 
-// ---- the ordering that makes it work ---------------------------------------
-const iRemove = endpoint.indexOf("'remove'");
-const iDrop = endpoint.indexOf("disconnectnode");
-check('disconnect removes the standing addnode entry', iRemove > -1);
-check('it unpins BEFORE disconnecting (else bitcoind redials first)',
-  iRemove > -1 && iDrop > -1 && iRemove < iDrop);
+// ---- BOTH dial paths must be closed ----------------------------------------
+// bitcoind refills a freed outbound slot within ~500ms (ThreadOpenConnections),
+// so disconnectnode alone is a no-op by design. Two paths dial a peer and each
+// ignores a different guard:
+//   automatic (pszDest == nullptr) -> checks IsBanned. Stopped only by a ban.
+//   addnode   (pszDest != nullptr) -> ban check SKIPPED. Stopped only by
+//                                     removing the addnode entry.
+// Closing one and not the other is exactly the bug that shipped in 29.1.22.
+const iRemove = endpoint.indexOf("rpc('addnode', [addr, 'remove']");
+const iBan = endpoint.indexOf("rpc('setban'");
+const iDrop = endpoint.indexOf("rpc('disconnectnode'");
+check('disconnect removes the standing addnode entry (closes the addnode path)', iRemove > -1);
+check('disconnect BANS the peer (closes the automatic outbound path)', iBan > -1);
+check('a ban alone is not relied on — the addnode entry is removed too',
+  iRemove > -1 && iBan > -1);
+check('both guards are applied BEFORE disconnecting (else bitcoind redials first)',
+  iRemove > -1 && iBan > -1 && iDrop > -1 && iRemove < iDrop && iBan < iDrop);
+check('the ban outlives setban\'s 24h default', /PEER_BLOCK_SECONDS/.test(endpoint) &&
+  /PEER_BLOCK_SECONDS = 10 \* 365/.test(SRC));
+check('a failed ban is reported, not swallowed (the peer would return)',
+  /could not block this peer/.test(endpoint));
 check('it checks getaddednodeinfo rather than guessing what is pinned',
   endpoint.includes('getaddednodeinfo'));
 check('it disconnects by node id, not by address',
@@ -51,9 +68,24 @@ const reconcile = SRC.slice(SRC.indexOf('async function onionReconcile'), SRC.in
 check('onionReconcile reads the drop list', reconcile.includes('dropsRead'));
 check('onionReconcile skips a peer the user dropped', /if \(drops\.has\(o\.address\)\) continue;/.test(reconcile));
 
+// ---- every block must be undoable, or the button is a one-way door ---------
+// A clearnet peer has no entry in the onion directory, so without this endpoint
+// Disconnect could never be reversed from the UI.
+const allow = SRC.slice(SRC.indexOf("app.post('/api/peers/allow'"), SRC.indexOf("app.get('/healthz'"));
+check('an unblock endpoint exists', allow.length > 0);
+check('unblock lifts the ban', allow.includes("'remove'") && allow.includes('setban'));
+check('unblock clears the persisted drop', allow.includes('drops.delete'));
+check('the blocked list is exposed to the UI', SRC.includes('out.blocked = [...dropsRead()]'));
+const ui = fs.readFileSync(path.join(__dirname, '..', '..', 'dashboard', 'public', 'index.html'), 'utf8');
+check('the UI renders the blocked list with an Allow button', /renderBlocked/.test(ui) && /'Allow'/.test(ui));
+check('the button says it blocks, rather than implying a one-shot drop',
+  /Disconnect and block this peer/.test(ui));
+check('no stale claim that this is not a ban', !/not a ban/.test(ui) && !/not `setban`/.test(SRC));
+
 // ---- and Connect must undo the drop, or the peer can never come back -------
 const onionPost = SRC.slice(SRC.indexOf("app.post('/api/onion'"), SRC.indexOf("app.post('/api/tor'"));
 check('an explicit Connect clears the drop', onionPost.includes('drops.delete(b.connect)'));
+check('an explicit Connect also lifts the ban', /setban',\s*\[b\.connect, 'remove'\]/.test(onionPost));
 check('Connect uses onetry (a one-shot dial, not a standing pin)', onionPost.includes("'onetry'"));
 
 // ---- the pin toggle must not resurrect dropped peers either -----------------

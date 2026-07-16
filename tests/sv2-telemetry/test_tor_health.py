@@ -199,8 +199,12 @@ def test_onion_peers():
     check("onion: never writes bitcoin.conf (no restart required)",
           "addnode=" not in srv)
 
+    # Bound to the handler, not a magic offset. This was srv[i:i+900] and it
+    # broke the moment the handler grew past 900 chars -- reporting that manual
+    # connect had stopped using onetry when it had not. Same failure as slicing
+    # a manifest between two anchors: the window is not the thing you meant.
     i = srv.index("app.post('/api/onion'")
-    ep = srv[i:i + 900]
+    ep = srv[i:srv.index("app.post('/api/tor'")]
     check("onion: manual connect validates the address shape",
           "/^[a-z2-7]{56}\\.onion$/i.test" in ep)
     check("onion: manual connect uses onetry (one-shot, not pinned)",

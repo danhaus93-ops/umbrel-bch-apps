@@ -285,6 +285,10 @@ const onionAdded = new Set();
 // loses a race with bitcoind's own redial -- the connection comes straight
 // back and the button looks broken. An in-memory set would also forget every
 // dashboard restart, and the peer would silently return.
+// bitcoind has no indefinite ban, and setban's default expires in 24h -- which
+// would silently undo an explicit decision. 10 years is "until you say
+// otherwise" in practice, and Allow/Connect removes it.
+const PEER_BLOCK_SECONDS = 10 * 365 * 24 * 3600;
 const ONION_DROP_FILE = path.join(path.dirname(NODE_CONF), 'peer_drops');
 function dropsRead() {
   try { return new Set(JSON.parse(fs.readFileSync(ONION_DROP_FILE, 'utf8'))); }
@@ -360,8 +364,12 @@ app.post('/api/onion', async (req, res) => {
     if (typeof b.connect === 'string' && /^[a-z2-7]{56}\.onion$/i.test(b.connect)) {
       // An explicit Connect undoes an explicit Disconnect -- otherwise the
       // peer could never come back and the button would silently do nothing.
+      // The ban must be lifted BEFORE dialling: onetry goes through
+      // OpenNetworkConnection, and while a ban does not block the addnode path,
+      // leaving it in place would let the automatic path drop it again later.
       const drops = dropsRead();
       if (drops.delete(b.connect)) dropsWrite(drops);
+      await rpc('setban', [b.connect, 'remove']).catch(() => {});
       const r = await rpc('addnode', [b.connect + ':' + (Number(b.port) || 8333), 'onetry']);
       return res.json({ ok: true, result: r === null ? 'requested' : r });
     }
@@ -482,6 +490,7 @@ app.get('/api/status', async (_req, res) => {
       out.onion_known = (await onionKnown().catch(() => [])).length;
       out.onion_pin = onionPinOn();
       out.geo_ready = GEO_OK;
+      out.blocked = [...dropsRead()];
       out.peers_list = (peers || []).slice(0, 40).map(p => {
         // Resolved HERE, on the node. The browser only ever receives a country
         // code and a centroid — never an address it didn't already have.
@@ -524,10 +533,14 @@ app.get('/api/status', async (_req, res) => {
   res.json(out);
 });
 
-// Drop one peer. This is `disconnectnode`, not `setban`: a one-shot
-// disconnect that bitcoind is free to undo by dialling the address again. The
-// UI says so, because a control that quietly did more than it claimed is the
-// same failure class as a toggle that silently isolates the node.
+// Block one peer. This DOES ban, and the UI must say so: a control that
+// quietly does more than it claims is the same failure class as a toggle that
+// silently isolates the node.
+//
+// The earlier version here was disconnectnode alone, on the reasoning that a
+// one-shot drop is the lighter, more honest action. It was neither -- it was a
+// button that did nothing, because bitcoind refills the outbound slot within
+// ~500ms. "Lighter" is not a virtue if the control does not work.
 app.post('/api/peers/disconnect', async (req, res) => {
   const addr = String((req.body && req.body.addr) || '').trim();
   if (!addr || addr.length > 128) {
@@ -545,31 +558,81 @@ app.post('/api/peers/disconnect', async (req, res) => {
     }
     const host = hostOfAddr(addr);
 
-    // ORDER MATTERS. If this peer is pinned with `addnode ... add`, bitcoind
-    // will redial it the moment we drop it -- that is what `add` means. Remove
-    // the standing entry BEFORE disconnecting, or the peer is back before the
-    // UI has finished repainting.
-    let unpinned = false;
+    // disconnectnode is ONE-SHOT. bitcoind's own words: "Immediately
+    // disconnects from the specified peer node." It makes no promise that the
+    // peer stays gone, and it does not:
+    //
+    //   ThreadOpenConnections() loops every 500ms and, whenever nOutbound drops
+    //   below nMaxOutbound, opens a replacement from addrman. A peer we just
+    //   dropped is a fresh `tried` entry, so it is a prime candidate -- which
+    //   is why it reappears within seconds.
+    //
+    // Two different code paths dial a peer, and each ignores a different guard:
+    //
+    //   automatic  OpenNetworkConnection(pszDest = nullptr)
+    //              -> checks IsBanned/IsDiscouraged. Stopped ONLY by a ban.
+    //   addnode    OpenNetworkConnection(pszDest = "host:port")
+    //              -> `if (!pszDest)` means the ban check is SKIPPED entirely.
+    //                 Stopped ONLY by removing the addnode entry.
+    //
+    // So keeping a peer away needs BOTH. A ban alone leaves the pin dialling;
+    // removing the pin alone leaves the automatic path dialling. That is why
+    // the previous fix did not work.
+    let unpinned = false, banned = false;
+
+    // 1. withdraw the standing addnode request (the ban cannot stop this path)
     try {
       const added = await rpc('getaddednodeinfo').catch(() => []);
-      const pinned = (added || []).some((a) => hostOfAddr(a.addednode) === host);
-      if (pinned) {
+      if ((added || []).some((a) => hostOfAddr(a.addednode) === host)) {
         await rpc('addnode', [addr, 'remove']).catch(() => {});
         unpinned = true;
       }
-    } catch (_) { /* non-fatal: the disconnect below still stands */ }
+    } catch (_) { /* non-fatal */ }
 
-    // Remember it, so the 5-minute pin reconcile doesn't quietly re-add it and
-    // so the decision survives a dashboard restart.
+    // 2. ban, so the automatic outbound path skips it too. Long rather than
+    // indefinite: bitcoind has no "forever", and a ban that silently expires in
+    // 24h would quietly undo the user's decision. Removed by Allow/Connect.
+    try {
+      await rpc('setban', [host, 'add', PEER_BLOCK_SECONDS, false]);
+      banned = true;
+    } catch (e) {
+      // If the ban won't take we must say so: without it the peer WILL return,
+      // and a button that lies is worse than one that fails.
+      return res.status(502).json({
+        ok: false, addr,
+        error: 'could not block this peer, so it would reconnect: ' + String(e.message || e),
+      });
+    }
+
+    // 3. remember it: survives a dashboard restart, and the pin reconcile skips it
     const drops = dropsRead();
     drops.add(host);
     dropsWrite(drops);
     onionAdded.delete(host);
 
-    // Prefer the node id: addresses are not unique (two peers can share an
-    // inbound source), and the id is exactly the connection we looked up.
+    // 4. finally drop the live connection. By node id: addresses are not unique
+    // (two peers can share an inbound source) and the id is the exact
+    // connection we looked up.
     await rpc('disconnectnode', ['', hit.id]);
-    return res.json({ ok: true, addr, unpinned });
+    return res.json({ ok: true, addr, unpinned, banned });
+  } catch (err) {
+    return res.status(502).json({ ok: false, error: String(err.message || err) });
+  }
+});
+
+// Un-block a peer. Without this, Disconnect on a clearnet peer would be a
+// one-way door: it has no entry in the onion directory, so there would be no
+// way to ever let it back in. A control that cannot be undone is a trap.
+app.post('/api/peers/allow', async (req, res) => {
+  const addr = String((req.body && req.body.addr) || '').trim();
+  if (!addr || addr.length > 128) return res.status(400).json({ ok: false, error: 'addr required' });
+  const host = hostOfAddr(addr);
+  try {
+    await rpc('setban', [host, 'remove']).catch(() => {});   // already-unbanned is fine
+    const drops = dropsRead();
+    drops.delete(host);
+    dropsWrite(drops);
+    return res.json({ ok: true, addr: host });
   } catch (err) {
     return res.status(502).json({ ok: false, error: String(err.message || err) });
   }

@@ -548,6 +548,11 @@
       <div id="onionList" style="font-family:var(--fm);font-size:11px"></div>
     </details>
     <div id="peersTable" style="font-family:var(--mono);font-size:11.5px"></div>
+    <div id="blockedBox" style="display:none;margin-top:14px">
+      <h3 style="margin:0 0 2px;font-size:13px">Blocked</h3>
+      <p style="margin:0 0 6px;color:var(--muted);font-size:12px">Your node won't connect to these until you allow them.</p>
+      <div id="blockedList" style="font-family:var(--mono);font-size:11.5px"></div>
+    </div>
     </div>
     <div class="conn">
       <h3>Recent blocks</h3>
@@ -659,6 +664,35 @@ async function disconnectPeer(addr, btn){
     tick();
   }catch(e){ btn.disabled=false; btn.textContent='Disconnect'; btn.title=String(e.message||e); }
 }
+function renderBlocked(list){
+  const box=document.getElementById('blockedBox');
+  if(!box) return;
+  const n=(list||[]).length;
+  box.style.display = n ? 'block' : 'none';
+  if(!n) return;
+  const t=document.getElementById('blockedList');
+  t.textContent='';
+  for(const host of list){
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:center';
+    row.innerHTML='<span class="pa" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)"></span>';
+    row.querySelector('.pa').textContent=host;   // peer-controlled bytes: textContent only
+    const b=document.createElement('button');
+    b.className='dc'; b.textContent='Allow';
+    b.setAttribute('aria-label','Allow peer '+host);
+    b.addEventListener('click',async()=>{
+      b.disabled=true; b.textContent='allowing';
+      try{
+        const r=await fetch('/api/peers/allow',{method:'POST',
+          headers:{'Content-Type':'application/json'},body:JSON.stringify({addr:host})});
+        if(!r.ok){ b.disabled=false; b.textContent='Allow'; return; }
+        tick();
+      }catch(e){ b.disabled=false; b.textContent='Allow'; }
+    });
+    row.appendChild(b);
+    t.appendChild(row);
+  }
+}
 function renderPeerRows(list){
   const t=document.getElementById('peersTable');
   t.textContent='';
@@ -675,7 +709,9 @@ function renderPeerRows(list){
     row.querySelector('.pa').textContent=(p.tor?'[tor] ':'')+p.addr;
     const btn=document.createElement('button');
     btn.className='dc'; btn.textContent='Disconnect';
-    btn.setAttribute('aria-label','Disconnect peer '+p.addr);
+    // says what it does: this blocks the peer until you allow it back
+    btn.title='Disconnect and block this peer. Your node will not reconnect to it until you allow it again.';
+    btn.setAttribute('aria-label','Disconnect and block peer '+p.addr);
     btn.addEventListener('click',()=>disconnectPeer(p.addr,btn));
     row.appendChild(btn);
     t.appendChild(row);
@@ -798,6 +834,7 @@ async function tick(){
     var op=document.getElementById('onionPin');
     if(op&&typeof d.onion_pin==='boolean'&&!window.__onionTouched)op.checked=d.onion_pin;
     renderPeerRows(d.peers_list);
+    renderBlocked(d.blocked);
     syncPeers(d.peers_list);
     if(d.geo_ready===false){var go=document.getElementById('geoOff'); if(go)go.style.display='block';}
   }
