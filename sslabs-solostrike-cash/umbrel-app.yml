@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.56"
+version: "1.4.57"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -76,15 +76,16 @@ widgets:
           text: "0"
           subtext: "found"
 releaseNotes: >-
-  The SV2 card now shows what the pool is actually running, not just what you
-  saved.
+  Adds an idle worker timeout to the SV2 card. A miner with no accepted shares
+  for that many minutes drops off the list, and reappears on its next share. It
+  applies within a couple of minutes of saving — no restart needed.
 
-  These settings only take effect when the pool restarts, so the value you saved
-  and the value in use can differ — and there was no way to tell. The Extranonce2
-  box also showed a hint of 16 whatever it really was. It now shows your real
-  setting, and warns you plainly when a restart is needed to apply it.
+  The card now also says in plain text which settings need a pool restart, instead
+  of hiding it in a hover hint.
 
-  If a miner is being refused for asking too large an extranonce2, this is where it
-  will say so.
+  Quieter logs: a repeating node-connection error in the template bridge now logs
+  once and then periodically, instead of eleven times a minute. Note the update
+  briefly restarts the template bridge — a gap of a few seconds — so if you're
+  mid-rental, update at a quiet moment.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
