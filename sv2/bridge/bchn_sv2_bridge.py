@@ -42,12 +42,19 @@ async def zmtp_sub_connect(host, port, topic: bytes):
     if peer[:1] != b"\xff" or peer[10:11] != b"\x03":
         raise RuntimeError("peer is not ZMTP 3.x")
 
+    # A ZMTP long frame declares its length as a U64 \u2014 up to 2^64. We only
+    # subscribe to hashblock (32 bytes) on a trusted local BCHN, so anything
+    # near that cap means the endpoint is not what we think it is.
+    ZMTP_MAX_FRAME = 1 << 20
+
     async def read_frame():
         flags = (await reader.readexactly(1))[0]
         if flags & 0x02:
             ln = int.from_bytes(await reader.readexactly(8), "big")
         else:
             ln = (await reader.readexactly(1))[0]
+        if ln > ZMTP_MAX_FRAME:
+            raise ValueError("ZMTP frame length %d exceeds %d" % (ln, ZMTP_MAX_FRAME))
         return flags, await reader.readexactly(ln)
 
     def meta(k, v):
@@ -350,8 +357,15 @@ class Bridge:
                 self.log(f"[bridge] pending resubmitter error: {e}")
             await asyncio.sleep(60)
 
+    MAX_CLIENTS = 8    # this TP serves our own SV2 pool, not the public
+
     async def handle_client(self, reader, writer):
         peer = writer.get_extra_info("peername")
+        if len(self.clients) >= self.MAX_CLIENTS:
+            self.log(f"[bridge] refusing {peer}: {self.MAX_CLIENTS} clients already connected")
+            try: writer.close()
+            except Exception: pass
+            return
         self.log(f"[bridge] pool connected from {peer}")
         async def rd(n):
             d = await reader.readexactly(n)
@@ -407,6 +421,10 @@ class Bridge:
         ext = struct.unpack("<H", hdr[0:2])[0]
         mtype = hdr[2]
         length = struct.unpack("<I", hdr[3:6] + b"\x00")[0]
+        # Declared length is attacker input. Bound it BEFORE readexactly, or one
+        # peer makes us buffer megabytes off six bytes of header. ValueError is
+        # already caught by handle_client, which drops the connection.
+        sv2.check_frame_len(mtype, length)
         payload = await reader.readexactly(length) if length else b""
         return ext, mtype, payload
 

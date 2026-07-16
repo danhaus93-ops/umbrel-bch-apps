@@ -88,6 +88,7 @@ def read_frame(sock_read):
     hdr = sock_read(6)
     ext, mtype = struct.unpack("<H", hdr[0:2])[0], hdr[2]
     length = struct.unpack("<I", hdr[3:6] + b"\x00")[0]
+    check_frame_len(mtype, length)              # BOUND BEFORE READ
     return ext, mtype, sock_read(length) if length else b""
 
 # ---------------------------- message builders/parsers ----------------------
@@ -185,3 +186,52 @@ def parse_submit_solution(p):
     return {"template_id": r.u64(), "version": r.u32(),
             "header_timestamp": r.u32(), "header_nonce": r.u32(),
             "coinbase_tx": r.b0_64k()}
+
+
+# --- frame bounds -----------------------------------------------------------
+# The SV2 header carries msg_length as a U24: six bytes of attacker input can
+# declare up to 16,777,215 bytes. A reader that trusts it sizes its next read
+# from that number. This is the bug that crash-looped mkpool on 2026-07-15 (a
+# header claiming 200,000 bytes crammed into a fixed 16 KB buffer). Python
+# cannot be made to corrupt memory, but readexactly(16 MiB) still lets one
+# peer make the bridge hold 16 MiB off six bytes of header.
+#
+# Limits come from each message's OWN field layout, never a round number.
+# SubmitSolution carries the coinbase tx as B0_64K, so a genuine found block
+# can legitimately declare ~65.5 KB; a blanket 8 KB cap would have REFUSED A
+# FOUND BLOCK. A bound that is too tight costs more than the DoS it prevents.
+#
+#   B0_255 = 1+255   STR0_255 = 1+255   B0_64K = 2+65535   SEQ0_255[U256] = 1+255*32
+MAX_FRAME_LEN = 0xffffff        # U24 ceiling; the wire cannot exceed it
+UNKNOWN_FRAME_MAX = 8192        # unknown types are logged and ignored anyway
+
+_LIMITS = {
+    MSG_SETUP_CONNECTION:            1 + 2 + 2 + 4 + (1 + 255) * 5 + 2,
+    MSG_SETUP_CONNECTION_SUCCESS:    2 + 4,
+    MSG_SETUP_CONNECTION_ERROR:      4 + 1 + 255,
+    MSG_COINBASE_OUTPUT_CONSTRAINTS: 4 + 2,
+    MSG_SET_NEW_PREV_HASH:           8 + 32 + 4 + 4 + 32,
+    MSG_REQUEST_TX_DATA:             8,
+    MSG_REQUEST_TX_DATA_ERROR:       8 + 1 + 255,
+    MSG_SUBMIT_SOLUTION:             8 + 4 + 4 + 4 + (2 + 65535),
+    MSG_NEW_TEMPLATE:                8 + 1 + 4 + 4 + (1 + 255) + 4 + 8 + 4
+                                     + (2 + 65535) + 4 + (1 + 255 * 32),
+    # Carries a whole block's transactions; BCH allows 32 MB, above the U24
+    # wire ceiling anyway, so the ceiling is the limit.
+    MSG_REQUEST_TX_DATA_SUCCESS:     MAX_FRAME_LEN,
+}
+
+
+def frame_limit(mtype: int) -> int:
+    """Ceiling for a declared msg_length, from that message's field layout."""
+    return _LIMITS.get(mtype, UNKNOWN_FRAME_MAX)
+
+
+def check_frame_len(mtype: int, length: int) -> None:
+    """Raise before a single byte of payload is read. Callers MUST invoke this
+    between reading the 6-byte header and reading the payload."""
+    limit = frame_limit(mtype)
+    if length > limit:
+        raise ValueError(
+            "frame length %d exceeds limit %d for msg_type 0x%02x "
+            "\u2014 refusing to read payload" % (length, limit, mtype))
