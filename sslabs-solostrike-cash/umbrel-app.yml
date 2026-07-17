@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.57"
+version: "1.4.58"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -76,16 +76,13 @@ widgets:
           text: "0"
           subtext: "found"
 releaseNotes: >-
-  Adds an idle worker timeout to the SV2 card. A miner with no accepted shares
-  for that many minutes drops off the list, and reappears on its next share. It
-  applies within a couple of minutes of saving — no restart needed.
-
-  The card now also says in plain text which settings need a pool restart, instead
-  of hiding it in a hover hint.
-
-  Quieter logs: a repeating node-connection error in the template bridge now logs
-  once and then periodically, instead of eleven times a minute. Note the update
-  briefly restarts the template bridge — a gap of a few seconds — so if you're
-  mid-rental, update at a quiet moment.
+  Blocks found over Stratum V2 now always appear in Blocks Found. Previously
+  the bridge's own record of an accepted block was only used to label blocks
+  the chain scan had already noticed - so a V2 block could be accepted by your
+  node, pay you, and still not show up in the list or count. The bridge's
+  record now creates the entry directly, and finding a V2 block correctly
+  resets the round for your whole fleet. Also fixed: payout addresses entered
+  in legacy format now match correctly when checking the chain, so blocks
+  paying a legacy address are recognised.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
