@@ -242,6 +242,100 @@ def test_sv2_log_download():
           and "Only share privately" in html)
 
 
+
+def _extract_fn(src, header):
+    i = src.index(header)
+    j = src.index("{", i)
+    depth, k = 0, j
+    while k < len(src):
+        if src[k] == "{": depth += 1
+        elif src[k] == "}":
+            depth -= 1
+            if depth == 0: return src[i:k + 1]
+        k += 1
+    raise AssertionError("unbalanced braces for " + header)
+
+
+def test_sv2_found_blocks_create_entries():
+    """Chris's 959807: the bridge recorded BLOCK ACCEPTED in sv2_blocks.jsonl,
+    but the dashboard only used that file to ANNOTATE blocks the chain scan had
+    already found -- so when the scan missed, Blocks Found stayed at 2 and the
+    fleet round-reset never fired. The jsonl is written at the moment the node
+    accepts the block; it must CREATE entries."""
+    check("upsert function exists", "function mergeSv2FoundBlocks(" in SRC)
+    check("old annotate-only loop is gone",
+          "if (b && !b.worker) b.worker = 'SV2';" not in SRC)
+    fn = _extract_fn(SRC, "function mergeSv2FoundBlocks(")
+    check("upsert creates entries (push)", "blockState.blocks.push({" in fn)
+    check("created entries are marked as bridge-sourced", "source: 'sv2-bridge'" in fn)
+    check("accepted/duplicate map to confirmed",
+          "rec.result === 'accepted' || rec.result === 'duplicate'" in fn)
+    check("dedupes by hash OR height",
+          "x.hash === rec.hash" in fn and "x.height === rec.height" in fn)
+    check("persists when anything was added", "if (added) saveBlocks();" in fn)
+    i = SRC.index("async function scanBlocks()")
+    scan = SRC[i:i + 4000]
+    check("scan runs the upsert before healFromBlockFiles",
+          0 < scan.find("mergeSv2FoundBlocks();") < scan.find("healFromBlockFiles();"))
+    check("status merge upserts and refreshes the visible list",
+          "if (mergeSv2FoundBlocks()) {" in SRC and
+          "out.blockList = [...blockState.blocks]" in SRC)
+
+    # functional: run the real function under node with stubs (CI only)
+    import shutil, subprocess, tempfile
+    if not shutil.which("node"):
+        print("SKIP  upsert behaviour (node unavailable on this host)")
+        return
+    js = """
+let saved = 0;
+const saveBlocks = () => { saved++; };
+const blockState = { blocks: [{ height: 100, hash: 'aa', time: 1, worker: null }] };
+let jsonl = [];
+const sv2Blocks = () => jsonl;
+%s
+// 1) rec matching an existing chain-scan entry: annotate only
+jsonl = [{ height: 100, hash: 'aa', time: 1, result: 'accepted' }];
+let n1 = mergeSv2FoundBlocks();
+// 2) brand-new accepted rec: must CREATE
+jsonl = [{ height: 959807, hash: 'ae8f398', time: 1784183321, result: 'accepted' }];
+let n2 = mergeSv2FoundBlocks();
+// 3) idempotent on re-run
+let n3 = mergeSv2FoundBlocks();
+const nb = blockState.blocks.find(b => b.height === 959807);
+console.log(JSON.stringify({ n1, n2, n3, len: blockState.blocks.length, saved,
+  annotated: blockState.blocks[0].worker, state: nb && nb.state,
+  worker: nb && nb.worker, src: nb && nb.source }));
+""" % _extract_fn(SRC, "function mergeSv2FoundBlocks(")
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as f:
+        f.write(js); pth = f.name
+    r = subprocess.run(["node", pth], capture_output=True, text=True)
+    import json as _json
+    try: d = _json.loads(r.stdout.strip().split("\n")[-1])
+    except Exception:
+        check("upsert functional run", False, r.stdout + r.stderr); return
+    check("existing entry annotated, not duplicated", d["n1"] == 0 and d["annotated"] == "SV2")
+    check("new accepted rec creates exactly one entry", d["n2"] == 1 and d["len"] == 2)
+    check("created entry: confirmed / worker SV2 / bridge-sourced",
+          d["state"] == "confirmed" and d["worker"] == "SV2" and d["src"] == "sv2-bridge")
+    check("idempotent on re-run", d["n3"] == 0)
+    check("saveBlocks called only when something was added", d["saved"] == 1)
+
+
+def test_addr_matching_normalized_by_node():
+    """BCHN reports vout addresses in cashaddr; a legacy-stored payout (a real
+    one in the field: 1QJr...) could never string-match, so the chain scan
+    silently missed paid blocks. The node normalizes via validateaddress."""
+    check("addrKeysFor exists", "async function addrKeysFor(" in SRC)
+    fn = _extract_fn(SRC, "async function addrKeysFor(")
+    check("asks the node to normalize", "'validateaddress'" in fn)
+    check("keeps the raw key too (node not ready is survivable)",
+          "keys.add(k)" in fn and "node not ready" in fn)
+    check("coinbasePaysUs matches against the key set", "mine.has(addrKey(a))" in SRC)
+    check("scan unions both payout addresses into one key set",
+          "for (const k of await addrKeysFor(readSv2Address())) mineKeys.add(k);" in SRC)
+    check("single-string matching is gone", "addrKey(a) === mine" not in SRC)
+
+
 if __name__ == "__main__":
     print("unified worker schema regression tests:")
     test_both_protocols_emit_one_schema()
@@ -257,6 +351,8 @@ if __name__ == "__main__":
     test_extranonce2_setting()
     test_ui_is_labelled()
     test_sv2_log_download()
+    test_sv2_found_blocks_create_entries()
+    test_addr_matching_normalized_by_node()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)

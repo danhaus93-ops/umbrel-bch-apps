@@ -894,6 +894,25 @@ function saveBlocks() {
 }
 function addrKey(a) { return String(a || '').toLowerCase().replace(/^(bitcoincash|bchtest|bchreg):/, ''); }
 
+// A stored payout address and the address BCHN reports in a coinbase vout can
+// be the same destination in two spellings: BCHN reports cashaddr, but users
+// paste legacy addresses (a real one in the field: 1QJr...). addrKey() string
+// comparison can never match across the two, so the chain scan silently missed
+// blocks. Ask the node to normalize: validateaddress echoes the canonical
+// form; if it echoes the input unchanged this is a harmless no-op.
+async function addrKeysFor(stored) {
+  const keys = new Set();
+  const k = addrKey(stored);
+  if (k) keys.add(k);
+  if (stored) {
+    try {
+      const v = await rpc('validateaddress', [stored]);
+      if (v && v.isvalid && v.address) keys.add(addrKey(v.address));
+    } catch (_) { /* node not ready -- raw key still applies */ }
+  }
+  return keys;
+}
+
 async function coinbasePaysUs(hash, mine) {
   const blk = await rpc('getblock', [hash, 1]);
   const cbTxid = blk.tx && blk.tx[0];
@@ -902,7 +921,7 @@ async function coinbasePaysUs(hash, mine) {
   for (const v of (tx.vout || [])) {
     const spk = v.scriptPubKey || {};
     const addrs = spk.addresses || (spk.address ? [spk.address] : []);
-    if (addrs.some(a => addrKey(a) === mine)) return { time: blk.time, height: blk.height, netdiff: Number(blk.difficulty) || 0 };
+    if (addrs.some(a => mine.has(addrKey(a)))) return { time: blk.time, height: blk.height, netdiff: Number(blk.difficulty) || 0 };
   }
   return null;
 }
@@ -951,21 +970,57 @@ function healFromBlockFiles() {
   }
 }
 
+// The bridge appends to sv2_blocks.jsonl at the moment the node ACCEPTS a
+// submitblock -- it is the most authoritative "we found a block" record that
+// exists. It was previously only used to annotate blocks the chain-scan had
+// already found, so if the scan missed (address-form mismatch, node hiccup,
+// anything), the block silently never appeared: Chris's 959807 sat in the
+// jsonl while Blocks Found stayed at 2. Upsert, never just decorate.
+function mergeSv2FoundBlocks() {
+  let added = 0;
+  for (const rec of sv2Blocks()) {
+    if (!(rec.height > 0)) continue;
+    const b = blockState.blocks.find((x) =>
+      (rec.hash && x.hash === rec.hash) || x.height === rec.height);
+    if (b) {
+      if (!b.worker) b.worker = 'SV2';
+      if (!b.hash && rec.hash) b.hash = rec.hash;
+      continue;
+    }
+    blockState.blocks.push({
+      height: rec.height,
+      hash: rec.hash || null,
+      time: Number(rec.time) || Math.floor(Date.now() / 1000),
+      best: 0,                // healed by the existing recheck loop
+      solveDiff: null,
+      netdiff: null,
+      worker: 'SV2',
+      state: (rec.result === 'accepted' || rec.result === 'duplicate')
+        ? 'confirmed' : String(rec.result || 'submitted'),
+      healed: true,
+      source: 'sv2-bridge',
+    });
+    added++;
+    console.log(`[LoneStrike Cash] BLOCK from SV2 bridge record: height ${rec.height}`);
+  }
+  if (added) saveBlocks();
+  return added;
+}
+
 async function scanBlocks() {
   if (scanning) return;
   scanning = true;
   try {
-    const mine = addrKey(readAddress());
-    const sv2Mine = addrKey(readSv2Address());
-    if (!mine && !sv2Mine) return;
+    const mineKeys = await addrKeysFor(readAddress());
+    for (const k of await addrKeysFor(readSv2Address())) mineKeys.add(k);
+    if (!mineKeys.size) return;
     const tip = await rpc('getblockcount', []);
     if (!blockState.lastScanned) blockState.lastScanned = Math.max(0, tip - 200); // first-run backfill
     let h = blockState.lastScanned + 1;
     let budget = 50;                                   // be gentle per pass
     while (h <= tip && budget-- > 0) {
       const hash = await rpc('getblockhash', [h]);
-      const hit = (mine && await coinbasePaysUs(hash, mine)) ||
-                  (sv2Mine && sv2Mine !== mine && await coinbasePaysUs(hash, sv2Mine));
+      const hit = await coinbasePaysUs(hash, mineKeys);
       if (hit && !blockState.blocks.some(b => b.hash === hash)) {
         const solveDiff = solveDiffFromBlocks(h) || solveDiffFromLog(h);
         const bestAtHit = solveDiff || hit.netdiff || lastBestSeen;
@@ -993,6 +1048,7 @@ async function scanBlocks() {
       const w = solveWorkerFromBlocks(b.height) || solveWorkerFromLog(b.height);
       if (w) b.worker = w;
     }
+    mergeSv2FoundBlocks();
     healFromBlockFiles();
     saveBlocks();
   } catch (_) { /* node not ready — retry next pass */ }
@@ -1043,10 +1099,9 @@ app.get('/api/status', async (_req, res) => {
 
   try {
     const s2 = sv2Stats();
-    const s2blocks = sv2Blocks();
-    for (const rec of s2blocks) {
-      const b = blockState.blocks.find((x) => x.height === rec.height || (rec.hash && x.hash === rec.hash));
-      if (b && !b.worker) b.worker = 'SV2';
+    if (mergeSv2FoundBlocks()) {
+      out.blockList = [...blockState.blocks].sort((a, b) => b.height - a.height).slice(0, 200);
+      out.blocks = Math.max(blockState.blocks.length, out.blocks || 0);
     }
     out.sv2 = {
       enabled: s2.enabled, workers: s2.workers, xn: readSv2Xn(),
