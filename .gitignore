@@ -1,5 +1,6 @@
-.DS_Store__pycache__/
+.DS_Store
+__pycache__/
 *.pyc
+node_modules/
 dashboard/geo/geo.bin
 dashboard/geo/centroids.json
-dashboard/geo/node_modules/

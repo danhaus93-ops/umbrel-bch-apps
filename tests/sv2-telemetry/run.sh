@@ -8,7 +8,7 @@ node run_tests.js
 # CI-only: the Umbrel host has no node (see HANDOFF 2.4).
 if [ ! -f ../../dashboard/geo/geo.bin ]; then
   (cd ../../dashboard/geo \
-    && npm install --no-audit --no-fund --silent world-atlas@2 topojson-client i18n-iso-countries \
+    && npm install --no-save --no-audit --no-fund --silent world-atlas@2 topojson-client i18n-iso-countries \
     && node build-geo.js geo.bin)
 fi
 node test_geo_lookup.js
