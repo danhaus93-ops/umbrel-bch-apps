@@ -107,6 +107,49 @@
     .wreset{width:22px;height:21px;font-size:11px}
   }
 </style>
+<style>
+/* ---- block-found celebration (namespaced cel*) ---- */
+.celfx{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;background:rgba(4,20,15,.88);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.celfx.on{display:flex}
+.celfx canvas{position:absolute;inset:0;width:100%;height:100%;z-index:4}
+.celwrap{position:relative;z-index:2;text-align:center;pointer-events:none}
+.celdismiss{position:absolute;bottom:34px;left:0;right:0;text-align:center;font-size:11px;color:var(--muted);z-index:5;letter-spacing:.1em;text-transform:uppercase;opacity:0;transition:opacity .6s;font-family:var(--fm)}
+.celfx.struck .celdismiss{opacity:.7;transition-delay:1.6s}
+.celkick{font-family:var(--fm);font-size:12px;letter-spacing:.4em;color:var(--mint);text-transform:uppercase;opacity:0;animation:celkick .5s .1s forwards}
+@keyframes celkick{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.celhead{font-family:var(--fm);font-size:min(13vw,64px);font-weight:800;letter-spacing:-.02em;line-height:1;margin:8px 0 0;background:linear-gradient(180deg,#eafff7,var(--mint));-webkit-background-clip:text;background-clip:text;color:transparent;opacity:0;transform:scale(.7);text-shadow:0 0 60px rgba(52,211,153,.5)}
+.celfx.struck .celhead{animation:celpop .55s cubic-bezier(.2,1.4,.35,1) forwards}
+@keyframes celpop{to{opacity:1;transform:none}}
+.celmeta{font-family:var(--fm);font-size:14px;color:var(--muted);margin-top:12px;opacity:0}
+.celmeta b{color:var(--gold)} .celmeta .celproto{color:var(--mint)}
+.celfx.struck .celmeta{animation:celfadem .5s .35s forwards}
+@keyframes celfadem{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* true 3D cube — NO filter on any 3D ancestor: filter flattens preserve-3d */
+.celscene{position:relative;height:220px;margin:2px auto 0}
+.celglow{position:absolute;left:50%;top:58%;width:230px;height:110px;transform:translate(-50%,-50%);background:radial-gradient(50% 50% at 50% 50%, rgba(16,185,129,.5), rgba(16,185,129,0) 70%);z-index:0}
+.celstage{position:absolute;inset:0;perspective:820px;z-index:1}
+.celcube{position:absolute;left:50%;top:56%;width:110px;height:110px;margin:-55px 0 0 -55px;transform-style:preserve-3d;transform:rotateX(-24deg) rotateY(-34deg)}
+.celfx.struck .celcube{animation:celjud .5s cubic-bezier(.3,1.6,.4,1) forwards, celsway 5s .5s ease-in-out infinite}
+@keyframes celjud{0%{transform:rotateX(-24deg) rotateY(-34deg) scale(1)}18%{transform:rotateX(-16deg) rotateY(-28deg) scale(.93,1.06) translateY(5px)}45%{transform:rotateX(-27deg) rotateY(-38deg) scale(1.04,.96)}100%{transform:rotateX(-24deg) rotateY(-34deg) scale(1)}}
+@keyframes celsway{0%,100%{transform:rotateX(-24deg) rotateY(-34deg)}50%{transform:rotateX(-24deg) rotateY(-24deg)}}
+.celface{position:absolute;width:110px;height:110px;display:flex;align-items:center;justify-content:center}
+.celtop{background:linear-gradient(135deg,#5ff0c0,#2bd39a);transform:rotateX(90deg) translateZ(55px)}
+.celfront{background:linear-gradient(160deg,#18b083,#0c7a5c);transform:translateZ(55px)}
+.celright{background:linear-gradient(160deg,#0c7a5c,#064635);transform:rotateY(90deg) translateZ(55px)}
+.celback{background:#0a6a50;transform:rotateY(180deg) translateZ(55px)}
+.celleft{background:#086048;transform:rotateY(-90deg) translateZ(55px)}
+.celbot{background:#053528;transform:rotateX(-90deg) translateZ(55px)}
+.celedge{box-shadow:inset 0 0 0 2px rgba(180,255,230,.22)}
+.celbtc{width:58px;height:58px;border-radius:13px;background:#052018;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1.5px rgba(52,211,153,.35), 0 2px 8px rgba(0,25,15,.5)}
+.celhole{position:absolute;inset:0;opacity:0;transform:scale(.3);transform-origin:52% 46%}
+.celfx.struck .celhole{opacity:1;transform:scale(1);transition:opacity .1s, transform .28s cubic-bezier(.2,1.5,.4,1)}
+.celpick{position:absolute;left:50%;top:50%;font-size:86px;z-index:3;transform-origin:85% 85%;opacity:0;line-height:1}
+.celfx.on .celpick{animation:celswing .6s cubic-bezier(.55,0,.9,.35) forwards}
+@keyframes celswing{0%{opacity:0;transform:translate(96px,-230px) rotate(112deg)}22%{opacity:1}100%{opacity:1;transform:translate(-2px,-138px) rotate(-18deg)}}
+.celfx.struck .celpick{animation:celrec .8s .02s ease-out forwards}
+@keyframes celrec{0%{opacity:1;transform:translate(-2px,-138px) rotate(-18deg)}30%{transform:translate(30px,-176px) rotate(40deg)}100%{opacity:0;transform:translate(86px,-224px) rotate(96deg)}}
+.celflash{position:absolute;inset:0;background:rgba(52,211,153,0);z-index:1}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -264,7 +307,10 @@
   </div>
 
 
-  <div class="sec">Found blocks</div>
+  <div class="sec" style="display:flex;align-items:center;gap:10px">Found blocks
+    <label style="display:flex;align-items:center;gap:5px;font-family:var(--fm);font-size:10px;color:var(--dim);cursor:pointer;text-transform:none;letter-spacing:0;margin-left:auto"><input type="checkbox" id="celebToggle"/> celebration</label>
+    <a href="#" id="celebPreview" style="font-family:var(--fm);font-size:10px;color:var(--dim);text-decoration:underline;text-transform:none;letter-spacing:0">preview</a>
+  </div>
   <div class="workers" id="blocksTable">
     <div class="wh" style="grid-template-columns:1fr 1.2fr 1fr 1.6fr"><div>Height</div><div class="wcol-r">When</div><div class="wcol-r">Best diff submitted</div><div class="wcol-r">Block</div></div>
     <div class="empty" id="blocksEmpty">No blocks yet &mdash; keep striking.</div>
@@ -370,6 +416,7 @@ function render(d){
       t.appendChild(r);
     });
   }else{emp.style.display='block';}
+  try{celebCheck(d.blockList)}catch(_){}
   const bt=document.getElementById('blocksTable');
   bt.querySelectorAll('.wr').forEach(e=>e.remove());
   const bemp=document.getElementById('blocksEmpty');
@@ -554,6 +601,129 @@ async function tick(){
 var blocksShown=25;
 var _bmb=document.getElementById('blocksMore'); if(_bmb){var _bb=_bmb.querySelector('button'); if(_bb)_bb.addEventListener('click',function(){blocksShown+=25;tick();});}
 tick();setInterval(tick,5000);
+
+/* ================= block-found celebration ================= */
+/* CELEB-GUARD-BEGIN */
+let celebSeen=null;
+function celebKey(b){return (b&&b.hash)?b.hash:('h'+(b&&b.height));}
+function celebOn(){try{return localStorage.getItem('celebOff')!=='1';}catch(_){return true;}}
+function celebCheck(list){
+  if(!Array.isArray(list))return;
+  if(celebSeen===null){celebSeen=new Set(list.map(celebKey));return;} // seed on first poll: existing blocks never fire
+  let newest=null;
+  for(const b of list){
+    const k=celebKey(b);
+    if(!celebSeen.has(k)){celebSeen.add(k);if(!newest||(b.height||0)>(newest.height||0))newest=b;}
+  }
+  if(newest&&celebOn())celebFire(newest);
+}
+/* CELEB-GUARD-END */
+
+const celfx=document.getElementById('celfx');
+const celcv=document.getElementById('celcv');
+const celctx=celcv?celcv.getContext('2d'):null;
+const celflash=document.getElementById('celflash');
+let celRaf=null,celBills=[],celT0=0,celLast=0,celEmit=0,celStorm=false,celHX=0,celHY=0;
+let celStormTo=null,celImpactTo=null,celEndTo=null;
+// the actual brand mark, taken from the header logo so a restyle follows through
+const celMarkD=(function(){var el=document.querySelector('svg.logo path[fill="url(#sscMark)"]');return el?el.getAttribute('d'):null;})();
+(function(){var el=document.getElementById('celMarkPath');if(el&&celMarkD)el.setAttribute('d',celMarkD);})();
+const celMark=(celMarkD&&window.Path2D)?new Path2D(celMarkD):null;
+function celSize(){celcv.width=innerWidth*devicePixelRatio;celcv.height=innerHeight*devicePixelRatio;celctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);}
+function celLocate(){var tf=celfx.querySelector('.celtop');var r=tf.getBoundingClientRect();celHX=r.left+r.width*0.52;celHY=r.top+r.height*0.42;}
+function celBill(x,y,vx,vy){return {x:x,y:y,vx:vx,vy:vy,w:34+Math.random()*10,h:16+Math.random()*4,flip:Math.random()*6,vflip:(Math.random()-.5)*.28,spin:Math.random()*6,vspin:(Math.random()-.5)*.12,sway:Math.random()*6,life:1};}
+function celGeyser(n,power,spread){for(let i=0;i<n;i++){const a=-Math.PI/2+(Math.random()-.5)*spread;const sp=power*(.55+Math.random()*.8);celBills.push(celBill(celHX+(Math.random()-.5)*16,celHY,Math.cos(a)*sp,Math.sin(a)*sp));}}
+function celSpill(n){for(let i=0;i<n;i++){const dir=Math.random()<.5?-1:1;celBills.push(celBill(celHX+dir*(10+Math.random()*10),celHY+2,dir*(0.6+Math.random()*1.4),-(0.5+Math.random()*1.2)));}}
+function celDrawMark(size,color){if(!celMark)return;const sc=size/1879;celctx.save();celctx.scale(sc,-sc);celctx.translate(-856,-700);celctx.fillStyle=color;celctx.fill(celMark);celctx.restore();}
+function celDrawBill(b){
+  const cat=Math.abs(Math.cos(b.flip));const h=b.h*(0.25+0.75*cat);const sh=0.55+0.45*cat;
+  celctx.save();celctx.translate(b.x,b.y);celctx.rotate(b.spin);celctx.globalAlpha=Math.max(0,Math.min(1,b.life));
+  const g=celctx.createLinearGradient(-b.w/2,0,b.w/2,0);
+  g.addColorStop(0,'rgba('+(16*sh|0)+','+(120*sh|0)+','+(90*sh|0)+',1)');
+  g.addColorStop(.5,'rgba('+(52*sh|0)+','+(211*sh|0)+','+(153*sh|0)+',1)');
+  g.addColorStop(1,'rgba('+(16*sh|0)+','+(120*sh|0)+','+(90*sh|0)+',1)');
+  celctx.fillStyle=g;celctx.beginPath();celctx.roundRect(-b.w/2,-h/2,b.w,h,2.5);celctx.fill();
+  celctx.strokeStyle='rgba(230,255,245,'+(.55*cat)+')';celctx.lineWidth=1;
+  celctx.beginPath();celctx.roundRect(-b.w/2+3,-h/2+2,b.w-6,h-4,2);celctx.stroke();
+  if(cat>.35){celctx.globalAlpha=Math.max(0,b.life)*(cat-.2);celctx.fillStyle='rgba(6,30,20,.9)';
+    celctx.beginPath();celctx.ellipse(0,0,h*.34,h*.34,0,0,7);celctx.fill();
+    celDrawMark(h*.52,'#34D399');}
+  celctx.restore();
+}
+function celFrame(ts){
+  if(!celT0){celT0=ts;celLast=ts;}const dt=Math.min(34,ts-celLast);celLast=ts;
+  celctx.clearRect(0,0,celcv.width,celcv.height);const H=innerHeight,k=dt/16;
+  for(const b of celBills){
+    b.vx*=Math.pow(0.97,k);b.vy+=0.13*k;b.vy*=Math.pow(0.985,k);b.sway+=0.06*k;
+    b.x+=(b.vx+Math.sin(b.sway)*1.1)*k;b.y+=b.vy*k;b.flip+=b.vflip*k;b.spin+=b.vspin*k;
+    if(b.y>H+30)b.life-=0.04*k;celDrawBill(b);
+  }
+  celBills=celBills.filter(function(b){return b.life>0&&b.y<H+60;});
+  if(celStorm){celEmit+=dt;if(celEmit>34){celEmit=0;celLocate();celGeyser(4,12,0.5);if(Math.random()<.5)celSpill(1);}}
+  celRaf=requestAnimationFrame(celFrame);
+}
+function celImpact(){
+  celfx.classList.add('struck');
+  celflash.style.transition='none';celflash.style.background='rgba(52,211,153,.55)';
+  requestAnimationFrame(function(){celflash.style.transition='background .45s';celflash.style.background='rgba(52,211,153,0)';});
+  celLocate();celGeyser(70,15,0.55);celSpill(6);celStorm=true;
+  celStormTo=setTimeout(function(){celStorm=false;},2300);
+}
+function celebFire(b){
+  if(!celfx||!celctx)return;
+  const proto=(b.worker==='SV2')?'SV2':'SV1';
+  document.getElementById('celP').textContent=proto;
+  document.getElementById('celkick').textContent=(proto==='SV2'?'Stratum V2':'Stratum V1')+' \u00b7 solo';
+  document.getElementById('celH').textContent=(b.height||0).toLocaleString();
+  const sd=b.solveDiff||b.best||0;
+  document.getElementById('celD').textContent=sd?fmtDiff(sd):'\u2014';
+  celSize();celBills=[];celT0=0;celLast=0;celEmit=0;celStorm=false;
+  celfx.classList.remove('struck');void celfx.offsetWidth;
+  celfx.classList.add('on');
+  cancelAnimationFrame(celRaf);celRaf=requestAnimationFrame(celFrame);
+  clearTimeout(celImpactTo);celImpactTo=setTimeout(celImpact,620);
+  clearTimeout(celEndTo);celEndTo=setTimeout(celStop,5800);
+}
+function celStop(){celfx.classList.remove('on','struck');cancelAnimationFrame(celRaf);celRaf=null;celBills=[];celStorm=false;
+  clearTimeout(celStormTo);clearTimeout(celImpactTo);clearTimeout(celEndTo);}
+if(celfx){celfx.addEventListener('click',celStop);addEventListener('resize',function(){if(celfx.classList.contains('on'))celSize();});}
+(function(){
+  var t=document.getElementById('celebToggle');
+  if(t){t.checked=celebOn();t.addEventListener('change',function(){try{localStorage.setItem('celebOff',t.checked?'0':'1');}catch(_){}});}
+  var pv=document.getElementById('celebPreview');
+  if(pv){pv.addEventListener('click',function(e){e.preventDefault();celebFire({height:960133,solveDiff:88416,worker:'SV2',hash:'preview'});});}
+})();
 </script>
+
+<!-- block-found celebration overlay -->
+<div class="celfx" id="celfx">
+  <canvas id="celcv"></canvas>
+  <div class="celflash" id="celflash"></div>
+  <div class="celwrap">
+    <div class="celkick" id="celkick">Stratum V2 · solo</div>
+    <div class="celhead">BLOCK FOUND</div>
+    <div class="celscene">
+      <div class="celglow"></div>
+      <div class="celstage"><div class="celcube">
+        <div class="celface celtop celedge">
+          <div class="celhole"><svg viewBox="0 0 110 110">
+            <path d="M52 44 L26 30 M60 40 L84 22 M44 54 L18 62 M66 54 L92 60 M50 60 L38 88 M62 58 L76 84" stroke="rgba(6,40,28,.85)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            <polygon points="53,32 66,36 72,46 68,58 56,64 44,60 38,50 42,38" fill="none" stroke="rgba(252,211,77,.85)" stroke-width="4" opacity=".7"/>
+            <polygon points="53,32 66,36 72,46 68,58 56,64 44,60 38,50 42,38" fill="#041f18"/>
+            <polygon points="55,38 64,41 67,48 63,55 55,58 47,55 44,48 48,41" fill="#020f0b"/>
+          </svg></div>
+        </div>
+        <div class="celface celfront celedge"><span class="celbtc"><svg viewBox="137 -1639 1439 1879" style="width:72%;height:72%;display:block"><g transform="scale(1,-1)"><path id="celMarkPath" fill="url(#sscMark)"/></g></svg></span></div>
+        <div class="celface celright celedge"></div>
+        <div class="celface celback celedge"></div>
+        <div class="celface celleft celedge"></div>
+        <div class="celface celbot celedge"></div>
+      </div></div>
+      <div class="celpick">&#x26CF;&#xFE0F;</div>
+    </div>
+    <div class="celmeta">height <b id="celH">-</b> &nbsp;&middot;&nbsp; solve diff <b id="celD">-</b> &nbsp;&middot;&nbsp; <span class="celproto" id="celP">SV2</span></div>
+  </div>
+  <div class="celdismiss">tap anywhere to dismiss</div>
+</div>
 </body>
 </html>
