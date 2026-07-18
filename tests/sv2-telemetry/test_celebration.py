@@ -23,6 +23,12 @@ def check(name, cond, detail=""):
 
 def test_structure():
     check("overlay exists", 'id="celfx"' in SRC)
+    # THE bug of 1.4.60: the overlay was inserted after </script>, so every
+    # element lookup returned null and the guard silently no-op'd -- preview
+    # dead AND real blocks would not have fired. Markup must precede script.
+    check("overlay markup precedes the script that references it",
+          SRC.index('id="celfx"') < SRC.index('<script>') < SRC.index("getElementById('celfx')"))
+    check("exactly one overlay in the document", SRC.count('id="celfx"') == 1)
     check("toggle exists beside Found blocks", 'id="celebToggle"' in SRC)
     check("preview link exists (see it without finding a block)",
           'id="celebPreview"' in SRC)

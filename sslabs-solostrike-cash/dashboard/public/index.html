@@ -330,6 +330,36 @@
   </footer>
 </div>
 
+<!-- block-found celebration overlay -->
+<div class="celfx" id="celfx">
+  <canvas id="celcv"></canvas>
+  <div class="celflash" id="celflash"></div>
+  <div class="celwrap">
+    <div class="celkick" id="celkick">Stratum V2 · solo</div>
+    <div class="celhead">BLOCK FOUND</div>
+    <div class="celscene">
+      <div class="celglow"></div>
+      <div class="celstage"><div class="celcube">
+        <div class="celface celtop celedge">
+          <div class="celhole"><svg viewBox="0 0 110 110">
+            <path d="M52 44 L26 30 M60 40 L84 22 M44 54 L18 62 M66 54 L92 60 M50 60 L38 88 M62 58 L76 84" stroke="rgba(6,40,28,.85)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            <polygon points="53,32 66,36 72,46 68,58 56,64 44,60 38,50 42,38" fill="none" stroke="rgba(252,211,77,.85)" stroke-width="4" opacity=".7"/>
+            <polygon points="53,32 66,36 72,46 68,58 56,64 44,60 38,50 42,38" fill="#041f18"/>
+            <polygon points="55,38 64,41 67,48 63,55 55,58 47,55 44,48 48,41" fill="#020f0b"/>
+          </svg></div>
+        </div>
+        <div class="celface celfront celedge"><span class="celbtc"><svg viewBox="137 -1639 1439 1879" style="width:72%;height:72%;display:block"><g transform="scale(1,-1)"><path id="celMarkPath" fill="url(#sscMark)"/></g></svg></span></div>
+        <div class="celface celright celedge"></div>
+        <div class="celface celback celedge"></div>
+        <div class="celface celleft celedge"></div>
+        <div class="celface celbot celedge"></div>
+      </div></div>
+      <div class="celpick">&#x26CF;&#xFE0F;</div>
+    </div>
+    <div class="celmeta">height <b id="celH">-</b> &nbsp;&middot;&nbsp; solve diff <b id="celD">-</b> &nbsp;&middot;&nbsp; <span class="celproto" id="celP">SV2</span></div>
+  </div>
+  <div class="celdismiss">tap anywhere to dismiss</div>
+</div>
 <script>
 function spark(t){
   if(!t||!t.some(v=>v>0))return '';
@@ -695,35 +725,5 @@ if(celfx){celfx.addEventListener('click',celStop);addEventListener('resize',func
 })();
 </script>
 
-<!-- block-found celebration overlay -->
-<div class="celfx" id="celfx">
-  <canvas id="celcv"></canvas>
-  <div class="celflash" id="celflash"></div>
-  <div class="celwrap">
-    <div class="celkick" id="celkick">Stratum V2 · solo</div>
-    <div class="celhead">BLOCK FOUND</div>
-    <div class="celscene">
-      <div class="celglow"></div>
-      <div class="celstage"><div class="celcube">
-        <div class="celface celtop celedge">
-          <div class="celhole"><svg viewBox="0 0 110 110">
-            <path d="M52 44 L26 30 M60 40 L84 22 M44 54 L18 62 M66 54 L92 60 M50 60 L38 88 M62 58 L76 84" stroke="rgba(6,40,28,.85)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-            <polygon points="53,32 66,36 72,46 68,58 56,64 44,60 38,50 42,38" fill="none" stroke="rgba(252,211,77,.85)" stroke-width="4" opacity=".7"/>
-            <polygon points="53,32 66,36 72,46 68,58 56,64 44,60 38,50 42,38" fill="#041f18"/>
-            <polygon points="55,38 64,41 67,48 63,55 55,58 47,55 44,48 48,41" fill="#020f0b"/>
-          </svg></div>
-        </div>
-        <div class="celface celfront celedge"><span class="celbtc"><svg viewBox="137 -1639 1439 1879" style="width:72%;height:72%;display:block"><g transform="scale(1,-1)"><path id="celMarkPath" fill="url(#sscMark)"/></g></svg></span></div>
-        <div class="celface celright celedge"></div>
-        <div class="celface celback celedge"></div>
-        <div class="celface celleft celedge"></div>
-        <div class="celface celbot celedge"></div>
-      </div></div>
-      <div class="celpick">&#x26CF;&#xFE0F;</div>
-    </div>
-    <div class="celmeta">height <b id="celH">-</b> &nbsp;&middot;&nbsp; solve diff <b id="celD">-</b> &nbsp;&middot;&nbsp; <span class="celproto" id="celP">SV2</span></div>
-  </div>
-  <div class="celdismiss">tap anywhere to dismiss</div>
-</div>
 </body>
 </html>
