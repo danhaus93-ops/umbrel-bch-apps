@@ -292,6 +292,8 @@ const saveBlocks = () => { saved++; };
 const blockState = { blocks: [{ height: 100, hash: 'aa', time: 1, worker: null }] };
 let jsonl = [];
 const sv2Blocks = () => jsonl;
+const sv2SolveDiffFromLog = () => 0;      // no pool log in this harness
+const solveDiffFromBlocks = () => 0;
 %s
 // 1) rec matching an existing chain-scan entry: annotate only
 jsonl = [{ height: 100, hash: 'aa', time: 1, result: 'accepted' }];
@@ -336,6 +338,50 @@ def test_addr_matching_normalized_by_node():
     check("single-string matching is gone", "addrKey(a) === mine" not in SRC)
 
 
+def test_sv2_best_diff_is_solve_not_network():
+    """Chris flagged SV2 blocks showing 449G/460G -- network difficulty -- in
+    the "Best Diff Submitted" column. The SV2 pool logs the block-found line
+    without a diff; the solving share's `share_work` is the real solve
+    difficulty and must be what's shown. netdiff must NEVER populate `best`."""
+    check("SV2 solve-diff reader exists", "function sv2SolveDiffFromLog(" in SRC)
+    fn = _extract_fn(SRC, "function sv2SolveDiffFromLog(")
+    check("reader keys off the block hash", "indexOf(hash)" in fn)
+    check("reader reads share_work", "share_work" in fn)
+    check("reader prefers the solving share's own channel", "chM[1]" in fn or "cM[1] === chM[1]" in fn)
+    check("bridge-record blocks use solve diff, not 0-then-netdiff",
+          "sv2SolveDiffFromLog(rec.hash)" in SRC)
+    check("heal path never borrows netdiff into best",
+          "hit.netdiff || lastBestSeen" not in SRC and
+          "best: solveDiff || 0" in SRC)
+
+    # functional: run the extracted reader against Chris's real block-found log
+    import shutil, subprocess, tempfile, os as _os
+    if not shutil.which("node"):
+        print("SKIP  solve-diff reader (node unavailable)"); return
+    fx = _os.path.join(HERE, "fixtures", "pool_sv2_blockfound.log")
+    if not _os.path.exists(fx):
+        check("blockfound fixture present", False); return
+    js = """
+const fs = require('fs'); const path = require('path');
+const SV2_DIR = %r, POOL_DIR = '/nonexistent', POOL_LOGDIR = '/nonexistent';
+%s
+const h = '000000000000000001e739924629fda5fa834f89517946f94292a04bf5aec98f';
+console.log(String(sv2SolveDiffFromLog(h)));
+""" % (_os.path.dirname(fx), _extract_fn(SRC, "function sv2SolveDiffFromLog("))
+    # point the reader's first candidate path at the fixture dir
+    js = js.replace("path.join(SV2_DIR, 'pool_sv2.log')",
+                    "path.join(SV2_DIR, 'pool_sv2_blockfound.log')")
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as f:
+        f.write(js); pth = f.name
+    r = subprocess.run(["node", pth], capture_output=True, text=True)
+    out = (r.stdout or "").strip()
+    check("reader extracts a real solve diff from Chris's log (not 0, not 449G)",
+          out.isdigit() and 1000 < int(out) < 1_000_000_000,
+          out + r.stderr)
+    check("solve diff matches the winning share_work (88416)",
+          out == "88416", out)
+
+
 if __name__ == "__main__":
     print("unified worker schema regression tests:")
     test_both_protocols_emit_one_schema()
@@ -353,6 +399,7 @@ if __name__ == "__main__":
     test_sv2_log_download()
     test_sv2_found_blocks_create_entries()
     test_addr_matching_normalized_by_node()
+    test_sv2_best_diff_is_solve_not_network()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)

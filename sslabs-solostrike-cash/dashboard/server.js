@@ -836,6 +836,50 @@ function solveDiffFromLog(height) {
   return 0;
 }
 
+// SV2 pool log format differs from ckpool's: the block-found line is
+//   "... 💰 Block Found!!! 💰<blockhash>"
+// and carries no difficulty. The solving share is the immediately-preceding
+//   "valid share | ... channel_id: N ... share_work: <diff>"
+// on the SAME channel. share_work is the real solve difficulty -- which is
+// what "Best Diff Submitted" is supposed to show, NOT network difficulty.
+// Chris correctly flagged that SV2 rows were showing net diff.
+function sv2SolveDiffFromLog(hash) {
+  if (!hash) return 0;
+  const files = [
+    path.join(SV2_DIR, 'pool_sv2.log'),
+    path.join(POOL_DIR, 'pool_sv2.log'),
+    path.join(POOL_LOGDIR, 'pool_sv2.log'),
+  ];
+  const shortH = hash.replace(/^0+/, '');
+  for (const f of files) {
+    let lines;
+    try { lines = fs.readFileSync(f, 'utf8').split('\n'); } catch (_) { continue; }
+    for (let i = 0; i < lines.length; i++) {
+      const fl = lines[i];
+      if (fl.indexOf('Block Found') === -1) continue;
+      if (fl.indexOf(hash) === -1 && (!shortH || fl.indexOf(shortH) === -1)) continue;
+      const chM = fl.match(/channel_id[:=\s]+(\d+)/i);
+      // walk back for the most recent valid share; prefer the same channel
+      let anyWork = 0;
+      for (let j = i; j >= Math.max(0, i - 40); j--) {
+        if (lines[j].indexOf('valid share') === -1) continue;
+        const wM = lines[j].match(/share_work[:=\s]+([0-9]+(?:\.[0-9]+)?)/i);
+        if (!wM) continue;
+        const work = Math.round(parseFloat(wM[1]));
+        if (!anyWork) anyWork = work;
+        if (chM) {
+          const cM = lines[j].match(/channel_id[:=\s]+(\d+)/i);
+          if (cM && cM[1] === chM[1]) return work;   // exact solving share
+        } else {
+          return work;
+        }
+      }
+      if (anyWork) return anyWork;                   // fallback: nearest share
+    }
+  }
+  return 0;
+}
+
 // minimal JSON-RPC call to BCHN
 function rpc(method, params = []) {
   return new Promise((resolve, reject) => {
@@ -987,12 +1031,13 @@ function mergeSv2FoundBlocks() {
       if (!b.hash && rec.hash) b.hash = rec.hash;
       continue;
     }
+    const sd = sv2SolveDiffFromLog(rec.hash) || solveDiffFromBlocks(rec.height);
     blockState.blocks.push({
       height: rec.height,
       hash: rec.hash || null,
       time: Number(rec.time) || Math.floor(Date.now() / 1000),
-      best: 0,                // healed by the existing recheck loop
-      solveDiff: null,
+      best: sd || 0,          // real solve diff if known; heal loop may fill later
+      solveDiff: sd || null,  // stays null rather than borrowing netdiff
       netdiff: null,
       worker: 'SV2',
       state: (rec.result === 'accepted' || rec.result === 'duplicate')
@@ -1022,9 +1067,11 @@ async function scanBlocks() {
       const hash = await rpc('getblockhash', [h]);
       const hit = await coinbasePaysUs(hash, mineKeys);
       if (hit && !blockState.blocks.some(b => b.hash === hash)) {
-        const solveDiff = solveDiffFromBlocks(h) || solveDiffFromLog(h);
-        const bestAtHit = solveDiff || hit.netdiff || lastBestSeen;
-        blockState.blocks.push({ height: h, hash, time: hit.time, best: bestAtHit, solveDiff: solveDiff || null, netdiff: hit.netdiff || null, worker: solveWorkerFromBlocks(h) || solveWorkerFromLog(h) || null, healed: true });
+        const solveDiff = solveDiffFromBlocks(h) || sv2SolveDiffFromLog(hash) || solveDiffFromLog(h);
+        // best === the submitted solve difficulty, or 0 (shown as a dash).
+        // NEVER borrow network difficulty here: that is what made SV2 rows
+        // read 449G/460G, i.e. net diff mislabeled as a submitted share.
+        blockState.blocks.push({ height: h, hash, time: hit.time, best: solveDiff || 0, solveDiff: solveDiff || null, netdiff: hit.netdiff || null, worker: solveWorkerFromBlocks(h) || solveWorkerFromLog(h) || null, healed: true });
         blockState.acceptedAtLastBlock = lastAcceptedTotal || 0;
         console.log(`[LoneStrike Cash] BLOCK FOUND at height ${h} (${hash})`);
       }
