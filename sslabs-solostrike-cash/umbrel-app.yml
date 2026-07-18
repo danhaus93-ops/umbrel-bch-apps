@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.60"
+version: "1.4.61"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -76,10 +76,10 @@ widgets:
           text: "0"
           subtext: "found"
 releaseNotes: >-
-  Finding a block is now an event. When your pool solves a block - Stratum V1
-  or V2 - the dashboard celebrates full-screen: a pickaxe cracks a hole in the
-  block and the money pours out, with the real height, solve difficulty and
-  protocol. It fires once per block, never replays on refresh, and can be
-  switched off (or previewed) right beside the Found Blocks list.
+  Fixes the block celebration from 1.4.60, which could not display: the
+  preview link did nothing and a real block would not have shown the
+  animation. Both now work - try the preview link beside the Found Blocks
+  list. The checkbox next to it turns the celebration off if you ever tire
+  of it.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
