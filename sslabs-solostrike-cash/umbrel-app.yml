@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.58"
+version: "1.4.59"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -76,13 +76,10 @@ widgets:
           text: "0"
           subtext: "found"
 releaseNotes: >-
-  Blocks found over Stratum V2 now always appear in Blocks Found. Previously
-  the bridge's own record of an accepted block was only used to label blocks
-  the chain scan had already noticed - so a V2 block could be accepted by your
-  node, pay you, and still not show up in the list or count. The bridge's
-  record now creates the entry directly, and finding a V2 block correctly
-  resets the round for your whole fleet. Also fixed: payout addresses entered
-  in legacy format now match correctly when checking the chain, so blocks
-  paying a legacy address are recognised.
+  The "Best Diff Submitted" column for Stratum V2 blocks now shows the
+  difficulty of the share that actually solved the block, instead of the
+  network difficulty. Previously V2 blocks displayed the network number, which
+  made every V2 solve look the same and hid how hard the winning share really
+  was.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
