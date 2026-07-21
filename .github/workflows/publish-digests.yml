@@ -2,8 +2,8 @@ name: Publish image digests
 
 # The Umbrel store requires images pinned as tag@sha256-digest. The packages
 # REST API needs a classic PAT and ghcr.io is unreachable from some tooling
-# environments -- but from inside Actions, GITHUB_TOKEN can read this repo's
-# own packages. Dump name -> {digest, tags} for every image we publish into
+# environments -- but inside Actions, GITHUB_TOKEN can read this repo's own
+# packages. Dump name -> {digest, tags} for every image into
 # image-digests.json on master so any environment can pin via the contents API.
 
 on:
@@ -32,21 +32,8 @@ jobs:
           echo '{' > image-digests.json
           first=1
           for img in $IMAGES; do
-            resp=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
-              "https://api.github.com/users/danhaus93-ops/packages/container/${img}/versions?per_page=5" || true)
-            row=$(echo "$resp" | python3 -c '
-import json,sys
-try:
-    vs=json.load(sys.stdin)
-    assert isinstance(vs,list) and vs
-except Exception:
-    print("null"); raise SystemExit
-best=None
-for v in vs:
-    tags=v.get("metadata",{}).get("container",{}).get("tags",[])
-    if tags:
-        best={"digest":v["name"],"tags":tags}; break
-print(json.dumps(best) if best else "null")')
+            resp=$(curl -s -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/users/danhaus93-ops/packages/container/${img}/versions?per_page=5" || echo '[]')
+            row=$(echo "$resp" | python3 -c "import json,sys;vs=json.load(sys.stdin);best=next(({'digest':v['name'],'tags':v['metadata']['container']['tags']} for v in vs if v.get('metadata',{}).get('container',{}).get('tags')),None) if isinstance(vs,list) else None;print(json.dumps(best) if best else 'null')" 2>/dev/null || echo null)
             [ $first -eq 1 ] || echo ',' >> image-digests.json
             first=0
             printf '  "%s": %s' "$img" "$row" >> image-digests.json
