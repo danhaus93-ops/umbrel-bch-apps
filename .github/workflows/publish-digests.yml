@@ -8,6 +8,8 @@ name: Publish image digests
 
 on:
   workflow_dispatch:
+  push:
+    paths: ['.github/workflows/publish-digests.yml']
   workflow_run:
     workflows: ["Build app images", "Build bchn-sv2-bridge", "Build BCH Explorer images", "Build lonestrike-sv2-pool"]
     types: [completed]
