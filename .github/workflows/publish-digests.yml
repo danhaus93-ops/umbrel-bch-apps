@@ -28,7 +28,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          IMAGES="bchn-dashboard solostrike-cash-dashboard asicseer-pool cash-sv2-pool bchn-sv2-bridge fulcrum-info bch-explorer-frontend bch-explorer-backend"
+          IMAGES="bchn-dashboard solostrike-cash-dashboard asicseer-pool lonestrike-sv2-pool bchn-sv2-bridge fulcrum-info bch-explorer-frontend bch-explorer-backend"
           echo '{' > image-digests.json
           first=1
           for img in $IMAGES; do
