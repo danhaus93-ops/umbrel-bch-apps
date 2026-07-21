@@ -312,7 +312,7 @@
     <a href="#" id="celebPreview" style="font-family:var(--fm);font-size:10px;color:var(--dim);text-decoration:underline;text-transform:none;letter-spacing:0">preview</a>
   </div>
   <div class="workers" id="blocksTable">
-    <div class="wh" style="grid-template-columns:1fr 1.2fr 1fr 1.6fr"><div>Height</div><div class="wcol-r">When</div><div class="wcol-r">Best diff submitted</div><div class="wcol-r">Block</div></div>
+    <div class="wh" style="grid-template-columns:1fr 1fr .8fr .9fr 1.5fr"><div>Height</div><div class="wcol-r">When</div><div class="wcol-r">Effort</div><div class="wcol-r">Best diff submitted</div><div class="wcol-r">Block</div></div>
     <div class="empty" id="blocksEmpty">No blocks yet &mdash; keep striking.</div>
   </div>
   <div id="blocksMore" style="display:none;text-align:center;margin-top:8px"><button style="background:none;border:1px solid var(--line2);color:var(--muted);font-family:var(--fm);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:7px 16px;border-radius:var(--r);cursor:pointer">Show more</button></div>
@@ -358,7 +358,7 @@
     </div>
     <div class="celmeta">height <b id="celH">-</b> &nbsp;&middot;&nbsp; solve diff <b id="celD">-</b> &nbsp;&middot;&nbsp; <span class="celproto" id="celP">SV2</span></div>
   </div>
-  <div class="celdismiss">tap anywhere to dismiss</div>
+  <div class="celdismiss">tap anywhere to close &middot; stays up for screenshots</div>
 </div>
 <script>
 function spark(t){
@@ -455,9 +455,11 @@ function render(d){
     document.getElementById('blocks').textContent=d.blockList.length;
     d.blockList.slice(0,blocksShown).forEach(b=>{
       const r=document.createElement('div');r.className='wr';
-      r.style.gridTemplateColumns='1fr 1.2fr 1fr 1.6fr';
+      r.style.gridTemplateColumns='1fr 1fr .8fr .9fr 1.5fr';
       const short=b.hash?b.hash.slice(0,8)+'\u2026'+b.hash.slice(-6):'\u2014';
-      r.innerHTML=`<div class="bd">${b.height.toLocaleString()}<span style="display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px">${b.worker||'\u2014'}</span></div><div class="ls wcol-r">${ago(b.time)} ago</div><div class="hr wcol-r">${fmtDiff(b.best)}</div><div class="wcol-r"><a href="https://blockchair.com/bitcoin-cash/block/${b.hash}" target="_blank" rel="noopener" style="color:var(--mint);text-decoration:none;font-family:var(--fm)">${short}</a></div>`;
+      const eff=(b.effort!=null)?((b.effort>=100?b.effort.toFixed(0):b.effort.toFixed(1))+'%'):'\u2014';
+      const effCol=(b.effort==null)?'var(--muted)':(b.effort<100?'var(--mint)':b.effort<250?'#FCD34D':'#FB7185');
+      r.innerHTML=`<div class="bd">${b.height.toLocaleString()}<span style="display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px">${b.worker||'\u2014'}</span></div><div class="ls wcol-r">${ago(b.time)} ago</div><div class="wcol-r" style="color:${effCol};font-family:var(--fm)">${eff}</div><div class="hr wcol-r">${fmtDiff(b.best)}</div><div class="wcol-r"><a href="https://blockchair.com/bitcoin-cash/block/${b.hash}" target="_blank" rel="noopener" style="color:var(--mint);text-decoration:none;font-family:var(--fm)">${short}</a></div>`;
       bt.appendChild(r);
     });
   }else{bemp.style.display='block';}
@@ -712,7 +714,7 @@ function celebFire(b){
   celfx.classList.add('on');
   cancelAnimationFrame(celRaf);celRaf=requestAnimationFrame(celFrame);
   clearTimeout(celImpactTo);celImpactTo=setTimeout(celImpact,620);
-  clearTimeout(celEndTo);celEndTo=setTimeout(celStop,5800);
+  clearTimeout(celEndTo);celEndTo=setTimeout(celStop,60000);  // stays up for screenshots; safety-close for unattended displays
 }
 function celStop(){celfx.classList.remove('on','struck');cancelAnimationFrame(celRaf);celRaf=null;celBills=[];celStorm=false;
   clearTimeout(celStormTo);clearTimeout(celImpactTo);clearTimeout(celEndTo);}

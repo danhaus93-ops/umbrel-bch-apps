@@ -188,6 +188,16 @@ function workersLoad() {
   } catch (_) {}
 }
 function sv2SaveResets() { try { fs.writeFileSync(SV2_RESETS_FILE, JSON.stringify(sv2Resets)); } catch (_) {} }
+// Chris (2026-07-18): "reset best doesn't reset sv2 workers" -- the translator
+// stats API reports its OWN cumulative best, which knows nothing about
+// dashboard resets, and the merge re-imported it seconds after every reset.
+// Baseline the API value at reset; only a value EXCEEDING the baseline is a
+// genuinely new record. (Post-reset bests below the old record come from the
+// share-level log ingest, which honors reset markers precisely.)
+const SV2_API_BASE_FILE = path.join(SV2_DIR, 'sv2_api_base.json');
+let sv2ApiBase = (() => { try { return JSON.parse(fs.readFileSync(SV2_API_BASE_FILE, 'utf8')) || {}; } catch (_) { return {}; } })();
+let sv2ApiLast = {};   // name -> highest api.best seen this process
+function sv2SaveApiBase() { try { fs.writeFileSync(SV2_API_BASE_FILE, JSON.stringify(sv2ApiBase)); } catch (_) {} }
 function sv2SaveBest()   { try { fs.writeFileSync(SV2_BEST_FILE,   JSON.stringify(sv2BestP));  } catch (_) {} }
 function sv2ResetTs(name) { return Math.max(Number(sv2Resets[name]) || 0, Number(sv2Resets.__all__) || 0); }
 // Chris #1: an individual reset must also clear that worker's displayed
@@ -225,6 +235,15 @@ function sv2ApplyReset(scope) {
   for (const n of Object.keys(sv2BestP)) {
     if (scope === 'all' || n === scope) delete sv2BestP[n];
   }
+  // freeze the translator's cumulative best as the new floor for this scope
+  const names = new Set(Object.values(sv2State.channels).map((c) => c.name));
+  for (const n of Object.keys(sv2ApiLast)) names.add(n);
+  for (const n of names) {
+    if (scope === 'all' || n === scope) {
+      sv2ApiBase[n] = Math.max(Number(sv2ApiBase[n]) || 0, Number(sv2ApiLast[n]) || 0);
+    }
+  }
+  sv2SaveApiBase();
   sv2SaveResets(); sv2SaveBest();
 }
 function readSv2Address() {
@@ -561,8 +580,11 @@ function sv2Stats() {
       }
       if (api.accepted > ch.accepted) ch.accepted = api.accepted;
       if (api.rejected > ch.rejected) ch.rejected = api.rejected;
-      if (api.best > ch.best && api.best > sv2ResetTs(ch.name) * 0) {
-        if (ch.last * 1000 > sv2ResetTs(ch.name) * 1000) ch.best = Math.max(ch.best, api.best);
+      if (api.best > 0) {
+        sv2ApiLast[ch.name] = Math.max(Number(sv2ApiLast[ch.name]) || 0, api.best);
+        // import only a value that BEATS the reset-time baseline: the old
+        // '* 0' guard was always-true and resurrected pre-reset bests.
+        if (api.best > (Number(sv2ApiBase[ch.name]) || 0) && api.best > ch.best) ch.best = api.best;
       }
     }
     // Feed the unified rings from the existing per-minute estimator. buckets
@@ -1166,6 +1188,11 @@ app.get('/api/status', async (_req, res) => {
       out.hashrate = { val: th.val, unit: th.unit };
       if (out.blockList.length !== sv2State.lastBlockCount) {
         if (sv2State.lastBlockCount >= 0) {
+          // Chris: record the round effort this block was found at. netDiff is
+          // computed later in this merge, so snapshot the shares now (before
+          // the round zeroes) and attach the percentage once netDiff exists.
+          sv2State.pendingEffortShares =
+            (out.roundShares || 0) + Math.max(sv2State.roundWork, sv2State.roundDiff);
           sv2State.roundWork = 0; sv2State.roundDiff = 0;
           // Chris #2: a block is a FLEET event. asicseer clears SV1's best
           // itself when SV1 solves, but SV2's best survived, so the combined
@@ -1221,6 +1248,17 @@ app.get('/api/status', async (_req, res) => {
     out.height  = info.blocks;
     out.chain   = info.chain;
     out.netDiff = Number(info.difficulty) || 0;
+    if (sv2State.pendingEffortShares != null && out.netDiff > 0) {
+      const pct = sv2State.pendingEffortShares / out.netDiff * 100;
+      const nowS2 = Math.floor(Date.now() / 1000);
+      for (const b of blockState.blocks) {
+        // fresh solves only: a heal that surfaces an OLD block must not get
+        // today's round effort stamped on it
+        if (b.effort == null && nowS2 - (b.time || 0) < 900) b.effort = Math.round(pct * 10) / 10;
+      }
+      sv2State.pendingEffortShares = null;
+      try { saveBlocks(); } catch (_) {}
+    }
   } catch (_) { /* node unreachable */ }
 
   res.json(out);

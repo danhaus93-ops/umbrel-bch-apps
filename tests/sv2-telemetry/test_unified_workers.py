@@ -31,6 +31,7 @@ def check(name, cond, detail=""):
 
 
 SRC = open(SERVER).read()
+HTML = open(SERVER.replace("server.js", os.path.join("public", "index.html"))).read()
 
 
 def row_block(marker):
@@ -382,6 +383,91 @@ console.log(String(sv2SolveDiffFromLog(h)));
           out == "88416", out)
 
 
+
+def test_sv2_reset_survives_translator_merge():
+    """Chris (2026-07-18): "reset best doesn't reset sv2 workers". The
+    translator stats API reports its own cumulative best; the merge guard was
+    `api.best > sv2ResetTs(name) * 0` -- always true -- so seconds after every
+    reset the old best was re-imported. Baseline at reset; only values that
+    EXCEED the baseline are imported."""
+    check("the *0 always-true guard is gone", "sv2ResetTs(ch.name) * 0" not in SRC)
+    check("api baseline state exists", "sv2ApiBase" in SRC and "SV2_API_BASE_FILE" in SRC)
+    check("merge records the api high-water mark", "sv2ApiLast[ch.name] = Math.max" in SRC)
+    check("merge imports only above the baseline",
+          "api.best > (Number(sv2ApiBase[ch.name]) || 0) && api.best > ch.best" in SRC)
+    check("reset freezes the baseline for the scope",
+          "sv2ApiBase[n] = Math.max(Number(sv2ApiBase[n]) || 0, Number(sv2ApiLast[n]) || 0)" in SRC)
+
+    import shutil, subprocess, tempfile, json as _json
+    if not shutil.which("node"):
+        print("SKIP  reset/merge functional run (node unavailable)"); return
+    js = """
+const path={join:()=>'/dev/null'}; const fs={writeFileSync:()=>{},readFileSync:()=>{throw 0}};
+let sv2Resets={}, sv2BestP={};
+const sv2State={channels:{c1:{name:'miner3',best:196.45e9,accepted:0,rejected:0,last:1e12}}};
+function sv2SaveResets(){} function sv2SaveBest(){}
+const SV2_DIR='';
+%s
+%s
+// translator has been reporting a big cumulative best
+const ch=sv2State.channels.c1; let api={best:196.45e9};
+sv2ApiLast[ch.name]=api.best;
+// user hits RESET BEST (scope all)
+sv2ApplyReset('all');
+const afterReset=ch.best;
+// next poll: the merge sees the SAME cumulative api.best again
+if (api.best > 0) {
+  sv2ApiLast[ch.name] = Math.max(Number(sv2ApiLast[ch.name]) || 0, api.best);
+  if (api.best > (Number(sv2ApiBase[ch.name]) || 0) && api.best > ch.best) ch.best = api.best;
+}
+const afterMerge=ch.best;
+// later: a genuinely NEW record beats the old one
+api={best:250e9};
+if (api.best > 0) {
+  sv2ApiLast[ch.name] = Math.max(Number(sv2ApiLast[ch.name]) || 0, api.best);
+  if (api.best > (Number(sv2ApiBase[ch.name]) || 0) && api.best > ch.best) ch.best = api.best;
+}
+const afterNewRecord=ch.best;
+console.log(JSON.stringify({afterReset,afterMerge,afterNewRecord}));
+"""
+    import re as _re
+    # one-line functions: extract to end of line, not to first brace.
+    # The stubs (path.join -> /dev/null, fs.readFileSync throws) make the real
+    # persistence code safe to run as-is -- no fragile string surgery needed.
+    base_block = _re.search(r"// Chris \(2026-07-18\):.*?function sv2SaveApiBase\(\)[^\n]*", SRC, _re.S).group(0)
+    reset_fn = _extract_fn(SRC, "function sv2ApplyReset(")
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as f:
+        f.write(js % (base_block, reset_fn)); pth = f.name
+    r = subprocess.run(["node", pth], capture_output=True, text=True)
+    try: d = _json.loads(r.stdout.strip().split("\n")[-1])
+    except Exception:
+        check("reset/merge functional run", False, (r.stdout + r.stderr)[:200]); return
+    check("reset zeroes the SV2 worker best", d["afterReset"] == 0)
+    check("the translator's old cumulative best does NOT come back", d["afterMerge"] == 0)
+    check("a genuinely new record IS imported", d["afterNewRecord"] == 250e9)
+
+
+def test_block_round_effort():
+    """Chris: show the round effort each block was found at."""
+    check("effort shares snapshotted BEFORE the round zeroes",
+          SRC.index("sv2State.pendingEffortShares =") < SRC.index("sv2State.roundWork = 0; sv2State.roundDiff = 0;"))
+    check("percentage attached once netDiff exists",
+          "sv2State.pendingEffortShares / out.netDiff * 100" in SRC)
+    check("only fresh solves are stamped (healed old blocks stay blank)",
+          "nowS2 - (b.time || 0) < 900" in SRC)
+    check("effort persisted with the block", "sv2State.pendingEffortShares = null;" in SRC)
+    check("UI: Effort column in the header", ">Effort</div>" in HTML)
+    check("UI: dash when unknown, colored like the round gauge",
+          "b.effort!=null" in HTML and "b.effort<100?'var(--mint)'" in HTML)
+
+
+def test_celebration_holds_for_screenshots():
+    """Chris: the celebration closed too fast to screenshot."""
+    check("no fast auto-close", "setTimeout(celStop,5800)" not in HTML)
+    check("stays up ~60s (safety-close only)", "setTimeout(celStop,60000)" in HTML)
+    check("hint tells users it stays", "stays up for screenshots" in HTML)
+
+
 if __name__ == "__main__":
     print("unified worker schema regression tests:")
     test_both_protocols_emit_one_schema()
@@ -400,6 +486,9 @@ if __name__ == "__main__":
     test_sv2_found_blocks_create_entries()
     test_addr_matching_normalized_by_node()
     test_sv2_best_diff_is_solve_not_network()
+    test_sv2_reset_survives_translator_merge()
+    test_block_round_effort()
+    test_celebration_holds_for_screenshots()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)
