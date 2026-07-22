@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.1.34"
+version: "29.1.35"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
@@ -19,12 +19,8 @@ description: >-
 
   Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: qpp8hg2n60mhhlsr2apw6l60x5vrdq0vp5pq3j4gyt
 releaseNotes: >-
-  Backups are now sensible. Previously a backup of this app tried to include
-  the entire blockchain - hundreds of gigabytes of data your node can simply
-  re-download. Backups now keep what actually matters and cannot be
-  regenerated: your settings (including Tor mode and onion peers), your
-  blocked-peer list, and your node's onion service identity, while skipping
-  the chain data and logs.
+  Corrects the donation address shown in the app description to a Bitcoin
+  Cash address (it previously showed a BTC address).
 developer: LoneStrike Labs
 website: https://bitcoincashnode.org
 dependencies: []

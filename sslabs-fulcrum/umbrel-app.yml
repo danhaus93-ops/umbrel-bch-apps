@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-fulcrum
 category: networking
 name: Fulcrum (BCH)
-version: "1.3.5"
+version: "1.3.6"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-fulcrum/icon.svg
 tagline: Electrum server for your Bitcoin Cash node — connect your wallet
 description: >-
@@ -15,9 +15,9 @@ description: >-
   uses extra disk; once done, point your wallet at the endpoints shown in the app.
 
   Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: qpp8hg2n60mhhlsr2apw6l60x5vrdq0vp5pq3j4gyt
-releaseNotes: URGENT FIX — removes a config option that current Fulcrum versions
-  reject, which caused Fulcrum to crash-loop after the last update. Please update
-  immediately if Fulcrum is not running.
+releaseNotes: >-
+  Corrects the donation address shown in the app description to a Bitcoin
+  Cash address (it previously showed a BTC address).
 developer: LoneStrike Labs
 website: https://github.com/cculianu/Fulcrum
 dependencies:
