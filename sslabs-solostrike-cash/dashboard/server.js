@@ -1074,6 +1074,40 @@ function mergeSv2FoundBlocks() {
   return added;
 }
 
+const PROC_START = Date.now();
+// asicseer declares the true round effort at the moment of solve:
+//   "Block solved after 47520286401 shares at 11.1% effort"
+// That line is authoritative. The dashboard-side snapshot can lie when
+// detection lags the solve (asicseer resets its own round instantly, so a
+// late snapshot measures the NEW round -- Chris's block stamped 0.1% when
+// the pool itself said 11.1%). Parse the declaration, matched by timestamp.
+function sv1SolveEffortFromLog(blockTime) {
+  if (!(blockTime > 0)) return null;
+  for (const f of [path.join(POOL_LOGDIR, 'pool', 'pool.log'),
+                   path.join(POOL_LOGDIR, 'pool.log')]) {
+    let txt;
+    try {
+      const st = fs.statSync(f);
+      const fd = fs.openSync(f, 'r');
+      const sz = Math.min(st.size, 262144);
+      const buf = Buffer.alloc(sz);
+      fs.readSync(fd, buf, 0, sz, st.size - sz);
+      fs.closeSync(fd);
+      txt = buf.toString('utf8');
+    } catch (_) { continue; }
+    let best = null, bestDt = Infinity;
+    const re = /\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})[^\]]*\] Block solved after \d+ shares at ([0-9.]+)% effort/g;
+    let m;
+    while ((m = re.exec(txt))) {
+      const ts = Date.parse(m[1].replace(' ', 'T') + 'Z') / 1000;
+      const dt = Math.abs(ts - blockTime);
+      if (dt < bestDt) { bestDt = dt; best = parseFloat(m[2]); }
+    }
+    if (best != null && bestDt < 900) return best;
+  }
+  return null;
+}
+
 async function scanBlocks() {
   if (scanning) return;
   scanning = true;
@@ -1168,7 +1202,10 @@ app.get('/api/status', async (_req, res) => {
 
   try {
     const s2 = sv2Stats();
-    if (mergeSv2FoundBlocks()) {
+    const nBefore = blockState.blocks.length;
+    const upserted = mergeSv2FoundBlocks();
+    try { healFromBlockFiles(); } catch (_) {}   // SV1 solves land as files instantly
+    if (upserted || blockState.blocks.length !== nBefore) {
       out.blockList = [...blockState.blocks].sort((a, b) => b.height - a.height).slice(0, 200);
       out.blocks = Math.max(blockState.blocks.length, out.blocks || 0);
     }
@@ -1251,13 +1288,22 @@ app.get('/api/status', async (_req, res) => {
     if (sv2State.pendingEffortShares != null && out.netDiff > 0) {
       const pct = sv2State.pendingEffortShares / out.netDiff * 100;
       const nowS2 = Math.floor(Date.now() / 1000);
+      // A snapshot taken within minutes of a process start is amnesiac: the
+      // in-memory round began at boot, not at the round's true start. Better
+      // a dash than a lie.
+      const snapshotTrusted = (Date.now() - PROC_START) > 600000;
+      let changed = false;
       for (const b of blockState.blocks) {
         // fresh solves only: a heal that surfaces an OLD block must not get
         // today's round effort stamped on it
-        if (b.effort == null && nowS2 - (b.time || 0) < 900) b.effort = Math.round(pct * 10) / 10;
+        if (b.effort == null && nowS2 - (b.time || 0) < 900) {
+          const declared = sv1SolveEffortFromLog(b.time);
+          if (declared != null) { b.effort = declared; changed = true; }
+          else if (snapshotTrusted) { b.effort = Math.round(pct * 10) / 10; changed = true; }
+        }
       }
       sv2State.pendingEffortShares = null;
-      try { saveBlocks(); } catch (_) {}
+      if (changed) { try { saveBlocks(); } catch (_) {} }
     }
   } catch (_) { /* node unreachable */ }
 

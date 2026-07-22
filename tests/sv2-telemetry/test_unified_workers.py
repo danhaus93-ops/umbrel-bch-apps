@@ -278,8 +278,9 @@ def test_sv2_found_blocks_create_entries():
     scan = SRC[i:i + 4000]
     check("scan runs the upsert before healFromBlockFiles",
           0 < scan.find("mergeSv2FoundBlocks();") < scan.find("healFromBlockFiles();"))
-    check("status merge upserts and refreshes the visible list",
-          "if (mergeSv2FoundBlocks()) {" in SRC and
+    check("status merge upserts BOTH protocols and refreshes the visible list",
+          "const upserted = mergeSv2FoundBlocks();" in SRC and
+          "healFromBlockFiles(); } catch (_) {}" in SRC and
           "out.blockList = [...blockState.blocks]" in SRC)
 
     # functional: run the real function under node with stubs (CI only)
@@ -468,6 +469,49 @@ def test_celebration_holds_for_screenshots():
     check("hint tells users it stays", "stays up for screenshots" in HTML)
 
 
+
+def test_sv1_effort_declaration_wins():
+    """Chris's 2026-07-22 block: the pool logged "Block solved ... at 11.1%
+    effort" but the dashboard stamped 0.1% -- detection lagged the solve, and
+    by then asicseer had reset its own round, so the snapshot measured the NEW
+    round. The pool's own declaration is authoritative and must win; the
+    snapshot is only a fallback, and never within 10 min of process start
+    (restart amnesia)."""
+    check("SV1 effort reader exists", "function sv1SolveEffortFromLog(" in SRC)
+    fn = _extract_fn(SRC, "function sv1SolveEffortFromLog(")
+    check("reads the tail, not the whole log", "262144" in fn)
+    check("matches by timestamp proximity", "bestDt" in fn and "< 900" in fn)
+    check("declaration takes precedence over the snapshot",
+          SRC.index("sv1SolveEffortFromLog(b.time)") < SRC.index("else if (snapshotTrusted)"))
+    check("snapshot needs 10 min of process uptime",
+          "(Date.now() - PROC_START) > 600000" in SRC)
+    check("SV1 block files healed every poll (fast detection)",
+          "healFromBlockFiles(); } catch (_) {}   // SV1 solves land as files instantly" in SRC)
+
+    import shutil, subprocess, tempfile, os as _os, json as _json
+    if not shutil.which("node"):
+        print("SKIP  effort reader functional (node unavailable)"); return
+    fxdir = _os.path.join(HERE, "fixtures")
+    js = """
+const fs = require('fs'); const path = require('path');
+const POOL_LOGDIR = %r;
+%s
+// block at the solve moment -> 11.1; a block hours away -> null
+const t = Date.parse('2026-07-22T07:05:08Z')/1000;
+console.log(JSON.stringify({near: sv1SolveEffortFromLog(t), far: sv1SolveEffortFromLog(t - 86400)}));
+""" % (fxdir, _extract_fn(SRC, "function sv1SolveEffortFromLog("))
+    js = js.replace("path.join(POOL_LOGDIR, 'pool', 'pool.log')",
+                    "path.join(POOL_LOGDIR, 'pool_sv1_solved.log')")
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as f:
+        f.write(js); pth = f.name
+    r = subprocess.run(["node", pth], capture_output=True, text=True)
+    try: d = _json.loads(r.stdout.strip().split("\n")[-1])
+    except Exception:
+        check("effort reader functional run", False, (r.stdout + r.stderr)[:200]); return
+    check("reads the pool's declared 11.1%% for the real block", d["near"] == 11.1)
+    check("returns null when no solve line is near in time", d["far"] is None)
+
+
 if __name__ == "__main__":
     print("unified worker schema regression tests:")
     test_both_protocols_emit_one_schema()
@@ -489,6 +533,7 @@ if __name__ == "__main__":
     test_sv2_reset_survives_translator_merge()
     test_block_round_effort()
     test_celebration_holds_for_screenshots()
+    test_sv1_effort_declaration_wins()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)
