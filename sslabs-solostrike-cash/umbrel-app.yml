@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.62"
+version: "1.4.63"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -76,11 +76,7 @@ widgets:
           text: "0"
           subtext: "found"
 releaseNotes: >-
-  Three community-requested fixes. Reset Best now truly resets Stratum V2
-  workers - previously the V2 translator's own statistics re-imported the old
-  best seconds after every reset. The Found Blocks list gains an Effort
-  column showing the round effort each block was found at. And the
-  block-found celebration now stays on screen until you tap it away, so
-  there is time to take a screenshot.
+  The donation address in the dashboard footer and app description is now a
+  Bitcoin Cash address (it previously showed a BTC address).
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
