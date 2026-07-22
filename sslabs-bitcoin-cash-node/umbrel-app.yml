@@ -17,7 +17,7 @@ description: >-
 
   First sync downloads the full chain, so use an SSD (NVMe strongly recommended).
 
-  Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: bc1q6k0j7w77xftasgwx7v5nra06rs3v5txk60wgsk
+  Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: qpp8hg2n60mhhlsr2apw6l60x5vrdq0vp5pq3j4gyt
 releaseNotes: >-
   Backups are now sensible. Previously a backup of this app tried to include
   the entire blockchain - hundreds of gigabytes of data your node can simply
