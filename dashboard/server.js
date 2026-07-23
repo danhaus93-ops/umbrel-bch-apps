@@ -267,17 +267,50 @@ function onionPinOn() {
 function onionPinSet(on) {
   try { fs.writeFileSync(ONION_PIN_FILE, on ? '1' : '0'); } catch (_) {}
 }
+// BCHN's own fixed onion seeds (contrib/seeds/nodes_main.txt, fetched
+// 2026-07-22). The binary dials these on a fresh install -- which is why a
+// brand-new node shows a full onion list on day one. getnodeaddresses
+// EXCLUDES addresses addrman has marked terrible after repeated failed
+// attempts, so one unlucky night of pin retries against dead services HID
+// 21 of 23 known onions -- including kister, the one peer proven live for
+// 10h in June. The user could only tap the two survivors, both dead.
+// The seeds are a permanent floor: always listed, always pinnable, immune
+// to addrman decay. Field-verified: a manual addnode to kister connected
+// in under 90s while the UI insisted nothing worked.
+const ONION_SEEDS = [
+  '2th7ipz3ljxxrjaqpksfop3pztprxpajrotankqyae6uq57w2iv7x4ad.onion',
+  'frnxsgdwkfzuqc3uriz6f6t4m7rk4hptv2unjk3mkr6imdspddtdklqd.onion',
+  'g73swphpkbqtzpd2i3v6et2gwfaojn5gb5abcomjroy3xzyuxap25bid.onion',
+  'hatjddf5z3h7hanh2ukwflt6wyul6gpsy47ehhvywwf7i7rltn4u27ad.onion',
+  'kisternet5tgeekwidrj7r7yd3n2l5j7y72b74y6xu3q2b6xdjrte6id.onion',
+  'utiprzsu4uvjlgbisyuhcdol7rca6ocv5bz436jdzm6ktngohw7kekid.onion',
+  'wgrqshnzdge3oomqn7xlszgxgibktsnj4hrikfnh2alxmtt3nbrlkuid.onion',
+];
 async function onionKnown() {
   const all = await rpc('getnodeaddresses', [0]).catch(() => []);
-  return (all || [])
+  const list = (all || [])
     .filter((a) => /\.onion$/i.test(a.address || ''))
-    .map((a) => ({ address: a.address, port: a.port || 8333, time: a.time || 0 }))
-    .sort((a, b) => b.time - a.time);
+    .map((a) => ({ address: a.address, port: a.port || 8333, time: a.time || 0 }));
+  const have = new Set(list.map((a) => a.address));
+  for (const addr of ONION_SEEDS) {
+    if (!have.has(addr)) list.push({ address: addr, port: 8333, time: 0, seed: true });
+    else list.find((a) => a.address === addr).seed = true;
+  }
+  // seeds first (the proven targets lead the list AND the pin's candidate
+  // slice), then freshest-seen
+  return list.sort((a, b) => (b.seed ? 1 : 0) - (a.seed ? 1 : 0) || b.time - a.time);
 }
 // Reconcile desired vs actual. Never re-add a peer that is already connected,
 // and never retry a dead hidden service in a tight loop: bitcoind's own retry
 // under `add` is the backoff, so we only ever add each address once per boot.
 const onionAdded = new Set();
+// A pinned address that never connects is a dead service; bitcoind's addnode
+// retry loop will hammer it forever, and every failure deepens the addrman
+// penalty that hides GOOD addresses from getnodeaddresses (the decay bug
+// above). Give each pin 20 minutes to land; then unpin, cool it down for an
+// hour, and let the reconcile advance to the next candidate.
+const onionPinAt = new Map();      // address -> first-pinned ms
+const onionCooldown = new Map();   // address -> retry-not-before ms
 
 // Peers the user dropped by hand. This has to be DURABLE and it has to be
 // consulted by the pin, because `addnode ... add` is a standing instruction:
@@ -323,16 +356,29 @@ async function onionReconcile() {
     const live = new Set((peers || [])
       .filter((p) => /\.onion/.test(p.addr || ''))
       .map((p) => (p.addr || '').split(':')[0]));
+    const nowMs = Date.now();
+    // retire pins that never landed: unpin after 20 min, cool down 60 min
+    for (const [addr, at] of [...onionPinAt]) {
+      if (live.has(addr)) { onionPinAt.delete(addr); continue; }   // it landed
+      if (nowMs - at > 20 * 60 * 1000) {
+        await rpc('addnode', [addr + ':8333', 'remove']).catch(() => {});
+        onionAdded.delete(addr);
+        onionPinAt.delete(addr);
+        onionCooldown.set(addr, nowMs + 60 * 60 * 1000);
+      }
+    }
     if (live.size >= ONION_PIN_MAX) return;
     const known = await onionKnown();
     const drops = dropsRead();
-    for (const o of known.slice(0, ONION_PIN_MAX * 3)) {
+    for (const o of known) {
       if (live.size + onionAdded.size >= ONION_PIN_MAX) break;
       if (live.has(o.address) || onionAdded.has(o.address)) continue;
       // The pin is a convenience; an explicit disconnect is an instruction.
       // The instruction wins until the user connects again.
       if (drops.has(o.address)) continue;
+      if ((onionCooldown.get(o.address) || 0) > nowMs) continue;
       onionAdded.add(o.address);
+      onionPinAt.set(o.address, nowMs);
       await rpc('addnode', [o.address + ':' + o.port, 'add']).catch(() => {});
     }
   } catch (_) {}
