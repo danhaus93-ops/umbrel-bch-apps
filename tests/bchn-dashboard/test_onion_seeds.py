@@ -64,7 +64,14 @@ def test_pin_rotation():
           "onionCooldown.set(addr, nowMs + 60 * 60 * 1000)" in SRC)
     check("cooldown respected when choosing candidates",
           "(onionCooldown.get(o.address) || 0) > nowMs" in SRC)
-    check("landed pins stop being tracked", "if (live.has(addr)) { onionPinAt.delete(addr); continue; }" in SRC)
+    check("landed pins keep a running clock (die later -> rotate out; nmfretz #5914)",
+          "if (live.has(addr)) { onionPinAt.set(addr, nowMs); continue; }" in SRC)
+    check("budget counts the UNION of live and pinned (no double count; nmfretz #5914)",
+          "new Set([...live, ...onionAdded]).size >= ONION_PIN_MAX" in SRC)
+    check("pinned-but-untracked addresses get re-armed",
+          "if (!onionPinAt.has(addr) && !live.has(addr)) onionPinAt.set(addr, nowMs);" in SRC)
+    check("known list deduped by address (count == rows)",
+          "const byAddr = new Map();" in SRC and "if (!prev || a.time > prev.time)" in SRC)
     check("candidate loop walks the FULL known list (not a decayed slice)",
           "for (const o of known) {" in SRC and "known.slice(0, ONION_PIN_MAX * 3)" not in SRC)
 

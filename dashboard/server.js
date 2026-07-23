@@ -291,6 +291,16 @@ async function onionKnown() {
   const list = (all || [])
     .filter((a) => /\.onion$/i.test(a.address || ''))
     .map((a) => ({ address: a.address, port: a.port || 8333, time: a.time || 0 }));
+  // addrman can return the same address under more than one port; the count
+  // and the rendered rows must describe the same deduped reality (a frozen
+  // "23 known" over 21 visible rows was two port-duplicates).
+  const byAddr = new Map();
+  for (const a of list) {
+    const prev = byAddr.get(a.address);
+    if (!prev || a.time > prev.time) byAddr.set(a.address, a);
+  }
+  list.length = 0;
+  for (const a of byAddr.values()) list.push(a);
   const have = new Set(list.map((a) => a.address));
   for (const addr of ONION_SEEDS) {
     if (!have.has(addr)) list.push({ address: addr, port: 8333, time: 0, seed: true });
@@ -357,9 +367,16 @@ async function onionReconcile() {
       .filter((p) => /\.onion/.test(p.addr || ''))
       .map((p) => (p.addr || '').split(':')[0]));
     const nowMs = Date.now();
+    for (const addr of onionAdded) {
+      if (!onionPinAt.has(addr) && !live.has(addr)) onionPinAt.set(addr, nowMs);
+    }
     // retire pins that never landed: unpin after 20 min, cool down 60 min
     for (const [addr, at] of [...onionPinAt]) {
-      if (live.has(addr)) { onionPinAt.delete(addr); continue; }   // it landed
+      // Review note (nmfretz, #5914): deleting tracking on connect meant a
+      // peer that landed and LATER died held its pin slot forever. Keep the
+      // clock running while live instead -- if it dies, retirement counts
+      // 20 minutes from the last time we saw it connected.
+      if (live.has(addr)) { onionPinAt.set(addr, nowMs); continue; }
       if (nowMs - at > 20 * 60 * 1000) {
         await rpc('addnode', [addr + ':8333', 'remove']).catch(() => {});
         onionAdded.delete(addr);
@@ -371,7 +388,7 @@ async function onionReconcile() {
     const known = await onionKnown();
     const drops = dropsRead();
     for (const o of known) {
-      if (live.size + onionAdded.size >= ONION_PIN_MAX) break;
+      if (new Set([...live, ...onionAdded]).size >= ONION_PIN_MAX) break;
       if (live.has(o.address) || onionAdded.has(o.address)) continue;
       // The pin is a convenience; an explicit disconnect is an instruction.
       // The instruction wins until the user connects again.
