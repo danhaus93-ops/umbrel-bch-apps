@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-bitcoin-cash-node
 category: networking
 name: Bitcoin Cash Node
-version: "29.1.35"
+version: "29.1.36"
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-bitcoin-cash-node/icon.svg
 tagline: Run your own Bitcoin Cash full node (BCHN)
 description: >-
@@ -19,8 +19,13 @@ description: >-
 
   Donations are never expected — but if LoneStrike Labs apps are useful to you, they keep development going: qpp8hg2n60mhhlsr2apw6l60x5vrdq0vp5pq3j4gyt
 releaseNotes: >-
-  Corrects the donation address shown in the app description to a Bitcoin
-  Cash address (it previously showed a BTC address).
+  Fixes the vanishing onion-peers list. The node's address manager hides
+  addresses after repeated failed connection attempts, so an unlucky stretch
+  of retries against offline onion services could shrink the visible list to
+  a couple of dead entries and hide the reliable ones. The seven onion seeds
+  that ship with Bitcoin Cash Node are now always listed and always tried
+  first, and the keep-connected option rotates away from unresponsive
+  services instead of retrying them forever.
 developer: LoneStrike Labs
 website: https://bitcoincashnode.org
 dependencies: []
