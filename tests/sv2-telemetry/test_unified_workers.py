@@ -512,6 +512,57 @@ console.log(JSON.stringify({near: sv1SolveEffortFromLog(t), far: sv1SolveEffortF
     check("returns null when no solve line is near in time", d["far"] is None)
 
 
+
+def test_round_watermark_survives_restart_replay():
+    """Chris (2026-07-28): round effort "reset and came back" at 101% after a
+    block -- the ingest replays the log tail on restart and the round
+    accumulators had no timestamp guard, so the pre-block round resurrected.
+    A persisted watermark now gates both accumulators."""
+    check("watermark persisted to disk", "SV2_ROUND_FILE" in SRC and "sv2_round_start.json" in SRC)
+    check("roundWork gated by the watermark",
+          "if (tsMs / 1000 > sv2RoundStartTs) {\n      sv2State.roundWork += work;" in SRC)
+    check("round share counter gated alongside", "ch.roundAcc = (ch.roundAcc || 0) + 1;" in SRC)
+    check("roundDiff draws on round-scoped counters only",
+          "const deltaRound = (ch.roundAcc || 0) - (ch.accountedRound || 0);" in SRC)
+    check("allDiff keeps all-time semantics (separate delta)",
+          "const deltaAll = ch.accepted - (ch.accounted || 0);" in SRC)
+    check("block detection stamps the watermark",
+          "sv2SetRoundStart(Math.floor(Date.now() / 1000));" in SRC)
+    check("per-channel round counters zeroed at reset",
+          "c.roundAcc = 0; c.accountedRound = 0;" in SRC)
+
+    import shutil, subprocess, tempfile, json as _json
+    if not shutil.which("node"):
+        print("SKIP  watermark functional (node unavailable)"); return
+    js = """
+// simulate: watermark set at block time T; tail replay carries shares
+// from BEFORE the block (the resurrection) and after (legit new round)
+let sv2RoundStartTs = 1000;
+const sv2State = { roundWork: 0 };
+const ch = {};
+function ingestShare(tsMs, work) {
+  if (tsMs / 1000 > sv2RoundStartTs) {
+    sv2State.roundWork += work;
+    ch.roundAcc = (ch.roundAcc || 0) + 1;
+  }
+}
+// replayed pre-block round: enormous, must NOT count
+for (let i = 0; i < 100; i++) ingestShare(900 * 1000, 5e9);
+const afterReplay = sv2State.roundWork;
+// genuinely new shares after the block: must count
+ingestShare(1500 * 1000, 3e9); ingestShare(1600 * 1000, 4e9);
+console.log(JSON.stringify({ afterReplay, final: sv2State.roundWork, roundAcc: ch.roundAcc }));
+"""
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as f:
+        f.write(js); pth = f.name
+    r = subprocess.run(["node", pth], capture_output=True, text=True)
+    try: d = _json.loads(r.stdout.strip().split("\n")[-1])
+    except Exception:
+        check("watermark functional run", False, (r.stdout + r.stderr)[:200]); return
+    check("replayed pre-block round stays at zero", d["afterReplay"] == 0)
+    check("post-block shares accumulate normally", d["final"] == 7e9 and d["roundAcc"] == 2)
+
+
 if __name__ == "__main__":
     print("unified worker schema regression tests:")
     test_both_protocols_emit_one_schema()
@@ -534,6 +585,7 @@ if __name__ == "__main__":
     test_block_round_effort()
     test_celebration_holds_for_screenshots()
     test_sv1_effort_declaration_wins()
+    test_round_watermark_survives_restart_replay()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)

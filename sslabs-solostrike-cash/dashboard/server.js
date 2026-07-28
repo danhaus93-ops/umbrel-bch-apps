@@ -198,6 +198,19 @@ const SV2_API_BASE_FILE = path.join(SV2_DIR, 'sv2_api_base.json');
 let sv2ApiBase = (() => { try { return JSON.parse(fs.readFileSync(SV2_API_BASE_FILE, 'utf8')) || {}; } catch (_) { return {}; } })();
 let sv2ApiLast = {};   // name -> highest api.best seen this process
 function sv2SaveApiBase() { try { fs.writeFileSync(SV2_API_BASE_FILE, JSON.stringify(sv2ApiBase)); } catch (_) {} }
+// Chris (2026-07-28): round effort "reset and came back" -- 101% shown 100
+// minutes after a block his ~2 PH/s could only have re-earned ~3G of. The
+// ingest replays the log tail on every dashboard restart (offset starts at
+// zero), and the round accumulators had no timestamp guard, so the entire
+// pre-block round resurrected from the tail. Same disease as the 1.4.62
+// reset-best bug; same cure: a persisted watermark. Shares at or before the
+// round start do not count toward the round.
+const SV2_ROUND_FILE = path.join(SV2_DIR, 'sv2_round_start.json');
+let sv2RoundStartTs = (() => { try { return Number(JSON.parse(fs.readFileSync(SV2_ROUND_FILE, 'utf8')).start) || 0; } catch (_) { return 0; } })();
+function sv2SetRoundStart(ts) {
+  sv2RoundStartTs = ts;
+  try { fs.writeFileSync(SV2_ROUND_FILE, JSON.stringify({ start: ts })); } catch (_) {}
+}
 function sv2SaveBest()   { try { fs.writeFileSync(SV2_BEST_FILE,   JSON.stringify(sv2BestP));  } catch (_) {} }
 function sv2ResetTs(name) { return Math.max(Number(sv2Resets[name]) || 0, Number(sv2Resets.__all__) || 0); }
 // Chris #1: an individual reset must also clear that worker's displayed
@@ -433,7 +446,10 @@ function sv2Ingest() {
       if (!p || diff > p.best) { sv2BestP[ch.name] = { best: diff, ts: Math.floor(tsMs / 1000) }; sv2SaveBest(); }
     }
     ch.last = Math.max(ch.last, Math.floor(tsMs / 1000));
-    sv2State.roundWork += work;
+    if (tsMs / 1000 > sv2RoundStartTs) {
+      sv2State.roundWork += work;
+      ch.roundAcc = (ch.roundAcc || 0) + 1;
+    }
     sv2State.shares.push([tsMs, work, cid, diff, seq]);
   }
   const cut = Date.now() - 600 * 1000;
@@ -601,11 +617,17 @@ function sv2Stats() {
     if (wd && wd.length >= 8) {
       const sorted = wd.slice().sort((a, b) => a - b);
       const tDiff = sorted[Math.floor(sorted.length * 0.15)] * 0.85;
-      const delta = ch.accepted - (ch.accounted || 0);
-      if (delta > 0 && tDiff > 0) {
+      const deltaAll = ch.accepted - (ch.accounted || 0);
+      if (deltaAll > 0 && tDiff > 0) {
         ch.accounted = ch.accepted;
-        sv2State.roundDiff += delta * tDiff;
-        sv2State.allDiff += delta * tDiff;
+        sv2State.allDiff += deltaAll * tDiff;
+      }
+      // round accounting draws only on shares AFTER the round watermark --
+      // replayed pre-block shares rebuild ch.accepted but not ch.roundAcc
+      const deltaRound = (ch.roundAcc || 0) - (ch.accountedRound || 0);
+      if (deltaRound > 0 && tDiff > 0) {
+        ch.accountedRound = ch.roundAcc || 0;
+        sv2State.roundDiff += deltaRound * tDiff;
       }
     }
     const hr = fmtHs(cHs);
@@ -1231,6 +1253,8 @@ app.get('/api/status', async (_req, res) => {
           sv2State.pendingEffortShares =
             (out.roundShares || 0) + Math.max(sv2State.roundWork, sv2State.roundDiff);
           sv2State.roundWork = 0; sv2State.roundDiff = 0;
+          sv2SetRoundStart(Math.floor(Date.now() / 1000));
+          for (const c of Object.values(sv2State.channels)) { c.roundAcc = 0; c.accountedRound = 0; }
           // Chris #2: a block is a FLEET event. asicseer clears SV1's best
           // itself when SV1 solves, but SV2's best survived, so the combined
           // "best diff" stayed pinned to a stale SV2 value and never dropped
