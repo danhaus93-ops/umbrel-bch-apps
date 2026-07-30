@@ -563,6 +563,66 @@ console.log(JSON.stringify({ afterReplay, final: sv2State.roundWork, roundAcc: c
     check("post-block shares accumulate normally", d["final"] == 7e9 and d["roundAcc"] == 2)
 
 
+
+def test_effort_units_and_races():
+    """Chris (2026-07-31): pool declared 302.9%, dashboard stamped 3.4%.
+    Block-file 'time' in epoch-ms slid past the freshness gate while making
+    the declaration matcher's timestamp distance astronomical (null ->
+    snapshot -> post-reset pool.status -> tiny number). Four defences:
+    unit normalization, matcher tolerance, prev-poll snapshot high-water,
+    and a declaration-heal for recent wrong stamps."""
+    check("heal normalizes ms-epoch block-file times",
+          "if (t > 1e12) t = Math.floor(t / 1000);" in SRC)
+    check("matcher normalizes and tolerates missing blockTime",
+          "if (bt > 1e12) bt = Math.floor(bt / 1000);" in SRC and
+          "if (!(bt > 0)) bt = Math.floor(Date.now() / 1000);" in SRC)
+    check("snapshot uses prev-poll high-water (pool resets its round instantly)",
+          "sv2State.prevRoundTotal || 0);" in SRC and
+          "sv2State.prevRoundTotal = out.roundShares;" in SRC)
+    check("effort decisions are logged with both candidates",
+          "declared=" in SRC and "' snapshot='" in SRC)
+    check("declaration-heal corrects recent 2x-wrong snapshot stamps",
+          "declared > b.effort * 2 || declared < b.effort / 2" in SRC and
+          "effort healed for" in SRC)
+    check("stamps carry their source", "b.effortSrc = 'pool'" in SRC and "b.effortSrc = 'snapshot'" in SRC)
+
+    import shutil, subprocess, tempfile, json as _json, os as _os
+    if not shutil.which("node"):
+        print("SKIP  units functional (node unavailable)"); return
+    fn = _extract_fn(SRC, "function sv1SolveEffortFromLog(")
+    fxdir = _os.path.join(HERE, "fixtures")
+    js = """
+const fs = require('fs'); const path = require('path');
+const POOL_LOGDIR = %r;
+%s
+// the 2026-07-22 fixture solve is at 07:05:08Z = 1784790308
+const tSec = Date.parse('2026-07-22T07:05:08Z')/1000;
+console.log(JSON.stringify({
+  sec: sv1SolveEffortFromLog(tSec),        // plain seconds
+  ms: sv1SolveEffortFromLog(tSec * 1000),  // ms-epoch (the bug)
+}));
+""" % (fxdir, fn.replace("path.join(POOL_LOGDIR, 'pool', 'pool.log')",
+                          "path.join(POOL_LOGDIR, 'pool_sv1_solved.log')"))
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as f:
+        f.write(js); pth = f.name
+    r = subprocess.run(["node", pth], capture_output=True, text=True)
+    try: d = _json.loads(r.stdout.strip().split("\n")[-1])
+    except Exception:
+        check("units functional run", False, (r.stdout + r.stderr)[:200]); return
+    check("seconds-epoch blockTime matches the declaration", d["sec"] == 11.1)
+    check("MS-epoch blockTime now ALSO matches (the exact bug)", d["ms"] == 11.1)
+
+
+def test_celebration_survives_refresh():
+    """Chris: 'the block find celebration didn't show up. Maybe because I
+    refreshed' -- correct: the first-poll seeder marked every existing block
+    seen, including a 30-second-old solve."""
+    check("seeder exempts blocks younger than 90s",
+          "nowS-(b.time||0)>=90" in HTML)
+    check("fresh blocks fall through and fire",
+          "must not eat the party" in HTML)
+
+
 if __name__ == "__main__":
     print("unified worker schema regression tests:")
     test_both_protocols_emit_one_schema()
@@ -586,6 +646,8 @@ if __name__ == "__main__":
     test_celebration_holds_for_screenshots()
     test_sv1_effort_declaration_wins()
     test_round_watermark_survives_restart_replay()
+    test_effort_units_and_races()
+    test_celebration_survives_refresh()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)

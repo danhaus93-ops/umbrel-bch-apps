@@ -1046,7 +1046,12 @@ function healFromBlockFiles() {
     blockState.blocks.push({
       height: h,
       hash: j.hash || null,
-      time: Number(j.time) || Math.floor(Date.now() / 1000),
+      // asicseer block-file 'time' units are not guaranteed: an epoch-ms
+      // value made b.time ~1.78e12, which slid past the freshness gate
+      // (now - b.time < 900 is true for huge b.time) while making the
+      // declaration matcher's timestamp distance astronomical -> null ->
+      // snapshot fallback -> Chris's 302.9%% round stamped as 3.4%%.
+      time: (() => { let t = Number(j.time) || 0; if (t > 1e12) t = Math.floor(t / 1000); return t || Math.floor(Date.now() / 1000); })(),
       best: sd || 0,
       solveDiff: sd,
       netdiff: Number(j.network_difficulty) || null,
@@ -1104,7 +1109,10 @@ const PROC_START = Date.now();
 // late snapshot measures the NEW round -- Chris's block stamped 0.1% when
 // the pool itself said 11.1%). Parse the declaration, matched by timestamp.
 function sv1SolveEffortFromLog(blockTime) {
-  if (!(blockTime > 0)) return null;
+  let bt = Number(blockTime) || 0;
+  if (bt > 1e12) bt = Math.floor(bt / 1000);          // ms-epoch defence
+  if (!(bt > 0)) bt = Math.floor(Date.now() / 1000);  // attach runs seconds after solve
+  blockTime = bt;
   for (const f of [path.join(POOL_LOGDIR, 'pool', 'pool.log'),
                    path.join(POOL_LOGDIR, 'pool.log')]) {
     let txt;
@@ -1250,8 +1258,12 @@ app.get('/api/status', async (_req, res) => {
           // Chris: record the round effort this block was found at. netDiff is
           // computed later in this merge, so snapshot the shares now (before
           // the round zeroes) and attach the percentage once netDiff exists.
-          sv2State.pendingEffortShares =
-            (out.roundShares || 0) + Math.max(sv2State.roundWork, sv2State.roundDiff);
+          // asicseer resets its own round the instant it solves; whether this
+          // merge's pool.status read is pre- or post-reset is a coin flip.
+          // The PREVIOUS poll's total (5s earlier) is always pre-reset.
+          sv2State.pendingEffortShares = Math.max(
+            (out.roundShares || 0) + Math.max(sv2State.roundWork, sv2State.roundDiff),
+            sv2State.prevRoundTotal || 0);
           sv2State.roundWork = 0; sv2State.roundDiff = 0;
           sv2SetRoundStart(Math.floor(Date.now() / 1000));
           for (const c of Object.values(sv2State.channels)) { c.roundAcc = 0; c.accountedRound = 0; }
@@ -1268,6 +1280,7 @@ app.get('/api/status', async (_req, res) => {
         sv2State.lastBlockCount = out.blockList.length;
       }
       out.roundShares = (out.roundShares || 0) + Math.max(sv2State.roundWork, sv2State.roundDiff);
+    sv2State.prevRoundTotal = out.roundShares;
       // aggregate: rental/proxy fleets fan one identity across many channels;
     // collapse same-name SV2 rows into a single row (sum hs+shares, max best,
     // freshest last, count connections) so 132 Braiins channels read as one
@@ -1322,8 +1335,22 @@ app.get('/api/status', async (_req, res) => {
         // today's round effort stamped on it
         if (b.effort == null && nowS2 - (b.time || 0) < 900) {
           const declared = sv1SolveEffortFromLog(b.time);
-          if (declared != null) { b.effort = declared; changed = true; }
-          else if (snapshotTrusted) { b.effort = Math.round(pct * 10) / 10; changed = true; }
+          if (declared != null) { b.effort = declared; b.effortSrc = 'pool'; changed = true; }
+          else if (snapshotTrusted) { b.effort = Math.round(pct * 10) / 10; b.effortSrc = 'snapshot'; changed = true; }
+          console.log('[LoneStrike Cash] effort for ' + b.height + ': declared=' +
+            (declared != null ? declared : 'none') + ' snapshot=' + Math.round(pct * 10) / 10 +
+            ' -> ' + b.effort + '%');
+        }
+      }
+      // declaration-heal: a snapshot stamp that the pool's own log contradicts
+      // by more than 2x within 24h gets corrected to the declaration
+      for (const b of blockState.blocks) {
+        if (b.effort != null && b.effortSrc !== 'pool' && nowS2 - (b.time || 0) < 86400) {
+          const declared = sv1SolveEffortFromLog(b.time);
+          if (declared != null && (declared > b.effort * 2 || declared < b.effort / 2)) {
+            console.log('[LoneStrike Cash] effort healed for ' + b.height + ': ' + b.effort + '% -> ' + declared + '% (pool declaration)');
+            b.effort = declared; b.effortSrc = 'pool'; changed = true;
+          }
         }
       }
       sv2State.pendingEffortShares = null;

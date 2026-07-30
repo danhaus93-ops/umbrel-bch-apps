@@ -641,7 +641,12 @@ function celebKey(b){return (b&&b.hash)?b.hash:('h'+(b&&b.height));}
 function celebOn(){try{return localStorage.getItem('celebOff')!=='1';}catch(_){return true;}}
 function celebCheck(list){
   if(!Array.isArray(list))return;
-  if(celebSeen===null){celebSeen=new Set(list.map(celebKey));return;} // seed on first poll: existing blocks never fire
+  if(celebSeen===null){
+    // seed on first poll -- but a block younger than 90s falls through and
+    // fires: a page refresh moments after a solve must not eat the party
+    var nowS=Math.floor(Date.now()/1000);
+    celebSeen=new Set(list.filter(function(b){return nowS-(b.time||0)>=90;}).map(celebKey));
+  }
   let newest=null;
   for(const b of list){
     const k=celebKey(b);
