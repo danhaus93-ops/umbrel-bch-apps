@@ -1108,11 +1108,57 @@ const PROC_START = Date.now();
 // detection lags the solve (asicseer resets its own round instantly, so a
 // late snapshot measures the NEW round -- Chris's block stamped 0.1% when
 // the pool itself said 11.1%). Parse the declaration, matched by timestamp.
+// Solve declarations must survive log churn: the asicseer status ticker
+// writes ~1 line/second, so a 256KB tail reaches back about an hour -- a
+// user who updates tomorrow would find yesterday's declaration already
+// scrolled away and the heal would have nothing to work with. Capture
+// every declaration into a durable store within seconds of it appearing.
+const SV1_DECL_FILE = path.join(SV2_DIR, 'solve_declarations.json');
+let sv1Decls = (() => { try { return JSON.parse(fs.readFileSync(SV1_DECL_FILE, 'utf8')) || []; } catch (_) { return []; } })();
+function sv1DeclScan() {
+  for (const f of [path.join(POOL_LOGDIR, 'pool', 'pool.log'),
+                   path.join(POOL_LOGDIR, 'pool.log')]) {
+    let txt;
+    try {
+      const st = fs.statSync(f);
+      const fd = fs.openSync(f, 'r');
+      const sz = Math.min(st.size, 262144);
+      const buf = Buffer.alloc(sz);
+      fs.readSync(fd, buf, 0, sz, st.size - sz);
+      fs.closeSync(fd);
+      txt = buf.toString('utf8');
+    } catch (_) { continue; }
+    const re = /\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})[^\]]*\] Block solved after (\d+) shares at ([0-9.]+)% effort/g;
+    let m, added = false;
+    while ((m = re.exec(txt))) {
+      const ts = Date.parse(m[1].replace(' ', 'T') + 'Z') / 1000;
+      if (!sv1Decls.some((d) => d.ts === ts)) {
+        sv1Decls.push({ ts, shares: Number(m[2]) || 0, pct: parseFloat(m[3]) });
+        added = true;
+      }
+    }
+    if (added) {
+      sv1Decls.sort((a, b) => a.ts - b.ts);
+      if (sv1Decls.length > 500) sv1Decls = sv1Decls.slice(-500);
+      try { fs.writeFileSync(SV1_DECL_FILE, JSON.stringify(sv1Decls)); } catch (_) {}
+    }
+  }
+}
+setInterval(() => { try { sv1DeclScan(); } catch (_) {} }, 30000);
+try { sv1DeclScan(); } catch (_) {}
+
 function sv1SolveEffortFromLog(blockTime) {
   let bt = Number(blockTime) || 0;
   if (bt > 1e12) bt = Math.floor(bt / 1000);          // ms-epoch defence
   if (!(bt > 0)) bt = Math.floor(Date.now() / 1000);  // attach runs seconds after solve
   blockTime = bt;
+  // durable store first: complete history, immune to ticker churn
+  let sBest = null, sDt = Infinity;
+  for (const d of sv1Decls) {
+    const dt = Math.abs(d.ts - blockTime);
+    if (dt < sDt) { sDt = dt; sBest = d.pct; }
+  }
+  if (sBest != null && sDt < 900) return sBest;
   for (const f of [path.join(POOL_LOGDIR, 'pool', 'pool.log'),
                    path.join(POOL_LOGDIR, 'pool.log')]) {
     let txt;
@@ -1345,9 +1391,12 @@ app.get('/api/status', async (_req, res) => {
       // declaration-heal: a snapshot stamp that the pool's own log contradicts
       // by more than 2x within 24h gets corrected to the declaration
       for (const b of blockState.blocks) {
-        if (b.effort != null && b.effortSrc !== 'pool' && nowS2 - (b.time || 0) < 86400) {
+        if (b.effortSrc !== 'pool' && nowS2 - (b.time || 0) < 7 * 86400) {
           const declared = sv1SolveEffortFromLog(b.time);
-          if (declared != null && (declared > b.effort * 2 || declared < b.effort / 2)) {
+          if (declared != null && b.effort == null) {
+            console.log('[LoneStrike Cash] effort filled for ' + b.height + ': ' + declared + '% (pool declaration)');
+            b.effort = declared; b.effortSrc = 'pool'; changed = true;
+          } else if (declared != null && (declared > b.effort * 2 || declared < b.effort / 2)) {
             console.log('[LoneStrike Cash] effort healed for ' + b.height + ': ' + b.effort + '% -> ' + declared + '% (pool declaration)');
             b.effort = declared; b.effortSrc = 'pool'; changed = true;
           }

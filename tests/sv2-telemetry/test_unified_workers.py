@@ -365,6 +365,7 @@ def test_sv2_best_diff_is_solve_not_network():
         check("blockfound fixture present", False); return
     js = """
 const fs = require('fs'); const path = require('path');
+let sv1Decls = [];
 const SV2_DIR = %r, POOL_DIR = '/nonexistent', POOL_LOGDIR = '/nonexistent';
 %s
 const h = '000000000000000001e739924629fda5fa834f89517946f94292a04bf5aec98f';
@@ -494,6 +495,7 @@ def test_sv1_effort_declaration_wins():
     fxdir = _os.path.join(HERE, "fixtures")
     js = """
 const fs = require('fs'); const path = require('path');
+let sv1Decls = [];
 const POOL_LOGDIR = %r;
 %s
 // block at the solve moment -> 11.1; a block hours away -> null
@@ -593,6 +595,7 @@ def test_effort_units_and_races():
     fxdir = _os.path.join(HERE, "fixtures")
     js = """
 const fs = require('fs'); const path = require('path');
+let sv1Decls = [];
 const POOL_LOGDIR = %r;
 %s
 // the 2026-07-22 fixture solve is at 07:05:08Z = 1784790308
@@ -623,6 +626,27 @@ def test_celebration_survives_refresh():
           "must not eat the party" in HTML)
 
 
+def test_declarations_are_durable():
+    """Chris (2026-07-31, second report): three blocks stamped by old code
+    (107.1%%, 34.3%%, 302.9%% declared; 0.1%%, dash, 3.4%% stamped). The
+    asicseer ticker writes ~1 line/sec, so a 256KB tail reaches ~1h back --
+    a late updater would find the declarations scrolled away and nothing
+    would heal. Declarations are now captured into a durable store within
+    30s of appearing, matched store-first, and the heal fills nulls too."""
+    check("durable store exists", "SV1_DECL_FILE" in SRC and "solve_declarations.json" in SRC)
+    check("scanner runs every 30s and at boot",
+          "setInterval(() => { try { sv1DeclScan(); } catch (_) {} }, 30000);" in SRC)
+    check("store deduped by timestamp and bounded",
+          "!sv1Decls.some((d) => d.ts === ts)" in SRC and "sv1Decls.slice(-500)" in SRC)
+    _mfn = _extract_fn(SRC, "function sv1SolveEffortFromLog(")
+    check("matcher consults the store FIRST",
+          "durable store first" in _mfn and
+          _mfn.index("durable store first") < _mfn.index("path.join(POOL_LOGDIR"))
+    check("heal window extended to 7 days", "nowS2 - (b.time || 0) < 7 * 86400" in SRC)
+    check("heal FILLS null stamps from declarations (the dash gets its 34.3%%)",
+          "declared != null && b.effort == null" in SRC and "effort filled for" in SRC)
+
+
 if __name__ == "__main__":
     print("unified worker schema regression tests:")
     test_both_protocols_emit_one_schema()
@@ -648,6 +672,7 @@ if __name__ == "__main__":
     test_round_watermark_survives_restart_replay()
     test_effort_units_and_races()
     test_celebration_survives_refresh()
+    test_declarations_are_durable()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)
