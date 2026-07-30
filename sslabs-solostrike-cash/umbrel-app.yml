@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.66"
+version: "1.4.67"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -76,12 +76,10 @@ widgets:
           text: "0"
           subtext: "found"
 releaseNotes: >-
-  The effort recorded on a found block now reliably uses the pool's own
-  declared round effort - a timestamp-unit mismatch could silently discard
-  the declaration and fall back to a value measured after the round had
-  already reset (a 302.9 percent round was stamped as 3.4 percent).
-  Recently mis-stamped blocks are corrected automatically from the pool
-  log. The block-found celebration also now fires even if the page was
-  refreshed moments after the solve.
+  The pool's declared round effort for each found block is now captured
+  permanently the moment it appears in the pool log, so blocks stamped with
+  a wrong or missing effort are corrected even if you update days later
+  (busy pool logs previously outgrew the correction window within hours).
+  Blocks showing a dash that have a recorded declaration get filled in too.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
