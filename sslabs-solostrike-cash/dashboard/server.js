@@ -466,8 +466,14 @@ setInterval(() => {
     let dirty = false;
     for (const [cid, ch] of Object.entries(sv2State.channels)) {
       const fb = /^sv2-\d+\.\d+$/.test(ch.name);
-      const ttl = fb ? Math.min(TTL, 300) : TTL;
-      if (!ch.last || nowS - ch.last > ttl + 600) {
+      // Chris (2026-07-31): host-side connection churn presented every
+      // reconnect under a fresh incremented name (miner5..miner79, "80-100s
+      // of workers but they are the same workers"). A ghost that connected
+      // and never contributed a share dies 3 minutes after last contact;
+      // contributors keep the full TTL.
+      const ghost = !(ch.accepted > 0) && !(ch.best > 0);
+      const ttl = ghost ? 180 : (fb ? Math.min(TTL, 300) : TTL);
+      if (!ch.last || nowS - ch.last > (ghost ? ttl : ttl + 600)) {
         delete sv2State.channels[cid];
         if (fb && sv2BestP[ch.name]) { delete sv2BestP[ch.name]; dirty = true; }
       }

@@ -647,6 +647,19 @@ def test_declarations_are_durable():
           "declared != null && b.effort == null" in SRC and "effort filled for" in SRC)
 
 
+def test_ghost_workers_expire_fast():
+    """Chris (2026-07-31): host-side connection churn presented every
+    reconnect as a fresh incremented worker name; the list grew to 80-100
+    entries of the same physical rigs. A worker that never contributed a
+    share (no accepted, no best) now expires 3 minutes after last contact;
+    contributors keep the configured TTL."""
+    check("ghost = never contributed", "const ghost = !(ch.accepted > 0) && !(ch.best > 0);" in SRC)
+    check("ghosts expire at 180s, contributors keep TTL",
+          "const ttl = ghost ? 180 : (fb ? Math.min(TTL, 300) : TTL);" in SRC)
+    check("no grace extension for ghosts",
+          "(ghost ? ttl : ttl + 600)" in SRC)
+
+
 if __name__ == "__main__":
     print("unified worker schema regression tests:")
     test_both_protocols_emit_one_schema()
@@ -673,6 +686,7 @@ if __name__ == "__main__":
     test_effort_units_and_races()
     test_celebration_survives_refresh()
     test_declarations_are_durable()
+    test_ghost_workers_expire_fast()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)
