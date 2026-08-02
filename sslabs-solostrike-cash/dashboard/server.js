@@ -1305,7 +1305,14 @@ app.get('/api/status', async (_req, res) => {
       out.poolHs = (out.poolHs || 0) + s2.hs;
       const th = fmtHs(out.poolHs);
       out.hashrate = { val: th.val, unit: th.unit };
-      if (out.blockList.length !== sv2State.lastBlockCount) {
+    }
+    // Chris (2026-08-02): block detection, the round reset, and the effort
+    // snapshot lived inside the SV2-only branch above -- an SV1-only
+    // deployment (his fleet, the day he dropped the translator) never ran
+    // ANY of it: two blocks landed with no effort, and the heal (gated
+    // downstream on pendingEffortShares) could never fill old dashes
+    // either. A found block is a pool event, not an SV2 event.
+    if (out.blockList.length !== sv2State.lastBlockCount) {
         if (sv2State.lastBlockCount >= 0) {
           // Chris: record the round effort this block was found at. netDiff is
           // computed later in this merge, so snapshot the shares now (before
@@ -1331,8 +1338,9 @@ app.get('/api/status', async (_req, res) => {
         }
         sv2State.lastBlockCount = out.blockList.length;
       }
-      out.roundShares = (out.roundShares || 0) + Math.max(sv2State.roundWork, sv2State.roundDiff);
+    out.roundShares = (out.roundShares || 0) + Math.max(sv2State.roundWork, sv2State.roundDiff);
     sv2State.prevRoundTotal = out.roundShares;
+    if (s2.enabled || s2.workers) {
       // aggregate: rental/proxy fleets fan one identity across many channels;
     // collapse same-name SV2 rows into a single row (sum hs+shares, max best,
     // freshest last, count connections) so 132 Braiins channels read as one
@@ -1374,25 +1382,28 @@ app.get('/api/status', async (_req, res) => {
     out.height  = info.blocks;
     out.chain   = info.chain;
     out.netDiff = Number(info.difficulty) || 0;
-    if (sv2State.pendingEffortShares != null && out.netDiff > 0) {
-      const pct = sv2State.pendingEffortShares / out.netDiff * 100;
+    if (out.netDiff > 0) {
       const nowS2 = Math.floor(Date.now() / 1000);
-      // A snapshot taken within minutes of a process start is amnesiac: the
-      // in-memory round began at boot, not at the round's true start. Better
-      // a dash than a lie.
-      const snapshotTrusted = (Date.now() - PROC_START) > 600000;
       let changed = false;
-      for (const b of blockState.blocks) {
-        // fresh solves only: a heal that surfaces an OLD block must not get
-        // today's round effort stamped on it
-        if (b.effort == null && nowS2 - (b.time || 0) < 900) {
-          const declared = sv1SolveEffortFromLog(b.time);
-          if (declared != null) { b.effort = declared; b.effortSrc = 'pool'; changed = true; }
-          else if (snapshotTrusted) { b.effort = Math.round(pct * 10) / 10; b.effortSrc = 'snapshot'; changed = true; }
-          console.log('[LoneStrike Cash] effort for ' + b.height + ': declared=' +
-            (declared != null ? declared : 'none') + ' snapshot=' + Math.round(pct * 10) / 10 +
-            ' -> ' + b.effort + '%');
+      if (sv2State.pendingEffortShares != null) {
+        const pct = sv2State.pendingEffortShares / out.netDiff * 100;
+        // A snapshot taken within minutes of a process start is amnesiac: the
+        // in-memory round began at boot, not at the round's true start. Better
+        // a dash than a lie.
+        const snapshotTrusted = (Date.now() - PROC_START) > 600000;
+        for (const b of blockState.blocks) {
+          // fresh solves only: a heal that surfaces an OLD block must not get
+          // today's round effort stamped on it
+          if (b.effort == null && nowS2 - (b.time || 0) < 900) {
+            const declared = sv1SolveEffortFromLog(b.time);
+            if (declared != null) { b.effort = declared; b.effortSrc = 'pool'; changed = true; }
+            else if (snapshotTrusted) { b.effort = Math.round(pct * 10) / 10; b.effortSrc = 'snapshot'; changed = true; }
+            console.log('[LoneStrike Cash] effort for ' + b.height + ': declared=' +
+              (declared != null ? declared : 'none') + ' snapshot=' + Math.round(pct * 10) / 10 +
+              ' -> ' + b.effort + '%');
+          }
         }
+        sv2State.pendingEffortShares = null;
       }
       // declaration-heal: a snapshot stamp that the pool's own log contradicts
       // by more than 2x within 24h gets corrected to the declaration
@@ -1408,7 +1419,6 @@ app.get('/api/status', async (_req, res) => {
           }
         }
       }
-      sv2State.pendingEffortShares = null;
       if (changed) { try { saveBlocks(); } catch (_) {} }
     }
   } catch (_) { /* node unreachable */ }

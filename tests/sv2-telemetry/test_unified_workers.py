@@ -660,6 +660,25 @@ def test_ghost_workers_expire_fast():
           "(ghost ? ttl : ttl + 600)" in SRC)
 
 
+def test_effort_machinery_runs_for_sv1_only():
+    """Chris (2026-08-02): running pure SV1 (no translator), two blocks landed
+    with no effort and old dashes never healed -- detection, round reset,
+    snapshot, and (via the pendingEffortShares gate) the heal all lived
+    inside the SV2-only branch. A found block is a pool event."""
+    i_close = SRC.index("out.hashrate = { val: th.val, unit: th.unit };\n    }")
+    i_detect = SRC.index("if (out.blockList.length !== sv2State.lastBlockCount)")
+    i_reopen = SRC.index("if (s2.enabled || s2.workers) {\n      // aggregate: rental/proxy")
+    check("detection sits between gate close and gate reopen (unconditional)",
+          i_close < i_detect < i_reopen)
+    check("round totals updated unconditionally",
+          SRC.index("sv2State.prevRoundTotal = out.roundShares;") < i_reopen)
+    check("heal gated only on netDiff, snapshot nested on pending",
+          "if (out.netDiff > 0) {" in SRC and
+          "if (sv2State.pendingEffortShares != null) {\n        const pct" in SRC)
+    check("heal loop is OUTSIDE the pending gate",
+          SRC.index("declaration-heal") > SRC.index("sv2State.pendingEffortShares = null;"))
+
+
 if __name__ == "__main__":
     print("unified worker schema regression tests:")
     test_both_protocols_emit_one_schema()
@@ -687,6 +706,7 @@ if __name__ == "__main__":
     test_celebration_survives_refresh()
     test_declarations_are_durable()
     test_ghost_workers_expire_fast()
+    test_effort_machinery_runs_for_sv1_only()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)
