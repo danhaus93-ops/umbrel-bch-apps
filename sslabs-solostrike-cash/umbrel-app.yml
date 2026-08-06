@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.69"
+version: "1.4.70"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -76,10 +76,11 @@ widgets:
           text: "0"
           subtext: "found"
 releaseNotes: >-
-  Fixes found-block effort not being recorded at all when only Stratum V1
-  miners are connected - the effort machinery previously only ran while a
-  Stratum V2 connection was active. Blocks found on V1-only setups now get
-  their effort recorded, and older blocks showing a dash are filled in
-  automatically from the pool's own solve declarations.
+  Blocks that pay your address but were solved elsewhere (for example, when
+  the same payout address is also used on a remote pool) are now listed as
+  "external" instead of being celebrated as found here. They keep their
+  explorer link, but they no longer fire the block-found celebration, reset
+  your local round, or receive a round effort. Thanks to a community report
+  for the exact scenario.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
