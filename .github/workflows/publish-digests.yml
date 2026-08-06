@@ -1,4 +1,5 @@
 name: Publish image digests
+# refresh-nudge: self-trigger after the 2026-08-06 runner outage
 
 # The Umbrel store requires images pinned as tag@sha256-digest. The packages
 # REST API needs a classic PAT and ghcr.io is unreachable from some tooling
