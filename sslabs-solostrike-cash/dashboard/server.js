@@ -1729,4 +1729,3 @@ app.get('/api/widget/stats', (_req, res) => {
 });
 
 app.listen(PORT, () => console.log(`LoneStrike Cash dashboard on :${PORT}`));
-// (build retrigger 2026-08-06: prior CI run lost to a runner provisioning failure)
