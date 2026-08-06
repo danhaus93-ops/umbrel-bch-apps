@@ -459,7 +459,7 @@ function render(d){
       const short=b.hash?b.hash.slice(0,8)+'\u2026'+b.hash.slice(-6):'\u2014';
       const eff=(b.effort!=null)?((b.effort>=100?b.effort.toFixed(0):b.effort.toFixed(1))+'%'):'\u2014';
       const effCol=(b.effort==null)?'var(--muted)':(b.effort<100?'var(--mint)':b.effort<250?'#FCD34D':'#FB7185');
-      r.innerHTML=`<div class="bd">${b.height.toLocaleString()}<span style="display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px">${b.worker||'\u2014'}</span></div><div class="ls wcol-r">${ago(b.time)} ago</div><div class="wcol-r" style="color:${effCol};font-family:var(--fm)">${eff}</div><div class="hr wcol-r">${fmtDiff(b.best)}</div><div class="wcol-r"><a href="https://blockchair.com/bitcoin-cash/block/${b.hash}" target="_blank" rel="noopener" style="color:var(--mint);text-decoration:none;font-family:var(--fm)">${short}</a></div>`;
+      r.innerHTML=`<div class="bd">${b.height.toLocaleString()}<span style="display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px">${b.external?'<span style="opacity:.55">external</span>':(b.worker||'\u2014')}</span></div><div class="ls wcol-r">${ago(b.time)} ago</div><div class="wcol-r" style="color:${effCol};font-family:var(--fm)">${eff}</div><div class="hr wcol-r">${fmtDiff(b.best)}</div><div class="wcol-r"><a href="https://blockchair.com/bitcoin-cash/block/${b.hash}" target="_blank" rel="noopener" style="color:var(--mint);text-decoration:none;font-family:var(--fm)">${short}</a></div>`;
       bt.appendChild(r);
     });
   }else{bemp.style.display='block';}
@@ -649,6 +649,7 @@ function celebCheck(list){
   }
   let newest=null;
   for(const b of list){
+    if(b.external){celebSeen.add(celebKey(b));continue;} // paid us, solved elsewhere: no party
     const k=celebKey(b);
     if(!celebSeen.has(k)){celebSeen.add(k);if(!newest||(b.height||0)>(newest.height||0))newest=b;}
   }

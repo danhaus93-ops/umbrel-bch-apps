@@ -1206,12 +1206,21 @@ async function scanBlocks() {
       const hit = await coinbasePaysUs(hash, mineKeys);
       if (hit && !blockState.blocks.some(b => b.hash === hash)) {
         const solveDiff = solveDiffFromBlocks(h) || sv2SolveDiffFromLog(hash) || solveDiffFromLog(h);
+        // Reddit field report (2026-08): a user mined the SAME payout address
+        // on a remote pool; the remote pool found the block, and this scan --
+        // which matches coinbase outputs by address -- celebrated it as ours.
+        // The address-match proves the block PAID us, not that we FOUND it.
+        // Local evidence (a pool solve record or a solve declaration near the
+        // block time) is what proves authorship.
+        const localEvidence = solveDiff ||
+          sv1Decls.some((d) => Math.abs(d.ts - (hit.time || 0)) < 900);
+        const ext = !localEvidence;
         // best === the submitted solve difficulty, or 0 (shown as a dash).
         // NEVER borrow network difficulty here: that is what made SV2 rows
         // read 449G/460G, i.e. net diff mislabeled as a submitted share.
-        blockState.blocks.push({ height: h, hash, time: hit.time, best: solveDiff || 0, solveDiff: solveDiff || null, netdiff: hit.netdiff || null, worker: solveWorkerFromBlocks(h) || solveWorkerFromLog(h) || null, healed: true });
+        blockState.blocks.push({ height: h, hash, time: hit.time, best: solveDiff || 0, solveDiff: solveDiff || null, netdiff: hit.netdiff || null, worker: solveWorkerFromBlocks(h) || solveWorkerFromLog(h) || (ext ? 'external' : null), external: ext || undefined, healed: true });
         blockState.acceptedAtLastBlock = lastAcceptedTotal || 0;
-        console.log(`[LoneStrike Cash] BLOCK FOUND at height ${h} (${hash})`);
+        console.log(`[LoneStrike Cash] BLOCK ${ext ? 'PAID (external solve)' : 'FOUND'} at height ${h} (${hash})`);
       }
       blockState.lastScanned = h; h++;
     }
@@ -1313,7 +1322,14 @@ app.get('/api/status', async (_req, res) => {
     // downstream on pendingEffortShares) could never fill old dashes
     // either. A found block is a pool event, not an SV2 event.
     if (out.blockList.length !== sv2State.lastBlockCount) {
-        if (sv2State.lastBlockCount >= 0) {
+        // an EXTERNAL block (paid our address, solved elsewhere) must not
+        // reset the local round: our miners' shares are still climbing
+        // toward OUR block
+        const localCount = out.blockList.filter((b) => !b.external).length;
+        if (localCount === (sv2State.lastLocalCount ?? localCount) && sv2State.lastBlockCount >= 0) {
+          sv2State.lastBlockCount = out.blockList.length;
+          sv2State.lastLocalCount = localCount;
+        } else if (sv2State.lastBlockCount >= 0) {
           // Chris: record the round effort this block was found at. netDiff is
           // computed later in this merge, so snapshot the shares now (before
           // the round zeroes) and attach the percentage once netDiff exists.
@@ -1337,6 +1353,10 @@ app.get('/api/status', async (_req, res) => {
           } catch (_) {}
         }
         sv2State.lastBlockCount = out.blockList.length;
+        sv2State.lastLocalCount = out.blockList.filter((b) => !b.external).length;
+      } else {
+        sv2State.lastBlockCount = out.blockList.length;
+        sv2State.lastLocalCount = out.blockList.filter((b) => !b.external).length;
       }
     out.roundShares = (out.roundShares || 0) + Math.max(sv2State.roundWork, sv2State.roundDiff);
     sv2State.prevRoundTotal = out.roundShares;
@@ -1394,7 +1414,7 @@ app.get('/api/status', async (_req, res) => {
         for (const b of blockState.blocks) {
           // fresh solves only: a heal that surfaces an OLD block must not get
           // today's round effort stamped on it
-          if (b.effort == null && nowS2 - (b.time || 0) < 900) {
+          if (!b.external && b.effort == null && nowS2 - (b.time || 0) < 900) {
             const declared = sv1SolveEffortFromLog(b.time);
             if (declared != null) { b.effort = declared; b.effortSrc = 'pool'; changed = true; }
             else if (snapshotTrusted) { b.effort = Math.round(pct * 10) / 10; b.effortSrc = 'snapshot'; changed = true; }
@@ -1408,7 +1428,7 @@ app.get('/api/status', async (_req, res) => {
       // declaration-heal: a snapshot stamp that the pool's own log contradicts
       // by more than 2x within 24h gets corrected to the declaration
       for (const b of blockState.blocks) {
-        if (b.effortSrc !== 'pool' && nowS2 - (b.time || 0) < 7 * 86400) {
+        if (!b.external && b.effortSrc !== 'pool' && nowS2 - (b.time || 0) < 7 * 86400) {
           const declared = sv1SolveEffortFromLog(b.time);
           if (declared != null && b.effort == null) {
             console.log('[LoneStrike Cash] effort filled for ' + b.height + ': ' + declared + '% (pool declaration)');

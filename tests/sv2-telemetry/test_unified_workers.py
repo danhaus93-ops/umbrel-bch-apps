@@ -679,6 +679,30 @@ def test_effort_machinery_runs_for_sv1_only():
           SRC.index("declaration-heal") > SRC.index("sv2State.pendingEffortShares = null;"))
 
 
+def test_external_blocks_paid_not_found():
+    """Reddit field report (2026-08): user mined the SAME payout address on a
+    remote pool; the remote pool solved, and the chain scan -- which matches
+    coinbase outputs by address -- celebrated the block as ours. Address
+    match proves PAID, local solve evidence proves FOUND. External blocks
+    are listed (they paid us) but never celebrated, never reset the local
+    round, never get round effort, and are labeled."""
+    check("scan demands local evidence for authorship",
+          "const localEvidence = solveDiff ||" in SRC and
+          "sv1Decls.some((d) => Math.abs(d.ts - (hit.time || 0)) < 900)" in SRC)
+    check("external entries flagged and labeled",
+          "external: ext || undefined" in SRC and "(ext ? 'external' : null)" in SRC)
+    check("log line distinguishes PAID from FOUND",
+          "BLOCK ${ext ? 'PAID (external solve)' : 'FOUND'}" in SRC)
+    check("external-only additions do not reset the local round",
+          "const localCount = out.blockList.filter((b) => !b.external).length;" in SRC)
+    check("effort stamp skips external", "if (!b.external && b.effort == null" in SRC)
+    check("effort heal skips external", "if (!b.external && b.effortSrc !== 'pool'" in SRC)
+    check("client: external never celebrates",
+          "if(b.external){celebSeen.add(celebKey(b));continue;}" in HTML)
+    check("client: external labeled muted in the table",
+          "b.external?'<span style=\"opacity:.55\">external</span>'" in HTML)
+
+
 if __name__ == "__main__":
     print("unified worker schema regression tests:")
     test_both_protocols_emit_one_schema()
@@ -707,6 +731,7 @@ if __name__ == "__main__":
     test_declarations_are_durable()
     test_ghost_workers_expire_fast()
     test_effort_machinery_runs_for_sv1_only()
+    test_external_blocks_paid_not_found()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)
