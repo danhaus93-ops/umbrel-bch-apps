@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.70"
+version: "1.4.71"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -76,11 +76,11 @@ widgets:
           text: "0"
           subtext: "found"
 releaseNotes: >-
-  Blocks that pay your address but were solved elsewhere (for example, when
-  the same payout address is also used on a remote pool) are now listed as
-  "external" instead of being celebrated as found here. They keep their
-  explorer link, but they no longer fire the block-found celebration, reset
-  your local round, or receive a round effort. Thanks to a community report
-  for the exact scenario.
+  A found block's best diff is now the achieved difficulty of the block's
+  own hash - always at or above network difficulty - and past blocks
+  recorded with an impossibly small value are corrected automatically. The
+  round effort is also recorded even when the dashboard was closed at the
+  moment of the solve, using a persisted once-a-minute round history. Worker
+  naming is more robust with the latest Stratum V2 pool build.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
