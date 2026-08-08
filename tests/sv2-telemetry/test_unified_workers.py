@@ -703,6 +703,91 @@ def test_external_blocks_paid_not_found():
           "b.external?'<span style=\"opacity:.55\">external</span>'" in HTML)
 
 
+def test_block_best_is_chain_authoritative():
+    """Chris (2026-08-08): SV2 block 963169 showed best 804K -- the vardiff
+    CREDITED target from share_work -- against 435G netdiff. The solving
+    share's achieved difficulty IS the block hash's difficulty; impossible
+    bests (below the netdiff they beat) are recomputed from the hash."""
+    check("hashAchievedDiff exists (BigInt over the D1 target)",
+          "function hashAchievedDiff(hexHash)" in SRC)
+    check("impossible bests healed from the block's own hash",
+          "b.best < nd" in SRC and "best healed for" in SRC)
+    import shutil, subprocess, tempfile, json as _json
+    if not shutil.which("node"):
+        print("SKIP  hashDiff functional"); return
+    js = """
+const SV2_D1 = 0xffffn << 208n;
+%s
+// Chris's block 963169 hash: 19 leading hex zeros
+const d = hashAchievedDiff('000000000000000001bd2713e80864c01cbdacbf8366acaa06fe2a13192f6e0d');
+console.log(JSON.stringify({ d, aboveNet: d > 435e9, sane: d < 1e18 }));
+""" % _extract_fn(SRC, "function hashAchievedDiff(")
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as f:
+        f.write(js); pth = f.name
+    r = subprocess.run(["node", pth], capture_output=True, text=True)
+    try: d = _json.loads(r.stdout.strip().split("\n")[-1])
+    except Exception:
+        check("hashDiff functional run", False, (r.stdout + r.stderr)[:200]); return
+    check("963169's real solve diff beats the 435G netdiff (not 804K)",
+          d["aboveNet"] and d["sane"])
+
+
+def test_round_samples_enable_late_effort():
+    """The status merge is client-driven: page closed at solve = detection
+    fires when the user next opens the dashboard, possibly an hour later,
+    when the live snapshot is stale (963169: dash). A once-a-minute persisted
+    round sample lets late detection read the round as it stood at solve."""
+    check("samples persisted once a minute, bounded",
+          "round_samples.json" in SRC and "now - sv2LastSampleTs < 60" in SRC and "slice(-2880)" in SRC)
+    check("nearest-sample lookup bounded to 10 min", "dt < 600" in SRC)
+    check("attach falls back to the sample store",
+          "b.effortSrc = 'sample'" in SRC)
+    check("null-fill heal learns the sample store too",
+          "effort filled for" in SRC and "(round sample)" in SRC)
+
+
+def test_identity_join_by_request_id():
+    """Current pool build splits identity across Open (request_id, identity)
+    and Success (request_id, channel_id). Joined by request_id."""
+    check("pending map + both regexes", "sv2PendingIdent" in SRC and "SV2_RE_OPEN_REQ" in SRC and "SV2_RE_OPEN_OK2" in SRC)
+    import re as _re, shutil, subprocess, tempfile, json as _json
+    if not shutil.which("node"):
+        print("SKIP  join functional"); return
+    js = """
+const sv2State = { channels: {} };
+function sv2Chan(cid) { if (!sv2State.channels[cid]) sv2State.channels[cid] = { name: 'sv2-' + cid, best: 0 }; return sv2State.channels[cid]; }
+const sv2PendingIdent = new Map();
+const SV2_RE_OPEN_REQ = %s;
+const SV2_RE_OPEN_OK2 = %s;
+const lines = [
+ 'INFO pool: Received OpenExtendedMiningChannel: OpenExtendedMiningChannel(request_id: 34, user_identity: addr.miner25, nominal_hash_rate: 5e14)',
+ 'INFO pool: Sending OpenExtendedMiningChannel.Success (downstream_id: 1): OpenExtendedMiningChannelSuccess(request_id: 34, channel_id: 35, target: U256(00))',
+];
+for (const line of lines) {
+  const oq2 = SV2_RE_OPEN_REQ.exec(line);
+  if (oq2) sv2PendingIdent.set(oq2[1], oq2[2]);
+  const ok2 = SV2_RE_OPEN_OK2.exec(line);
+  if (ok2 && sv2PendingIdent.has(ok2[2])) {
+    const idn = sv2PendingIdent.get(ok2[2]); sv2PendingIdent.delete(ok2[2]);
+    if (/^[A-Za-z0-9:._\\-]{4,64}$/.test(idn)) {
+      const dj = idn.lastIndexOf('.');
+      sv2Chan(ok2[1] + ':' + ok2[3]).name = (dj > 0 && dj < idn.length - 1) ? idn.slice(dj + 1) : idn;
+    }
+  }
+}
+console.log(JSON.stringify({ name: (sv2State.channels['1:35']||{}).name }));
+"""
+    m1 = _re.search(r"const SV2_RE_OPEN_REQ = (/.*?/);", SRC).group(1)
+    m2 = _re.search(r"const SV2_RE_OPEN_OK2 = (/.*?/);", SRC).group(1)
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as f:
+        f.write(js % (m1, m2)); pth = f.name
+    r = subprocess.run(["node", pth], capture_output=True, text=True)
+    try: d = _json.loads(r.stdout.strip().split("\n")[-1])
+    except Exception:
+        check("join functional run", False, (r.stdout + r.stderr)[:200]); return
+    check("channel 1:35 named miner25 via the request_id join", d["name"] == "miner25")
+
+
 if __name__ == "__main__":
     print("unified worker schema regression tests:")
     test_both_protocols_emit_one_schema()
@@ -732,6 +817,9 @@ if __name__ == "__main__":
     test_ghost_workers_expire_fast()
     test_effort_machinery_runs_for_sv1_only()
     test_external_blocks_paid_not_found()
+    test_block_best_is_chain_authoritative()
+    test_round_samples_enable_late_effort()
+    test_identity_join_by_request_id()
     if FAILURES:
         print(f"\n{len(FAILURES)} FAILURE(S): {FAILURES}")
         sys.exit(1)

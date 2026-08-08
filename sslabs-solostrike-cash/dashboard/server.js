@@ -207,6 +207,31 @@ function sv2SaveApiBase() { try { fs.writeFileSync(SV2_API_BASE_FILE, JSON.strin
 // round start do not count toward the round.
 const SV2_ROUND_FILE = path.join(SV2_DIR, 'sv2_round_start.json');
 let sv2RoundStartTs = (() => { try { return Number(JSON.parse(fs.readFileSync(SV2_ROUND_FILE, 'utf8')).start) || 0; } catch (_) { return 0; } })();
+// The status merge is client-driven: with the page closed, block detection
+// happens whenever the user next opens the dashboard -- possibly an hour
+// after the solve, when the live round snapshot is stale and the freshness
+// gate rightly refuses it (Chris's 963169: dash). Persist a once-a-minute
+// sample of the round total so a late detection can still read the round
+// as it stood at solve time.
+const SV2_ROUND_SAMPLES_FILE = path.join(SV2_DIR, 'round_samples.json');
+let sv2RoundSamples = (() => { try { return JSON.parse(fs.readFileSync(SV2_ROUND_SAMPLES_FILE, 'utf8')) || []; } catch (_) { return []; } })();
+let sv2LastSampleTs = 0;
+function sv2RoundSample(total) {
+  const now = Math.floor(Date.now() / 1000);
+  if (now - sv2LastSampleTs < 60) return;
+  sv2LastSampleTs = now;
+  sv2RoundSamples.push({ ts: now, total: Math.round(total) });
+  if (sv2RoundSamples.length > 2880) sv2RoundSamples = sv2RoundSamples.slice(-2880);
+  try { fs.writeFileSync(SV2_ROUND_SAMPLES_FILE, JSON.stringify(sv2RoundSamples)); } catch (_) {}
+}
+function sv2RoundNear(ts) {
+  let best = null, dt = Infinity;
+  for (const r of sv2RoundSamples) {
+    const d = Math.abs(r.ts - ts);
+    if (d < dt) { dt = d; best = r.total; }
+  }
+  return (best != null && dt < 600) ? best : null;
+}
 function sv2SetRoundStart(ts) {
   sv2RoundStartTs = ts;
   try { fs.writeFileSync(SV2_ROUND_FILE, JSON.stringify({ start: ts })); } catch (_) {}
@@ -319,6 +344,13 @@ function fmtHs(hs) {
 // Every accepted share logs share_hash (-> difficulty) and share_work
 // (difficulty units credited). Hashrate = sum(share_work in window) * 2^32 / secs.
 const SV2_D1 = 0xffffn << 208n;                    // difficulty-1 target
+// The solving share's achieved difficulty IS the block hash's difficulty --
+// chain-authoritative, no log needed. share_work in the current pool build
+// is the vardiff CREDITED target (~800K), which briefly displayed as an
+// SV2 block's "best" (six orders of magnitude under the real solve).
+function hashAchievedDiff(hexHash) {
+  try { return Number(SV2_D1 * 1000000n / BigInt('0x' + hexHash)) / 1e6; } catch (_) { return 0; }
+}
 const sv2State = {
   offset: 0, pendingId: '', pendingAge: 99, roundWork: 0, lastBlockCount: -1,
   // The extranonce2 size the pool is REALLY running, read off the wire rather
@@ -342,6 +374,12 @@ const SV2_RE_XN_GRANT = /OpenExtendedMiningChannelSuccess.*?extranonce_size: (\d
 // Fallback: the boot banner, for a pool that has not opened a channel yet.
 const SV2_RE_XN_BOOT  = /\[entrypoint\] extranonce2 bytes: (\d+)/;
 const SV2_RE_TS    = /^(\d{4}-\d{2}-\d{2}T[0-9:.]+Z)/;
+// Current pool build splits identity across two lines: Open carries
+// (request_id, user_identity); Success carries (request_id, channel_id).
+// Join by request_id -- robust to line distance and redaction brackets.
+const sv2PendingIdent = new Map();
+const SV2_RE_OPEN_REQ = /Received Open(?:Standard|Extended)MiningChannel\b.*?request_id[=:\s]+(\d+).*?user_identity[=:\s]+\[?([^\],\s)]+)/;
+const SV2_RE_OPEN_OK2 = /\(downstream_id[=:\s]+(\d+)\).*?MiningChannelSuccess\(request_id[=:\s]+(\d+),\s*channel_id[=:\s]+(\d+)/;
 const SV2_RE_IDENT = /Open(?:Standard|Extended)MiningChannel\b[^\n]*?user_identity[^"\x27]*["\x27]?([^"\x27,\s)]+)/;
 const SV2_RE_OPENOK = /Open(?:Standard|Extended)MiningChannelSuccess[^\n]*?channel_id[=:\s]+(\d+)/;
 const SV2_RE_BAD   = /(?:invalid share|SubmitSharesError)[^\n]*?channel_id[=:\s]+(\d+)/;
@@ -387,6 +425,16 @@ function sv2Ingest() {
   for (const line of chunk.split('\n')) {
     const xg = SV2_RE_XN_GRANT.exec(line) || SV2_RE_XN_BOOT.exec(line);
     if (xg) { const n = parseInt(xg[1], 10); if (n >= 1 && n <= 32) sv2State.activeXn = n; }
+    const oq2 = SV2_RE_OPEN_REQ.exec(line);
+    if (oq2) { sv2PendingIdent.set(oq2[1], oq2[2]); if (sv2PendingIdent.size > 64) sv2PendingIdent.delete(sv2PendingIdent.keys().next().value); }
+    const ok2 = SV2_RE_OPEN_OK2.exec(line);
+    if (ok2 && sv2PendingIdent.has(ok2[2])) {
+      const idn = sv2PendingIdent.get(ok2[2]); sv2PendingIdent.delete(ok2[2]);
+      if (/^[A-Za-z0-9:._\-]{4,64}$/.test(idn)) {
+        const dj = idn.lastIndexOf('.');
+        sv2Chan(ok2[1] + ':' + ok2[3]).name = (dj > 0 && dj < idn.length - 1) ? idn.slice(dj + 1) : idn;
+      }
+    }
     if (/Open(?:Standard|Extended)MiningChannel\b/.test(line) && line.includes('user_identity')) {
       let ident = '';
       const plain = line.match(/user_identity[=:\s]+([^\s,"\x27)]+)/);
@@ -1330,6 +1378,7 @@ app.get('/api/status', async (_req, res) => {
           sv2State.lastBlockCount = out.blockList.length;
           sv2State.lastLocalCount = localCount;
         } else if (sv2State.lastBlockCount >= 0) {
+          console.log('[LoneStrike Cash] local block detected: round + bests reset (' + (sv2State.lastLocalCount ?? '?') + ' -> ' + localCount + ' local blocks)');
           // Chris: record the round effort this block was found at. netDiff is
           // computed later in this merge, so snapshot the shares now (before
           // the round zeroes) and attach the percentage once netDiff exists.
@@ -1360,6 +1409,7 @@ app.get('/api/status', async (_req, res) => {
       }
     out.roundShares = (out.roundShares || 0) + Math.max(sv2State.roundWork, sv2State.roundDiff);
     sv2State.prevRoundTotal = out.roundShares;
+    try { sv2RoundSample(out.roundShares || 0); } catch (_) {}
     if (s2.enabled || s2.workers) {
       // aggregate: rental/proxy fleets fan one identity across many channels;
     // collapse same-name SV2 rows into a single row (sum hs+shares, max best,
@@ -1405,6 +1455,19 @@ app.get('/api/status', async (_req, res) => {
     if (out.netDiff > 0) {
       const nowS2 = Math.floor(Date.now() / 1000);
       let changed = false;
+      // best-diff heal: a solve's achieved diff can never be BELOW the
+      // network difficulty it beat; recompute impossible bests from the
+      // block's own hash (fixes the 804K share_work stamp, retroactively)
+      for (const b of blockState.blocks) {
+        const nd = Number(b.netdiff) || out.netDiff;
+        if (b.hash && nd > 0 && (!(b.best > 0) || b.best < nd)) {
+          const ad = hashAchievedDiff(b.hash);
+          if (ad >= nd) {
+            console.log('[LoneStrike Cash] best healed for ' + b.height + ': ' + Math.round(b.best || 0) + ' -> ' + Math.round(ad) + ' (block-hash achieved diff)');
+            b.best = ad; b.solveDiff = ad; changed = true;
+          }
+        }
+      }
       if (sv2State.pendingEffortShares != null) {
         const pct = sv2State.pendingEffortShares / out.netDiff * 100;
         // A snapshot taken within minutes of a process start is amnesiac: the
@@ -1418,6 +1481,8 @@ app.get('/api/status', async (_req, res) => {
             const declared = sv1SolveEffortFromLog(b.time);
             if (declared != null) { b.effort = declared; b.effortSrc = 'pool'; changed = true; }
             else if (snapshotTrusted) { b.effort = Math.round(pct * 10) / 10; b.effortSrc = 'snapshot'; changed = true; }
+            else { const rt = sv2RoundNear(b.time); const ndL = Number(b.netdiff) || out.netDiff;
+              if (rt != null && ndL > 0) { b.effort = Math.round(rt / ndL * 1000) / 10; b.effortSrc = 'sample'; changed = true; } }
             console.log('[LoneStrike Cash] effort for ' + b.height + ': declared=' +
               (declared != null ? declared : 'none') + ' snapshot=' + Math.round(pct * 10) / 10 +
               ' -> ' + b.effort + '%');
@@ -1430,6 +1495,13 @@ app.get('/api/status', async (_req, res) => {
       for (const b of blockState.blocks) {
         if (!b.external && b.effortSrc !== 'pool' && nowS2 - (b.time || 0) < 7 * 86400) {
           const declared = sv1SolveEffortFromLog(b.time);
+          if (declared == null && b.effort == null) {
+            const rt = sv2RoundNear(b.time); const ndH = Number(b.netdiff) || out.netDiff;
+            if (rt != null && ndH > 0) {
+              console.log('[LoneStrike Cash] effort filled for ' + b.height + ': ' + Math.round(rt / ndH * 1000) / 10 + '% (round sample)');
+              b.effort = Math.round(rt / ndH * 1000) / 10; b.effortSrc = 'sample'; changed = true;
+            }
+          }
           if (declared != null && b.effort == null) {
             console.log('[LoneStrike Cash] effort filled for ' + b.height + ': ' + declared + '% (pool declaration)');
             b.effort = declared; b.effortSrc = 'pool'; changed = true;
