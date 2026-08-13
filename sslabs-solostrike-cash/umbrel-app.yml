@@ -2,7 +2,7 @@ manifestVersion: 1
 id: sslabs-solostrike-cash
 category: bitcoin
 name: LoneStrike Cash
-version: "1.4.71"
+version: "1.4.72"
 tagline: Zero-fee BCH solo pool with the first self-hosted Stratum V2 endpoint for Bitcoin Cash
 icon: https://raw.githubusercontent.com/danhaus93-ops/umbrel-bch-apps/master/sslabs-solostrike-cash/icon.svg
 description: >-
@@ -76,11 +76,8 @@ widgets:
           text: "0"
           subtext: "found"
 releaseNotes: >-
-  A found block's best diff is now the achieved difficulty of the block's
-  own hash - always at or above network difficulty - and past blocks
-  recorded with an impossibly small value are corrected automatically. The
-  round effort is also recorded even when the dashboard was closed at the
-  moment of the solve, using a persisted once-a-minute round history. Worker
-  naming is more robust with the latest Stratum V2 pool build.
+  The "Shares" tile is now labeled "Lifetime Shares" to make clear it counts
+  all-time accepted work, distinct from the current round effort. Suggested
+  by a community tester.
 submitter: LoneStrike Labs
 submission: https://github.com/danhaus93-ops/umbrel-bch-apps
